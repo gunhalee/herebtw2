@@ -48,7 +48,6 @@ export type PostComposeState = {
   locationResolved: boolean;
   resolvedDongName: string | null;
   resolvedDongCode: string | null;
-  resolvedGridCellPath: string | null;
   cooldownRemainingSeconds: number;
   duplicateBlocked: boolean;
   errorMessage: string | null;

@@ -1,6 +1,7 @@
 import { getSupabaseConfig, hasSupabaseServerConfig } from "./config";
 
 type RequestMethod = "GET" | "POST" | "PATCH" | "DELETE";
+const SUPABASE_REQUEST_TIMEOUT_MS = 8000;
 
 function buildSupabaseAuthHeaders(
   key: string,
@@ -32,25 +33,41 @@ async function supabaseRestRequest<T>(
     config.serviceRoleKey!,
     extraHeaders,
   );
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    SUPABASE_REQUEST_TIMEOUT_MS,
+  );
 
-  const response = await fetch(`${config.url}/rest/v1/${path}`, {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    cache: "no-store",
-  });
+  try {
+    const response = await fetch(`${config.url}/rest/v1/${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: "no-store",
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Supabase REST request failed: ${response.status} ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Supabase REST request failed: ${response.status} ${errorText}`);
+    }
+
+    const text = await response.text();
+    if (!text) {
+      return null;
+    }
+
+    return JSON.parse(text) as T;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Supabase REST request timed out.");
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const text = await response.text();
-  if (!text) {
-    return null;
-  }
-
-  return JSON.parse(text) as T;
 }
 
 export async function supabaseSelect<T>(path: string) {
@@ -81,22 +98,39 @@ export async function supabaseRpc<T>(fn: string, body: unknown) {
   }
 
   const config = getSupabaseConfig();
-  const response = await fetch(`${config.url}/rest/v1/rpc/${fn}`, {
-    method: "POST",
-    headers: buildSupabaseAuthHeaders(config.serviceRoleKey!),
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    SUPABASE_REQUEST_TIMEOUT_MS,
+  );
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Supabase RPC failed: ${response.status} ${errorText}`);
+  try {
+    const response = await fetch(`${config.url}/rest/v1/rpc/${fn}`, {
+      method: "POST",
+      headers: buildSupabaseAuthHeaders(config.serviceRoleKey!),
+      body: JSON.stringify(body),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Supabase RPC failed: ${response.status} ${errorText}`);
+    }
+
+    const text = await response.text();
+    if (!text) {
+      return null;
+    }
+
+    return JSON.parse(text) as T;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Supabase RPC timed out.");
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const text = await response.text();
-  if (!text) {
-    return null;
-  }
-
-  return JSON.parse(text) as T;
 }

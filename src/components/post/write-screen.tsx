@@ -34,7 +34,6 @@ function createInitialComposeState(): PostComposeState {
     locationResolved: false,
     resolvedDongName: null,
     resolvedDongCode: null,
-    resolvedGridCellPath: null,
     cooldownRemainingSeconds: 0,
     duplicateBlocked: false,
     errorMessage: null,
@@ -110,7 +109,6 @@ export function WriteScreen({ dataSourceMode }: WriteScreenProps) {
           locationResolved: true,
           resolvedDongName: nextLocation.administrativeDongName,
           resolvedDongCode: nextLocation.administrativeDongCode,
-          resolvedGridCellPath: null,
           errorMessage: null,
         }));
       } catch (error) {
@@ -125,7 +123,6 @@ export function WriteScreen({ dataSourceMode }: WriteScreenProps) {
           locationResolved: false,
           resolvedDongName: null,
           resolvedDongCode: null,
-          resolvedGridCellPath: null,
         }));
       }
     }

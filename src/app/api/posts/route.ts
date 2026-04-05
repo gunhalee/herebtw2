@@ -63,7 +63,6 @@ export async function POST(request: Request) {
     locationResolved: true,
     resolvedDongName: resolvedLocation.administrativeDongName,
     resolvedDongCode: resolvedLocation.administrativeDongCode,
-    resolvedGridCellPath: null,
     cooldownRemainingSeconds: 0,
     duplicateBlocked: false,
     errorMessage: null,

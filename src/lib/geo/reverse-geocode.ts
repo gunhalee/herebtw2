@@ -1,4 +1,4 @@
-import { findRegionNodeByDongName } from "./region-metadata";
+import { findKnownDongCode } from "./known-dong-codes";
 
 type NominatimFeatureCollection = {
   features?: Array<{
@@ -107,12 +107,10 @@ export async function reverseGeocode(
     throw new Error("Reverse geocoding could not determine a dong name.");
   }
 
-  const knownRegion = findRegionNodeByDongName(administrativeDongName);
-
   return {
     administrativeDongName,
     administrativeDongCode:
-      knownRegion?.dongCode ??
+      findKnownDongCode(administrativeDongName) ??
       createSyntheticDongCode({
         countryCode,
         sidoName,

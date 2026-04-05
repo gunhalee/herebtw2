@@ -1,5 +1,3 @@
-import type { AppShellState } from "../../types/device";
-import type { GridCellSummary } from "../../types/grid";
 import type {
   PostComposeState,
   PostDetailState,
@@ -15,45 +13,11 @@ import {
   supabaseUpsert,
 } from "../supabase/rest";
 import { formatRelativeTime } from "../utils/datetime";
-import { hydrateGridCells } from "../geo/region-metadata";
 import {
-  getMockGridSummary,
-  getMockAppShellState,
-  getMockGridCells,
   getMockPostDetailState,
   getMockPostListState,
   toggleMockPostAgree,
 } from "./mock-data";
-
-export type HomePageRepositoryResult = {
-  appShellState: AppShellState;
-  gridCells: GridCellSummary[];
-  postListState: PostListState;
-  postDetailState: PostDetailState;
-};
-
-export async function loadHomePageRepository(): Promise<HomePageRepositoryResult> {
-  const supabase = getSupabaseServerClient();
-
-  if (!supabase) {
-    const appShellState = getMockAppShellState();
-    return {
-      appShellState,
-      gridCells: getMockGridCells(appShellState),
-      postListState: getMockPostListState(),
-      postDetailState: getMockPostDetailState(),
-    };
-  }
-
-  const appShellState = getMockAppShellState();
-
-  return {
-    appShellState,
-    gridCells: getMockGridCells(appShellState),
-    postListState: getMockPostListState(),
-    postDetailState: getMockPostDetailState(),
-  };
-}
 
 type DeviceIdentityRow = {
   id: string;
@@ -147,52 +111,6 @@ async function ensureDeviceIdentity(anonymousDeviceId: string) {
 
 function buildInFilter(values: string[]) {
   return values.map((value) => `"${value}"`).join(",");
-}
-
-function getColorLevel(activePostCount: number) {
-  if (activePostCount >= 10) {
-    return 3;
-  }
-
-  if (activePostCount >= 3) {
-    return 2;
-  }
-
-  if (activePostCount >= 1) {
-    return 1;
-  }
-
-  return 0;
-}
-
-export async function loadGridSummaryRepository(input: {
-  gridCellPaths: string[];
-}) {
-  const supabase = getSupabaseServerClient();
-
-  if (!supabase) {
-    return getMockGridSummary(input.gridCellPaths).map((cell) => ({
-      ...cell,
-      colorLevel: getColorLevel(cell.activePostCount),
-    }));
-  }
-
-  return input.gridCellPaths.map((gridCellPath) => ({
-    gridCellPath,
-    activePostCount: 0,
-    colorLevel: 0,
-  }));
-}
-
-export async function loadRegionGridRepository(
-  appShellState: Pick<AppShellState, "selectedGridLevel" | "selectedGridCellPath">,
-) {
-  const metadataCells = getMockGridCells(appShellState);
-  const summary = await loadGridSummaryRepository({
-    gridCellPaths: metadataCells.map((cell) => cell.gridCellPath),
-  });
-
-  return hydrateGridCells(appShellState, summary);
 }
 
 export async function loadPostsListRepository(input: {

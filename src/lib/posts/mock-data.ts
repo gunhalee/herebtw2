@@ -1,18 +1,9 @@
-import type { AppShellState } from "../../types/device";
-import type { GridCellSummary } from "../../types/grid";
 import type {
   PostDetailState,
   PostListItem,
   PostListState,
 } from "../../types/post";
-import {
-  getRegionCellMetadata,
-  getRootGridPath,
-} from "../geo/region-metadata";
-
-type MockPostRecord = PostListItem & {
-  gridCellPath: string;
-};
+type MockPostRecord = PostListItem;
 
 const MOCK_POSTS: MockPostRecord[] = [
   {
@@ -25,7 +16,6 @@ const MOCK_POSTS: MockPostRecord[] = [
     myAgree: false,
     canReport: true,
     isHighlighted: true,
-    gridCellPath: "nation.seoul.gangnam.yeoksam1",
   },
   {
     id: "post_2",
@@ -37,7 +27,6 @@ const MOCK_POSTS: MockPostRecord[] = [
     myAgree: true,
     canReport: true,
     isHighlighted: false,
-    gridCellPath: "nation.seoul.gangnam.yeoksam2",
   },
   {
     id: "post_3",
@@ -49,7 +38,6 @@ const MOCK_POSTS: MockPostRecord[] = [
     myAgree: false,
     canReport: true,
     isHighlighted: false,
-    gridCellPath: "nation.seoul.gangnam.nonhyeon1",
   },
   {
     id: "post_4",
@@ -61,7 +49,6 @@ const MOCK_POSTS: MockPostRecord[] = [
     myAgree: false,
     canReport: true,
     isHighlighted: false,
-    gridCellPath: "nation.seoul.mapo.seogyo",
   },
   {
     id: "post_5",
@@ -73,7 +60,6 @@ const MOCK_POSTS: MockPostRecord[] = [
     myAgree: false,
     canReport: true,
     isHighlighted: false,
-    gridCellPath: "nation.seoul.mapo.yeonnam",
   },
   {
     id: "post_6",
@@ -85,7 +71,6 @@ const MOCK_POSTS: MockPostRecord[] = [
     myAgree: true,
     canReport: true,
     isHighlighted: false,
-    gridCellPath: "nation.incheon.yeonsu.songdo1",
   },
 ];
 
@@ -112,44 +97,8 @@ export function toggleMockPostAgree(postId: string) {
   };
 }
 
-export function getMockAppShellState(): AppShellState {
-  return {
-    anonymousDeviceId: "anon_device_abc123",
-    deviceReady: true,
-    permissionMode: "granted",
-    readOnlyMode: false,
-    selectedGridLevel: "nation",
-    selectedGridCellPath: getRootGridPath(),
-    selectedDongCode: null,
-    selectedDongName: null,
-  };
-}
-
-export function getMockActivePostCount(gridCellPath: string) {
-  return MOCK_POSTS.filter((post) => post.gridCellPath.startsWith(gridCellPath)).length;
-}
-
-export function getMockGridCells(
-  appShellState: Pick<AppShellState, "selectedGridLevel" | "selectedGridCellPath"> = getMockAppShellState(),
-): GridCellSummary[] {
-  return getRegionCellMetadata(appShellState).map((cell) => ({
-    ...cell,
-    activePostCount: getMockActivePostCount(cell.gridCellPath),
-  }));
-}
-
-export function getMockGridSummary(gridCellPaths: string[]) {
-  return gridCellPaths.map((gridCellPath) => ({
-    gridCellPath,
-    activePostCount: getMockActivePostCount(gridCellPath),
-    colorLevel: 0,
-  }));
-}
-
 export function getMockPostItems(): PostListItem[] {
-  return MOCK_POSTS
-    .map(({ gridCellPath: _gridCellPath, ...post }) => post)
-    .sort((a, b) => a.distanceMeters - b.distanceMeters);
+  return [...MOCK_POSTS].sort((a, b) => a.distanceMeters - b.distanceMeters);
 }
 
 export function getMockPostListState(): PostListState {
@@ -157,7 +106,7 @@ export function getMockPostListState(): PostListState {
 
   return {
     items,
-    nextCursor: "opaque_cursor",
+    nextCursor: null,
     loading: false,
     loadingMore: false,
     empty: items.length === 0,

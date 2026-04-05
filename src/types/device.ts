@@ -8,8 +8,6 @@ export type DeviceState = {
 };
 
 export type AppShellState = DeviceState & {
-  selectedGridLevel: "nation" | "sido" | "sigungu" | "dong";
-  selectedGridCellPath: string | null;
   selectedDongCode: string | null;
   selectedDongName: string | null;
 };

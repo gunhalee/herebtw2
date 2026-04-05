@@ -1,12 +1,15 @@
 # Supabase Migrations
 
-`supabase/migrations` contains the MVP 1 schema split into execution-order files.
+`supabase/migrations` now keeps a single baseline for the current MVP 1 schema:
 
-Order:
+1. `20260406143000_create_mvp1_baseline.sql`
 
-1. `20260405174500_enable_pgcrypto.sql`
-2. `20260405174600_create_mvp1_core_tables.sql`
-3. `20260405174700_create_mvp1_indexes.sql`
-4. `20260405174800_create_mvp1_functions_and_views.sql`
+That baseline reflects the coordinate-based post model:
+
+- `posts.latitude` / `posts.longitude` are present
+- `posts.grid_cell_path` is gone
+- functions, triggers, and the engagement view are included in the same file
+
+Pre-squash migration history is preserved under `supabase/archive/migrations_pre_squash`.
 
 `herebtw_mvp1_migration_draft.sql` remains as a single-file reference draft.
