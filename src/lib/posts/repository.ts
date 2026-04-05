@@ -35,6 +35,10 @@ type PostRow = {
   delete_expires_at: string;
 };
 
+type NearbyPostRow = PostRow & {
+  distance_meters: number;
+};
+
 function toRadians(value: number) {
   return (value * Math.PI) / 180;
 }
@@ -78,6 +82,19 @@ function estimateDistanceMeters(
     latitude: post.latitude!,
     longitude: post.longitude!,
   });
+}
+
+function getPostDistanceMeters(
+  post: Pick<PostRow, "latitude" | "longitude"> & {
+    distance_meters?: number | null;
+  },
+  viewerLocation?: PostLocation,
+) {
+  if (typeof post.distance_meters === "number" && Number.isFinite(post.distance_meters)) {
+    return post.distance_meters;
+  }
+
+  return estimateDistanceMeters(post, viewerLocation);
 }
 
 type PostEngagementRow = {
@@ -128,13 +145,15 @@ export async function loadPostsListRepository(input: {
     ? await ensureDeviceIdentity(input.anonymousDeviceId)
     : null;
   const limit = input.limit ?? 10;
-  const query = [
-    "select=id,content,administrative_dong_name,created_at,delete_expires_at,latitude,longitude",
-    "status=eq.active",
-    "order=created_at.desc",
-  ];
-
-  const posts = (await supabaseSelect<PostRow[]>(`posts?${query.join("&")}`)) ?? [];
+  const posts = input.location
+    ? ((await supabaseRpc<NearbyPostRow[]>("list_nearby_posts", {
+        viewer_latitude: input.location.latitude,
+        viewer_longitude: input.location.longitude,
+        result_limit: limit,
+      })) ?? [])
+    : ((await supabaseSelect<PostRow[]>(
+        `posts?select=id,content,administrative_dong_name,created_at,delete_expires_at,latitude,longitude&status=eq.active&order=created_at.desc&limit=${limit}`,
+      )) ?? []);
   const postIds = posts.map((post) => post.id);
 
   const engagementRows =
@@ -156,25 +175,12 @@ export async function loadPostsListRepository(input: {
   );
   const myReactionSet = new Set(myReactionRows.map((row) => row.post_id));
 
-  const sortedPosts = [...posts].sort((left, right) => {
-    const leftDistance = estimateDistanceMeters(left, input.location);
-    const rightDistance = estimateDistanceMeters(right, input.location);
-
-    if (leftDistance !== rightDistance) {
-      return leftDistance - rightDistance;
-    }
-
-    return new Date(right.created_at).getTime() - new Date(left.created_at).getTime();
-  });
-
-  const selectedPosts = sortedPosts.slice(0, limit);
-
-  const items = selectedPosts
+  const items = posts
     .map((post) => ({
       id: post.id,
       content: post.content,
       administrativeDongName: post.administrative_dong_name,
-      distanceMeters: estimateDistanceMeters(post, input.location),
+      distanceMeters: getPostDistanceMeters(post, input.location),
       relativeTime: formatRelativeTime(post.created_at),
       agreeCount: engagementMap.get(post.id) ?? 0,
       myAgree: myReactionSet.has(post.id),

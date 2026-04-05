@@ -1,8 +1,9 @@
 # Supabase Migrations
 
-`supabase/migrations` now keeps a single baseline for the current MVP 1 schema:
+`supabase/migrations` now starts with a single baseline for the current MVP 1 schema:
 
 1. `20260406143000_create_mvp1_baseline.sql`
+2. Later schema changes layer on as incremental migrations.
 
 That baseline reflects the coordinate-based post model:
 
