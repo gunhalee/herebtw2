@@ -7,7 +7,7 @@ import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
 import { getCurrentBrowserCoordinates } from "../../lib/geo/browser-location";
 import type { ApiResponse } from "../../types/api";
 import type { AppShellState } from "../../types/device";
-import type { PostListState } from "../../types/post";
+import type { PostListState, PostLocation } from "../../types/post";
 
 type PostsListResponse = {
   items: PostListState["items"];
@@ -34,6 +34,18 @@ export type HomeScreenProps = {
   initialPostListState: PostListState;
 };
 
+function mergePostItems(
+  currentItems: PostListState["items"],
+  incomingItems: PostListState["items"],
+) {
+  const seenPostIds = new Set(currentItems.map((item) => item.id));
+
+  return [
+    ...currentItems,
+    ...incomingItems.filter((item) => !seenPostIds.has(item.id)),
+  ];
+}
+
 export function HomeScreen({
   dataSourceMode,
   initialAppShellState,
@@ -45,6 +57,7 @@ export function HomeScreen({
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const [activeReportPostId, setActiveReportPostId] = useState<string | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [feedLocation, setFeedLocation] = useState<PostLocation | null>(null);
 
   const currentDongName =
     appShellState.selectedDongName ??
@@ -57,10 +70,8 @@ export function HomeScreen({
 
   async function fetchPostsList(
     anonymousDeviceId: string,
-    location?: {
-      latitude: number;
-      longitude: number;
-    },
+    location?: PostLocation,
+    cursor?: string | null,
   ) {
     const response = await fetch("/api/posts/list", {
       method: "POST",
@@ -72,6 +83,7 @@ export function HomeScreen({
         location,
         pagination: {
           limit: 10,
+          cursor: cursor ?? undefined,
         },
       }),
     });
@@ -145,8 +157,10 @@ export function HomeScreen({
 
         try {
           resolvedCoordinates = await bootstrapLocation();
+          setFeedLocation(resolvedCoordinates);
         } catch (error) {
           if (!cancelled) {
+            setFeedLocation(null);
             setAppShellState((current) => ({
               ...current,
               permissionMode: getPermissionMode(error),
@@ -215,6 +229,55 @@ export function HomeScreen({
 
   function handleCompose() {
     router.push("/write");
+  }
+
+  async function handleLoadMore() {
+    if (
+      dataSourceMode !== "supabase" ||
+      postListState.loading ||
+      postListState.loadingMore ||
+      !postListState.nextCursor
+    ) {
+      return;
+    }
+
+    try {
+      const anonymousDeviceId = await ensureDeviceReady();
+
+      setPostListState((current) => ({
+        ...current,
+        loadingMore: true,
+        errorMessage: null,
+      }));
+
+      const data = await fetchPostsList(
+        anonymousDeviceId,
+        feedLocation ?? undefined,
+        postListState.nextCursor,
+      );
+
+      setPostListState((current) => {
+        const mergedItems = mergePostItems(current.items, data.items);
+
+        return {
+          ...current,
+          items: mergedItems,
+          nextCursor: data.nextCursor,
+          loadingMore: false,
+          empty: mergedItems.length === 0,
+          errorMessage: null,
+        };
+      });
+    } catch (error) {
+      setPostListState((current) => ({
+        ...current,
+        loadingMore: false,
+        errorMessage:
+          error instanceof Error
+            ? error.message
+            : "목록을 더 불러오지 못했습니다.",
+      }));
+    }
   }
 
   function handleOpenMenu(postId: string) {
@@ -371,6 +434,7 @@ export function HomeScreen({
         onCloseReportDialog={handleCloseReportDialog}
         onCompose={handleCompose}
         onConfirmReport={handleReport}
+        onLoadMore={handleLoadMore}
         onOpenMenu={handleOpenMenu}
         onSelectReport={handleSelectReport}
         onToggleAgree={handleToggleAgree}

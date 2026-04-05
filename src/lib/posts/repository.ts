@@ -39,6 +39,12 @@ type NearbyPostRow = PostRow & {
   distance_meters: number;
 };
 
+type PostListCursor = {
+  distanceMeters: number;
+  createdAt: string;
+  postId: string;
+};
+
 function toRadians(value: number) {
   return (value * Math.PI) / 180;
 }
@@ -97,6 +103,42 @@ function getPostDistanceMeters(
   return estimateDistanceMeters(post, viewerLocation);
 }
 
+function encodePostListCursor(post: NearbyPostRow) {
+  const payload: PostListCursor = {
+    distanceMeters: post.distance_meters,
+    createdAt: post.created_at,
+    postId: post.id,
+  };
+
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+}
+
+function decodePostListCursor(cursor: string | undefined) {
+  if (!cursor) {
+    return null;
+  }
+
+  try {
+    const decoded = Buffer.from(cursor, "base64url").toString("utf8");
+    const payload = JSON.parse(decoded) as Partial<PostListCursor>;
+
+    if (
+      typeof payload.distanceMeters !== "number" ||
+      !Number.isFinite(payload.distanceMeters) ||
+      typeof payload.createdAt !== "string" ||
+      !payload.createdAt ||
+      typeof payload.postId !== "string" ||
+      !isUuid(payload.postId)
+    ) {
+      return null;
+    }
+
+    return payload as PostListCursor;
+  } catch {
+    return null;
+  }
+}
+
 type PostEngagementRow = {
   post_id: string;
   agree_count: number;
@@ -133,6 +175,7 @@ function buildInFilter(values: string[]) {
 export async function loadPostsListRepository(input: {
   anonymousDeviceId?: string;
   limit?: number;
+  cursor?: string;
   location?: PostLocation;
 }) {
   const supabase = getSupabaseServerClient();
@@ -144,17 +187,20 @@ export async function loadPostsListRepository(input: {
   const device = input.anonymousDeviceId
     ? await ensureDeviceIdentity(input.anonymousDeviceId)
     : null;
-  const limit = input.limit ?? 10;
-  const posts = input.location
-    ? ((await supabaseRpc<NearbyPostRow[]>("list_nearby_posts", {
-        viewer_latitude: input.location.latitude,
-        viewer_longitude: input.location.longitude,
-        result_limit: limit,
-      })) ?? [])
-    : ((await supabaseSelect<PostRow[]>(
-        `posts?select=id,content,administrative_dong_name,created_at,delete_expires_at,latitude,longitude&status=eq.active&order=created_at.desc&limit=${limit}`,
-      )) ?? []);
-  const postIds = posts.map((post) => post.id);
+  const limit = Math.min(Math.max(input.limit ?? 10, 1), 50);
+  const cursor = decodePostListCursor(input.cursor);
+  const posts =
+    (await supabaseRpc<NearbyPostRow[]>("list_nearby_posts", {
+      viewer_latitude: input.location?.latitude ?? null,
+      viewer_longitude: input.location?.longitude ?? null,
+      cursor_distance_meters: cursor?.distanceMeters ?? null,
+      cursor_created_at: cursor?.createdAt ?? null,
+      cursor_post_id: cursor?.postId ?? null,
+      result_limit: limit + 1,
+    })) ?? [];
+  const hasMore = posts.length > limit;
+  const selectedPosts = hasMore ? posts.slice(0, limit) : posts;
+  const postIds = selectedPosts.map((post) => post.id);
 
   const engagementRows =
     postIds.length > 0
@@ -175,7 +221,7 @@ export async function loadPostsListRepository(input: {
   );
   const myReactionSet = new Set(myReactionRows.map((row) => row.post_id));
 
-  const items = posts
+  const items = selectedPosts
     .map((post) => ({
       id: post.id,
       content: post.content,
@@ -186,18 +232,14 @@ export async function loadPostsListRepository(input: {
       myAgree: myReactionSet.has(post.id),
       canReport: true,
       isHighlighted: false,
-    }))
-    .sort((a, b) => {
-      if (a.distanceMeters !== b.distanceMeters) {
-        return a.distanceMeters - b.distanceMeters;
-      }
-
-      return 0;
-    });
+    }));
 
   return {
     items,
-    nextCursor: null,
+    nextCursor:
+      hasMore && selectedPosts.length > 0
+        ? encodePostListCursor(selectedPosts[selectedPosts.length - 1])
+        : null,
     loading: false,
     loadingMore: false,
     empty: items.length === 0,

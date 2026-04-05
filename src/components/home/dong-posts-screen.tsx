@@ -17,6 +17,7 @@ export type DongPostsScreenProps = {
   activeReportPostId?: string | null;
   reportSubmitting?: boolean;
   onCompose?: () => void;
+  onLoadMore?: () => void;
   onToggleAgree?: (postId?: string) => void;
   onOpenMenu?: (postId: string) => void;
   onCloseMenu?: () => void;
@@ -33,6 +34,7 @@ export function DongPostsScreen({
   activeReportPostId,
   reportSubmitting = false,
   onCompose,
+  onLoadMore,
   onToggleAgree,
   onOpenMenu,
   onCloseMenu,
@@ -224,6 +226,26 @@ export function DongPostsScreen({
                   onToggleAgree={onToggleAgree}
                 />
               ))}
+              {state.nextCursor && !state.loadingMore ? (
+                <button
+                  onClick={onLoadMore}
+                  style={{
+                    appearance: "none",
+                    background: "#fffdfa",
+                    border: "1px solid #e7dccd",
+                    borderRadius: uiRadius.pill,
+                    color: uiColors.textStrong,
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    padding: `${uiSpacing.md} ${uiSpacing.lg}`,
+                    width: "100%",
+                  }}
+                  type="button"
+                >
+                  더 보기
+                </button>
+              ) : null}
               {state.loadingMore ? <LoadingState label="더 불러오는 중" /> : null}
             </div>
           )}

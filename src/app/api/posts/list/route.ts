@@ -10,6 +10,7 @@ type PostsListRequest = {
   };
   pagination?: {
     limit?: number;
+    cursor?: string;
   };
 };
 
@@ -18,6 +19,7 @@ export async function POST(request: Request) {
   const postListState = await loadPostsListRepository({
     anonymousDeviceId: body.anonymousDeviceId,
     limit: body.pagination?.limit ?? 10,
+    cursor: body.pagination?.cursor,
     location: isValidCoordinateInput(body.location) ? body.location : undefined,
   });
 
