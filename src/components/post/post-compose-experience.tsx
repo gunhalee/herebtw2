@@ -114,6 +114,7 @@ export function PostComposeExperience({
     "neutral" | "danger"
   >("neutral");
   const deviceRegistrationPromiseRef = useRef<Promise<string> | null>(null);
+  const sheetTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const isSheet = presentation === "sheet";
 
   function ensureDeviceRegistrationStarted() {
@@ -167,6 +168,16 @@ export function PostComposeExperience({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isSheet, onDismiss]);
+
+  useEffect(() => {
+    if (!isSheet || !sheetTextareaRef.current) {
+      return;
+    }
+
+    const textarea = sheetTextareaRef.current;
+    textarea.style.height = "0px";
+    textarea.style.height = `${Math.max(220, textarea.scrollHeight)}px`;
+  }, [composeState.content, isSheet]);
 
   useEffect(() => {
     let cancelled = false;
@@ -477,9 +488,10 @@ export function PostComposeExperience({
           boxShadow: uiShadow.sheet,
           display: "flex",
           flexDirection: "column",
-          maxHeight: "min(88dvh, 760px)",
-          minHeight: "min(68dvh, 620px)",
-          padding: `${uiSpacing.md} ${uiSpacing.pageX} calc(${uiSpacing.xl} + env(safe-area-inset-bottom, 0px))`,
+          maxHeight: "min(64dvh, 540px)",
+          minHeight: "min(46dvh, 420px)",
+          overflow: "hidden",
+          padding: `${uiSpacing.md} ${uiSpacing.pageX} calc(${uiSpacing.lg} + env(safe-area-inset-bottom, 0px))`,
           position: "relative",
           width: "100%",
         }}
@@ -490,9 +502,8 @@ export function PostComposeExperience({
             alignItems: "center",
             display: "flex",
             flexDirection: "column",
-            flex: 1,
-            gap: uiSpacing.lg,
-            minHeight: 0,
+            gap: uiSpacing.md,
+            height: "100%",
           }}
         >
           <div
@@ -511,10 +522,11 @@ export function PostComposeExperience({
                 border: "none",
                 color: uiColors.textMuted,
                 cursor: "pointer",
-                fontSize: uiTypography.body.fontSize,
-                fontWeight: 600,
+                fontSize: "16px",
+                fontWeight: 700,
                 justifySelf: "start",
-                padding: 0,
+                minHeight: "36px",
+                padding: `${uiSpacing.xs} 0`,
               }}
               type="button"
             >
@@ -548,10 +560,11 @@ export function PostComposeExperience({
                 border: "none",
                 color: sheetSubmitDisabled ? "#9ca3af" : uiColors.buttonPrimary,
                 cursor: sheetSubmitDisabled ? "default" : "pointer",
-                fontSize: uiTypography.body.fontSize,
+                fontSize: "16px",
                 fontWeight: 700,
                 justifySelf: "end",
-                padding: 0,
+                minHeight: "36px",
+                padding: `${uiSpacing.xs} 0`,
               }}
               type="submit"
             >
@@ -561,8 +574,8 @@ export function PostComposeExperience({
 
           <div
             style={{
+              alignSelf: "stretch",
               flex: 1,
-              minHeight: 0,
               position: "relative",
             }}
           >
@@ -571,17 +584,20 @@ export function PostComposeExperience({
               maxLength={100}
               onChange={(event) => handleChangeContent(event.target.value)}
               placeholder="지금 이 곳에서 느끼는 감정을 적어보세요"
+              ref={sheetTextareaRef}
               style={{
                 background: "transparent",
                 border: "none",
                 color: uiColors.textStrong,
-                fontSize: "22px",
+                fontSize: "20px",
                 fontWeight: 500,
-                height: "100%",
+                height: "220px",
                 lineHeight: 1.55,
                 outline: "none",
-                padding: `${uiSpacing.sm} 0 calc(${uiSpacing.xl} + 18px)`,
+                overflowY: "hidden",
+                padding: `${uiSpacing.sm} 0 calc(${uiSpacing.xl} + 22px)`,
                 resize: "none",
+                verticalAlign: "top",
                 width: "100%",
               }}
               value={composeState.content}
@@ -592,8 +608,9 @@ export function PostComposeExperience({
                 color: uiColors.textMuted,
                 fontSize: uiTypography.meta.fontSize,
                 fontWeight: uiTypography.meta.fontWeight,
-                left: 0,
                 position: "absolute",
+                right: 0,
+                textAlign: "right",
               }}
             >
               {composeState.charCount}/100

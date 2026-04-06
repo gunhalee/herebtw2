@@ -274,7 +274,8 @@ input {
   display: flex;
   inset: 0;
   justify-content: center;
-  position: absolute;
+  overscroll-behavior: contain;
+  position: fixed;
   z-index: 12;
 }
 
@@ -289,6 +290,7 @@ input {
 
 .compose-sheet-panel {
   animation: compose-sheet-rise 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  overscroll-behavior: contain;
 }
 
 @keyframes global-feed-preview-drop {
