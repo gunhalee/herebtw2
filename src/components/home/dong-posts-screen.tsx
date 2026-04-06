@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { EmptyState } from "../common/empty-state";
 import { ErrorState } from "../common/error-state";
@@ -11,15 +11,301 @@ import { homeScreenCopy } from "../../lib/content/home-copy";
 import type { PostListState } from "../../types/post";
 import { uiColors, uiRadius, uiSpacing } from "../../lib/ui/tokens";
 
+const PLACEHOLDER_DONG_LABEL = "우리 동네";
+const PLACEHOLDER_DONG_CANDIDATES = [
+  "역삼1동",
+  "연남동",
+  "망원1동",
+  "성수2가3동",
+  "서교동",
+  "삼청동",
+  "정자동",
+  "광안2동",
+  "봉천동",
+  "평창동",
+  "효자동",
+  "송도2동",
+] as const;
+const COMPOSE_DONG_FLASHCARD_FLIP_DURATION_MS = 520;
+const COMPOSE_DONG_FLASHCARD_INITIAL_DWELL_MS = 500;
+const COMPOSE_DONG_FLASHCARD_DWELL_MS = 820;
+const PLACEHOLDER_DONG_LABEL_LENGTH = [...PLACEHOLDER_DONG_LABEL].length;
+const DEFAULT_PLACEHOLDER_DONG_CANDIDATES = PLACEHOLDER_DONG_CANDIDATES.filter(
+  (label) => getDongLabelLength(label) <= PLACEHOLDER_DONG_LABEL_LENGTH,
+);
+
+function getDongLabelLength(label: string) {
+  return [...label].length;
+}
+
+function pickRandomDongSequence(
+  candidates: readonly string[],
+  count: number,
+) {
+  const shuffled = candidates
+    .map((label) => ({
+      label,
+      sortKey: Math.random(),
+    }))
+    .sort((left, right) => left.sortKey - right.sortKey)
+    .map((item) => item.label);
+
+  return shuffled.slice(0, count);
+}
+
+function ComposeDongFlashcard({
+  label,
+  animatePlaceholder,
+}: {
+  label: string;
+  animatePlaceholder: boolean;
+}) {
+  const [sequence, setSequence] = useState<string[]>([label]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [incomingLabel, setIncomingLabel] = useState<string | null>(null);
+  const [introRequested, setIntroRequested] = useState(animatePlaceholder);
+  const [fittingCandidates, setFittingCandidates] = useState<
+    readonly string[]
+  >(DEFAULT_PLACEHOLDER_DONG_CANDIDATES);
+  const measureRef = useRef<HTMLSpanElement | null>(null);
+  const finalLabelRef = useRef(label);
+  const hasStartedIntroRef = useRef(false);
+  const hasCompletedIntroRef = useRef(false);
+  const introCandidatesRef = useRef<readonly string[]>(
+    DEFAULT_PLACEHOLDER_DONG_CANDIDATES,
+  );
+
+  useEffect(() => {
+    if (!animatePlaceholder || !measureRef.current || typeof window === "undefined") {
+      return;
+    }
+
+    let cancelled = false;
+
+    const measureElement = measureRef.current;
+
+    const measureCandidateWidths = () => {
+      const originalText = measureElement.textContent;
+
+      const measureWidth = (value: string) => {
+        measureElement.textContent = value;
+        return Math.ceil(measureElement.getBoundingClientRect().width);
+      };
+
+      const nextCardWidthPx = measureWidth(PLACEHOLDER_DONG_LABEL);
+      const nextCandidates = PLACEHOLDER_DONG_CANDIDATES.filter(
+        (candidate) => measureWidth(candidate) <= nextCardWidthPx,
+      );
+
+      measureElement.textContent = originalText ?? PLACEHOLDER_DONG_LABEL;
+
+      if (cancelled) {
+        return;
+      }
+
+      setFittingCandidates(nextCandidates);
+    };
+
+    measureCandidateWidths();
+
+    const handleResize = () => {
+      measureCandidateWidths();
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    const fontFaceSet = document.fonts;
+
+    void fontFaceSet.ready.then(() => {
+      if (!cancelled) {
+        measureCandidateWidths();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [animatePlaceholder]);
+
+  useEffect(() => {
+    if (animatePlaceholder) {
+      setIntroRequested(true);
+    }
+  }, [animatePlaceholder]);
+
+  useEffect(() => {
+    if (!hasStartedIntroRef.current) {
+      introCandidatesRef.current = fittingCandidates;
+    }
+  }, [fittingCandidates]);
+
+  useEffect(() => {
+    finalLabelRef.current = label;
+
+    if (hasStartedIntroRef.current && !hasCompletedIntroRef.current) {
+      setSequence((current) => {
+        if (current.length <= 1) {
+          return current;
+        }
+
+        const next = [...current];
+        next[next.length - 1] = label;
+        return next;
+      });
+
+      return;
+    }
+
+    setSequence([label]);
+    setCurrentIndex(0);
+    setIncomingLabel(null);
+  }, [label]);
+
+  useEffect(() => {
+    if (!introRequested && !hasStartedIntroRef.current) {
+      setSequence([finalLabelRef.current]);
+      setCurrentIndex(0);
+      setIncomingLabel(null);
+      return;
+    }
+
+    if (!introRequested || hasStartedIntroRef.current) {
+      return;
+    }
+
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      hasStartedIntroRef.current = true;
+      hasCompletedIntroRef.current = true;
+      setSequence([finalLabelRef.current]);
+      setCurrentIndex(0);
+      setIncomingLabel(null);
+      return;
+    }
+
+    hasStartedIntroRef.current = true;
+    hasCompletedIntroRef.current = false;
+
+    const introSequence = [
+      PLACEHOLDER_DONG_LABEL,
+      ...pickRandomDongSequence(introCandidatesRef.current, 4),
+      finalLabelRef.current,
+    ];
+
+    setSequence(introSequence);
+    setCurrentIndex(0);
+    setIncomingLabel(null);
+
+    let cancelled = false;
+    let dwellTimer: number | null = null;
+    let flipTimer: number | null = null;
+
+    function getStepLabel(index: number) {
+      if (index === introSequence.length - 1) {
+        return finalLabelRef.current;
+      }
+
+      return introSequence[index]!;
+    }
+
+    function queueFlip(index: number) {
+      if (cancelled || index >= introSequence.length - 1) {
+        hasCompletedIntroRef.current = true;
+        return;
+      }
+
+      dwellTimer = window.setTimeout(() => {
+        const nextIndex = index + 1;
+        const nextLabel = getStepLabel(nextIndex);
+        setIncomingLabel(nextLabel);
+
+        flipTimer = window.setTimeout(() => {
+          if (cancelled) {
+            return;
+          }
+
+          if (nextIndex >= introSequence.length - 1) {
+            hasCompletedIntroRef.current = true;
+            setSequence([finalLabelRef.current]);
+            setCurrentIndex(0);
+            setIncomingLabel(null);
+            return;
+          }
+
+          setCurrentIndex(nextIndex);
+          setIncomingLabel(null);
+          queueFlip(nextIndex);
+        }, COMPOSE_DONG_FLASHCARD_FLIP_DURATION_MS);
+      }, index === 0
+        ? COMPOSE_DONG_FLASHCARD_INITIAL_DWELL_MS
+        : COMPOSE_DONG_FLASHCARD_DWELL_MS);
+    }
+
+    queueFlip(0);
+
+    return () => {
+      cancelled = true;
+
+      if (dwellTimer) {
+        window.clearTimeout(dwellTimer);
+      }
+
+      if (flipTimer) {
+        window.clearTimeout(flipTimer);
+      }
+    };
+  }, [introRequested]);
+
+  const currentLabel = sequence[currentIndex] ?? label;
+
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        className="compose-dong-flashcard__card compose-dong-flashcard__card--measure"
+        ref={measureRef}
+      >
+        {PLACEHOLDER_DONG_LABEL}
+      </span>
+      <span className="compose-dong-flashcard">
+        <span
+          aria-hidden="true"
+          className="compose-dong-flashcard__card compose-dong-flashcard__card--sizer"
+        >
+          {PLACEHOLDER_DONG_LABEL}
+        </span>
+        <span
+          className={`compose-dong-flashcard__card${
+            incomingLabel ? " compose-dong-flashcard__card--leaving" : ""
+          }`}
+        >
+          {currentLabel}
+        </span>
+        {incomingLabel ? (
+          <span className="compose-dong-flashcard__card compose-dong-flashcard__card--entering">
+            {incomingLabel}
+          </span>
+        ) : null}
+      </span>
+    </>
+  );
+}
+
 export type DongPostsScreenProps = {
   currentDongName: string;
+  animateComposeDongPlaceholder?: boolean;
   state: PostListState;
   runtimeNotice?: string | null;
+  pendingNewItemsCount?: number;
   activeMenuPostId?: string | null;
   activeReportPostId?: string | null;
   reportSubmitting?: boolean;
   obscurePosts?: boolean;
   onCompose?: () => void;
+  onApplyPendingUpdates?: () => void;
   onLoadMore?: () => void;
   onToggleAgree?: (postId?: string) => void;
   onOpenMenu?: (postId: string) => void;
@@ -31,13 +317,16 @@ export type DongPostsScreenProps = {
 
 export function DongPostsScreen({
   currentDongName,
+  animateComposeDongPlaceholder = false,
   state,
   runtimeNotice,
+  pendingNewItemsCount = 0,
   activeMenuPostId,
   activeReportPostId,
   reportSubmitting = false,
   obscurePosts = false,
   onCompose,
+  onApplyPendingUpdates,
   onLoadMore,
   onToggleAgree,
   onOpenMenu,
@@ -50,6 +339,11 @@ export function DongPostsScreen({
     state.items.find((item) => item.id === activeReportPostId) ?? null;
   const shouldObscurePosts =
     obscurePosts && !state.loading && !state.errorMessage && !state.empty;
+  const shouldShowPendingUpdatesButton =
+    pendingNewItemsCount > 0 && !shouldObscurePosts;
+  const composeCta = homeScreenCopy.composeCta(currentDongName);
+  const shouldAnimatePlaceholderDong =
+    animateComposeDongPlaceholder || composeCta.location === PLACEHOLDER_DONG_LABEL;
 
   return (
     <section
@@ -183,36 +477,39 @@ export function DongPostsScreen({
           />
           <span
             style={{
+              alignItems: "center",
+              display: "inline-flex",
+              gap: "0.04em",
               textAlign: "center",
             }}
           >
-            {(() => {
-              const cta = homeScreenCopy.composeCta(currentDongName);
-
-              return (
-                <>
-                  <span style={{ color: uiColors.textMuted }}>{cta.prefix}</span>
-                  <span>{cta.location}</span>
-                  <span style={{ color: uiColors.textMuted }}>{cta.suffix}</span>
-                </>
-              );
-            })()}
+            <span
+              style={{
+                color: uiColors.textMuted,
+              }}
+            >
+              {composeCta.prefix}
+            </span>
+            <ComposeDongFlashcard
+              animatePlaceholder={shouldAnimatePlaceholderDong}
+              label={composeCta.location}
+            />
+            <span
+              style={{
+                color: uiColors.textMuted,
+              }}
+            >
+              {composeCta.suffix}
+            </span>
           </span>
           <span
             style={{
-              alignItems: "center",
-              background: "rgba(255, 255, 255, 0.96)",
-              border: `1px solid ${uiColors.border}`,
-              borderRadius: "999px",
               display: "inline-flex",
-              height: "30px",
-              justifyContent: "center",
               justifySelf: "end",
-              padding: "0 8px",
-              width: "30px",
+              transform: "translateX(-2px)",
             }}
           >
-            <Image alt="" src={penWritingImage} width={15} height={15} />
+            <Image alt="" src={penWritingImage} width={20} height={20} />
           </span>
         </button>
       </header>
@@ -236,7 +533,11 @@ export function DongPostsScreen({
             gap: uiSpacing.md,
             minHeight: 0,
             overflowY: "auto",
-            padding: `${uiSpacing.lg} ${uiSpacing.pageX} ${uiSpacing.xxxl}`,
+            padding: `${uiSpacing.lg} ${uiSpacing.pageX} ${
+              shouldShowPendingUpdatesButton
+                ? "calc(96px + env(safe-area-inset-bottom, 0px))"
+                : uiSpacing.xxxl
+            }`,
             position: "relative",
           }}
         >
@@ -335,13 +636,52 @@ export function DongPostsScreen({
             {shouldObscurePosts ? (
               <div aria-hidden="true" className="global-feed-preview__veil">
                 <div className="global-feed-preview__badge">
-                  위치를 허용하면 근처 글을 읽을 수 있어요
+                  위치를 허용하면 근처 글의 내용을 읽을 수 있어요.
                 </div>
               </div>
             ) : null}
           </div>
         </div>
       </div>
+
+      {shouldShowPendingUpdatesButton ? (
+        <div
+          style={{
+            bottom: "calc(20px + env(safe-area-inset-bottom, 0px))",
+            display: "flex",
+            justifyContent: "center",
+            left: uiSpacing.pageX,
+            pointerEvents: "none",
+            position: "absolute",
+            right: uiSpacing.pageX,
+            zIndex: 12,
+          }}
+        >
+          <button
+            onClick={onApplyPendingUpdates}
+            style={{
+              alignItems: "center",
+              appearance: "none",
+              background: "linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%)",
+              border: "1px solid rgba(255, 255, 255, 0.34)",
+              borderRadius: uiRadius.pill,
+              boxShadow: "0 14px 32px rgba(96, 165, 250, 0.26)",
+              color: uiColors.textInverse,
+              cursor: "pointer",
+              display: "inline-flex",
+              fontSize: "14px",
+              fontWeight: 700,
+              justifyContent: "center",
+              minHeight: "48px",
+              padding: `${uiSpacing.md} ${uiSpacing.xxl}`,
+              pointerEvents: "auto",
+            }}
+            type="button"
+          >
+            새 글 {pendingNewItemsCount}개 이어보기
+          </button>
+        </div>
+      ) : null}
 
       {activeReportPost ? (
         <div
@@ -427,7 +767,7 @@ export function DongPostsScreen({
                 }}
                 type="button"
               >
-                {reportSubmitting ? "처리 중..." : "신고"}
+                {reportSubmitting ? "처리 중.." : "신고"}
               </button>
             </div>
           </div>

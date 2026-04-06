@@ -522,6 +522,31 @@ export async function loadPostsListRepository(input: {
   };
 }
 
+export async function syncNearbyFeedRepository(input: {
+  anonymousDeviceId?: string;
+  loadedPostIds?: string[];
+  limit?: number;
+  location: PostLocation;
+}) {
+  const limit = Math.min(
+    Math.max(input.limit ?? input.loadedPostIds?.length ?? 10, 1),
+    50,
+  );
+  const snapshot = await loadPostsListRepository({
+    anonymousDeviceId: input.anonymousDeviceId,
+    limit,
+    location: input.location,
+  });
+  const loadedPostIdSet = new Set(input.loadedPostIds ?? []);
+
+  return {
+    items: snapshot.items,
+    nextCursor: snapshot.nextCursor,
+    newItemsCount: snapshot.items.filter((item) => !loadedPostIdSet.has(item.id))
+      .length,
+  };
+}
+
 export async function loadGlobalPostsListRepository(input: {
   limit?: number;
   cursor?: string;

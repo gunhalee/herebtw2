@@ -209,6 +209,65 @@ input {
   text-align: center;
 }
 
+.compose-dong-flashcard {
+  display: inline-grid;
+  flex: 0 0 auto;
+  grid-template-areas: "stack";
+  justify-items: stretch;
+  margin: 0 0.2em;
+  min-height: 2em;
+  perspective: 900px;
+  vertical-align: middle;
+}
+
+.compose-dong-flashcard__card {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 12px;
+  box-sizing: border-box;
+  box-shadow:
+    0 10px 14px -10px rgba(148, 163, 184, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  color: #111827;
+  display: inline-flex;
+  grid-area: stack;
+  height: 2em;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 0.72em;
+  transform-style: preserve-3d;
+  white-space: nowrap;
+  will-change: opacity, transform;
+  width: 100%;
+}
+
+.compose-dong-flashcard__card--measure {
+  left: -9999px;
+  position: fixed;
+  top: -9999px;
+  visibility: hidden;
+  width: auto;
+}
+
+.compose-dong-flashcard__card--sizer {
+  opacity: 0;
+  pointer-events: none;
+  width: auto;
+}
+
+.compose-dong-flashcard__card--leaving {
+  animation: compose-dong-flashcard-leave 520ms cubic-bezier(0.55, 0.04, 0.36, 1)
+    both;
+  transform-origin: 50% 0%;
+}
+
+.compose-dong-flashcard__card--entering {
+  animation: compose-dong-flashcard-enter 520ms cubic-bezier(0.22, 0.88, 0.33, 1)
+    both;
+  transform-origin: 50% 100%;
+}
+
 @keyframes global-feed-preview-drop {
   0% {
     opacity: 0.18;
@@ -226,8 +285,37 @@ input {
   }
 }
 
+@keyframes compose-dong-flashcard-leave {
+  0% {
+    opacity: 1;
+    transform: rotateX(0deg) translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: rotateX(-88deg) translateY(-8%);
+  }
+}
+
+@keyframes compose-dong-flashcard-enter {
+  0% {
+    opacity: 0;
+    transform: rotateX(88deg) translateY(8%);
+  }
+
+  100% {
+    opacity: 1;
+    transform: rotateX(0deg) translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .global-feed-preview[data-obscured="true"] .global-feed-preview__card {
+    animation: none;
+  }
+
+  .compose-dong-flashcard__card--leaving,
+  .compose-dong-flashcard__card--entering {
     animation: none;
   }
 }

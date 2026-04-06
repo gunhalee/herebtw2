@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DongPostsScreen } from "./dong-posts-screen";
 import {
@@ -28,18 +28,40 @@ type PostsListResponse = {
   nextCursor: string | null;
 };
 
+type NearbyFeedSyncResponse = {
+  items: PostListState["items"];
+  nextCursor: string | null;
+  newItemsCount: number;
+};
+
 type ResolveLocationResponse = {
   location: {
     administrativeDongName: string;
     administrativeDongCode: string;
+    countryCode: string | null;
   };
 };
+
+type PendingFeedSnapshot = {
+  items: PostListState["items"];
+  nextCursor: string | null;
+  newItemsCount: number;
+  requestedItemCount: number;
+};
+
+const COMPOSE_PLACEHOLDER_DONG_NAME = "우리 동네";
 
 function getPermissionMode(error: unknown): AppShellState["permissionMode"] {
   return error instanceof Error &&
     error.message === "GEOLOCATION_PERMISSION_DENIED"
     ? "denied"
     : "unknown";
+}
+
+function isDomesticAdministrativeLocation(location: {
+  countryCode: string | null;
+}) {
+  return location.countryCode === null || location.countryCode === "kr";
 }
 
 export type HomeScreenProps = {
@@ -60,6 +82,37 @@ function mergePostItems(
   ];
 }
 
+function patchPostListItems(
+  currentItems: PostListState["items"],
+  incomingItems: PostListState["items"],
+) {
+  const incomingItemMap = new Map(incomingItems.map((item) => [item.id, item]));
+
+  return currentItems.map((item) => {
+    const incomingItem = incomingItemMap.get(item.id);
+
+    if (!incomingItem) {
+      return item;
+    }
+
+    return {
+      ...item,
+      relativeTime: incomingItem.relativeTime,
+      agreeCount: incomingItem.agreeCount,
+      myAgree: incomingItem.myAgree,
+      canReport: incomingItem.canReport,
+    };
+  });
+}
+
+function updateSinglePostItem(
+  items: PostListState["items"],
+  targetPostId: string,
+  updater: (item: PostListState["items"][number]) => PostListState["items"][number],
+) {
+  return items.map((item) => (item.id === targetPostId ? updater(item) : item));
+}
+
 async function resolveAdministrativeLocation(location: PostLocation) {
   const response = await fetch("/api/location/resolve", {
     method: "POST",
@@ -73,9 +126,7 @@ async function resolveAdministrativeLocation(location: PostLocation) {
   const json = (await response.json()) as ApiResponse<ResolveLocationResponse>;
 
   if (!response.ok || !json.success || !json.data) {
-    throw new Error(
-      json.error?.message ?? "현재 위치를 행정동으로 확인하지 못했습니다.",
-    );
+    throw new Error(json.error?.message ?? "현재 위치를 행정동으로 확인하지 못했습니다.");
   }
 
   return json.data.location;
@@ -89,6 +140,8 @@ export function HomeScreen({
   const router = useRouter();
   const [appShellState, setAppShellState] = useState(initialAppShellState);
   const [postListState, setPostListState] = useState(initialPostListState);
+  const [pendingFeedSnapshot, setPendingFeedSnapshot] =
+    useState<PendingFeedSnapshot | null>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const [activeReportPostId, setActiveReportPostId] = useState<string | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
@@ -100,16 +153,16 @@ export function HomeScreen({
       ? "global"
       : "nearby",
   );
+  const appShellStateRef = useRef(appShellState);
+  const postListStateRef = useRef(postListState);
+  const feedLocationRef = useRef(feedLocation);
+  const syncInFlightRef = useRef(false);
   const hasInitialGlobalFeed =
     initialPostListState.sort === "latest" && !initialPostListState.loading;
 
   const currentDongName =
-    appShellState.selectedDongName ??
-    (locationResolving ? "행정동 확인 중" : null) ??
-    (postListState.sort === "distance"
-      ? postListState.items[0]?.administrativeDongName
-      : null) ??
-    "우리 동네";
+    appShellState.selectedDongName ?? COMPOSE_PLACEHOLDER_DONG_NAME;
+  const shouldAnimateComposeDongPlaceholder = true;
   const runtimeNotice =
     dataSourceMode === "mock"
       ? "Supabase 환경변수가 아직 설정되지 않아 샘플 데이터를 보여주고 있어요."
@@ -117,6 +170,18 @@ export function HomeScreen({
 
   const obscureGlobalFallbackList =
     appShellState.readOnlyMode && feedSortMode === "global";
+
+  useEffect(() => {
+    appShellStateRef.current = appShellState;
+  }, [appShellState]);
+
+  useEffect(() => {
+    postListStateRef.current = postListState;
+  }, [postListState]);
+
+  useEffect(() => {
+    feedLocationRef.current = feedLocation;
+  }, [feedLocation]);
 
   async function fetchNearbyPostsList(
     location: PostLocation,
@@ -137,9 +202,7 @@ export function HomeScreen({
     const json = (await response.json()) as ApiResponse<PostsListResponse>;
 
     if (!response.ok || !json.success || !json.data) {
-      throw new Error(
-        json.error?.message ?? "동네 글을 불러오지 못했습니다.",
-      );
+      throw new Error(json.error?.message ?? "동네 글을 불러오지 못했습니다.");
     }
 
     if (!cursor) {
@@ -147,6 +210,34 @@ export function HomeScreen({
         items: json.data.items,
         nextCursor: json.data.nextCursor,
       });
+    }
+
+    return json.data;
+  }
+
+  async function fetchNearbyFeedSync(
+    location: PostLocation,
+    loadedPostIds: string[],
+    limit: number,
+    anonymousDeviceId?: string,
+  ) {
+    const response = await fetch("/api/feed/nearby/sync", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+      body: JSON.stringify({
+        anonymousDeviceId,
+        loadedPostIds,
+        limit,
+        location,
+      }),
+    });
+    const json = (await response.json()) as ApiResponse<NearbyFeedSyncResponse>;
+
+    if (!response.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message ?? "피드 갱신에 실패했습니다.");
     }
 
     return json.data;
@@ -165,9 +256,7 @@ export function HomeScreen({
     const json = (await response.json()) as ApiResponse<PostsListResponse>;
 
     if (!response.ok || !json.success || !json.data) {
-      throw new Error(
-        json.error?.message ?? "전역 피드를 불러오지 못했습니다.",
-      );
+      throw new Error(json.error?.message ?? "전역 피드를 불러오지 못했습니다.");
     }
 
     return json.data;
@@ -200,6 +289,7 @@ export function HomeScreen({
           dataSourceMode === "supabase" ? readLatestCachedNearbyPostList() : null;
 
         if (latestCachedNearbyPostList) {
+          setPendingFeedSnapshot(null);
           setFeedSortMode("nearby");
           setLocationResolving(true);
           setPostListState((current) => ({
@@ -213,18 +303,6 @@ export function HomeScreen({
             sort: "distance",
           }));
 
-          const latestCachedAdministrativeLocation =
-            readCachedAdministrativeLocation(latestCachedNearbyPostList.location);
-
-          if (latestCachedAdministrativeLocation) {
-            setAppShellState((current) => ({
-              ...current,
-              selectedDongCode:
-                latestCachedAdministrativeLocation.administrativeDongCode,
-              selectedDongName:
-                latestCachedAdministrativeLocation.administrativeDongName,
-            }));
-          }
         }
 
         function applyAdministrativeLocation(
@@ -276,10 +354,10 @@ export function HomeScreen({
             applyAdministrativeLocation(cachedAdministrativeLocation);
           }
 
-          const cachedNearbyPostList =
-            readCachedNearbyPostList(resolvedCoordinates);
+          const cachedNearbyPostList = readCachedNearbyPostList(resolvedCoordinates);
 
           if (cachedNearbyPostList) {
+            setPendingFeedSnapshot(null);
             setFeedSortMode("nearby");
             setPostListState((current) => ({
               ...current,
@@ -295,6 +373,16 @@ export function HomeScreen({
 
           void resolveAdministrativeLocation(resolvedCoordinates)
             .then((resolvedLocation) => {
+              if (!isDomesticAdministrativeLocation(resolvedLocation)) {
+                setAppShellState((current) => ({
+                  ...current,
+                  selectedDongCode: null,
+                  selectedDongName: null,
+                }));
+                setLocationResolving(false);
+                return;
+              }
+
               applyAdministrativeLocation(resolvedLocation, {
                 final: true,
               });
@@ -317,6 +405,8 @@ export function HomeScreen({
               ...current,
               permissionMode,
               readOnlyMode: permissionMode === "denied",
+              selectedDongCode: null,
+              selectedDongName: null,
             }));
 
             if (latestCachedNearbyPostList && hasInitialGlobalFeed) {
@@ -354,6 +444,7 @@ export function HomeScreen({
           return;
         }
 
+        setPendingFeedSnapshot(null);
         setPostListState((current) => ({
           ...current,
           items: data.items,
@@ -376,7 +467,7 @@ export function HomeScreen({
           errorMessage:
             error instanceof Error
               ? error.message
-              : "홈 피드를 불러오지 못했습니다.",
+              : "피드를 불러오지 못했습니다.",
         }));
       }
     }
@@ -387,6 +478,130 @@ export function HomeScreen({
       cancelled = true;
     };
   }, [dataSourceMode, hasInitialGlobalFeed, initialPostListState]);
+
+  useEffect(() => {
+    if (feedSortMode === "nearby") {
+      return;
+    }
+
+    setPendingFeedSnapshot(null);
+  }, [feedSortMode]);
+
+  useEffect(() => {
+    if (
+      dataSourceMode !== "supabase" ||
+      feedSortMode !== "nearby" ||
+      !feedLocation
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function runNearbyFeedSync() {
+      if (
+        cancelled ||
+        syncInFlightRef.current ||
+        typeof document === "undefined" ||
+        document.hidden
+      ) {
+        return;
+      }
+
+      const latestLocation = feedLocationRef.current;
+      const latestAppShellState = appShellStateRef.current;
+      const latestPostListState = postListStateRef.current;
+
+      if (
+        !latestLocation ||
+        latestAppShellState.readOnlyMode ||
+        latestPostListState.loading ||
+        latestPostListState.loadingMore
+      ) {
+        return;
+      }
+
+      const loadedPostIds = latestPostListState.items.map((item) => item.id);
+      const requestedItemCount = Math.max(loadedPostIds.length, 10);
+
+      syncInFlightRef.current = true;
+
+      try {
+        const data = await fetchNearbyFeedSync(
+          latestLocation,
+          loadedPostIds,
+          requestedItemCount,
+          latestAppShellState.anonymousDeviceId ?? undefined,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        setPostListState((current) => ({
+          ...current,
+          items: patchPostListItems(current.items, data.items),
+        }));
+
+        const currentItemCount = postListStateRef.current.items.length;
+        const hasMatchingWindow = currentItemCount === loadedPostIds.length;
+
+        if (currentItemCount === 0 && data.items.length > 0) {
+          setPendingFeedSnapshot(null);
+          setPostListState((current) => ({
+            ...current,
+            items: data.items,
+            nextCursor: data.nextCursor,
+            empty: data.items.length === 0,
+            errorMessage: null,
+            sort: "distance",
+          }));
+          writeCachedNearbyPostList(latestLocation, {
+            items: data.items,
+            nextCursor: data.nextCursor,
+          });
+          return;
+        }
+
+        if (data.newItemsCount > 0 && hasMatchingWindow) {
+          setPendingFeedSnapshot({
+            items: data.items,
+            nextCursor: data.nextCursor,
+            newItemsCount: data.newItemsCount,
+            requestedItemCount,
+          });
+          return;
+        }
+
+        if (data.newItemsCount === 0) {
+          setPendingFeedSnapshot(null);
+        }
+      } catch {
+        return;
+      } finally {
+        syncInFlightRef.current = false;
+      }
+    }
+
+    void runNearbyFeedSync();
+
+    const intervalId = window.setInterval(() => {
+      void runNearbyFeedSync();
+    }, 20000);
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        void runNearbyFeedSync();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [dataSourceMode, feedLocation, feedSortMode]);
 
   async function ensureDeviceReady() {
     if (appShellState.anonymousDeviceId) {
@@ -408,6 +623,48 @@ export function HomeScreen({
     router.push("/write");
   }
 
+  function handleApplyPendingFeedSnapshot() {
+    if (!pendingFeedSnapshot || !feedLocation) {
+      return;
+    }
+
+    const currentState = postListStateRef.current;
+
+    if (currentState.items.length !== pendingFeedSnapshot.requestedItemCount) {
+      setPendingFeedSnapshot(null);
+      return;
+    }
+
+    const currentPostIdSet = new Set(currentState.items.map((item) => item.id));
+    const appendedNewItems = pendingFeedSnapshot.items.filter(
+      (item) => !currentPostIdSet.has(item.id),
+    );
+    const mergedItems = [
+      ...patchPostListItems(currentState.items, pendingFeedSnapshot.items),
+      ...appendedNewItems,
+    ];
+
+    setPostListState((current) => {
+      if (current.items.length !== pendingFeedSnapshot.requestedItemCount) {
+        return current;
+      }
+
+      return {
+        ...current,
+        items: mergedItems,
+        nextCursor: current.nextCursor,
+        empty: mergedItems.length === 0,
+        errorMessage: null,
+        sort: "distance",
+      };
+    });
+    writeCachedNearbyPostList(feedLocation, {
+      items: mergedItems,
+      nextCursor: currentState.nextCursor,
+    });
+    setPendingFeedSnapshot(null);
+  }
+
   async function handleLoadMore() {
     if (
       dataSourceMode !== "supabase" ||
@@ -419,6 +676,7 @@ export function HomeScreen({
     }
 
     try {
+      setPendingFeedSnapshot(null);
       setPostListState((current) => ({
         ...current,
         loadingMore: true,
@@ -427,10 +685,7 @@ export function HomeScreen({
 
       setFeedSortMode(feedLocation ? "nearby" : "global");
       const data = feedLocation
-        ? await fetchNearbyPostsList(
-            feedLocation,
-            postListState.nextCursor,
-          )
+        ? await fetchNearbyPostsList(feedLocation, postListState.nextCursor)
         : await fetchGlobalPostsList(postListState.nextCursor);
 
       setPostListState((current) => {
@@ -505,16 +760,24 @@ export function HomeScreen({
       setPostListState((current) => ({
         ...current,
         errorMessage: null,
-        items: current.items.map((item) =>
-          item.id === targetPostId
-            ? {
+        items: updateSinglePostItem(current.items, targetPostId, (item) => ({
+          ...item,
+          myAgree: optimisticMyAgree,
+          agreeCount: optimisticAgreeCount,
+        })),
+      }));
+      setPendingFeedSnapshot((current) =>
+        current
+          ? {
+              ...current,
+              items: updateSinglePostItem(current.items, targetPostId, (item) => ({
                 ...item,
                 myAgree: optimisticMyAgree,
                 agreeCount: optimisticAgreeCount,
-              }
-            : item,
-        ),
-      }));
+              })),
+            }
+          : null,
+      );
 
       const anonymousDeviceId = await ensureDeviceReady();
       const response = await fetch(`/api/posts/${targetPostId}/agree/toggle`, {
@@ -533,9 +796,7 @@ export function HomeScreen({
       }>;
 
       if (!response.ok || !json.success || !json.data) {
-        throw new Error(
-          json.error?.message ?? "공감 상태를 반영하지 못했습니다.",
-        );
+        throw new Error(json.error?.message ?? "맞아요 상태를 반영하지 못했습니다.");
       }
 
       const data = json.data;
@@ -543,33 +804,49 @@ export function HomeScreen({
       setPostListState((current) => ({
         ...current,
         errorMessage: null,
-        items: current.items.map((item) =>
-          item.id === targetPostId
-            ? {
+        items: updateSinglePostItem(current.items, targetPostId, (item) => ({
+          ...item,
+          myAgree: data.agreed,
+          agreeCount: data.agreeCount,
+        })),
+      }));
+      setPendingFeedSnapshot((current) =>
+        current
+          ? {
+              ...current,
+              items: updateSinglePostItem(current.items, targetPostId, (item) => ({
                 ...item,
                 myAgree: data.agreed,
                 agreeCount: data.agreeCount,
-              }
-            : item,
-        ),
-      }));
+              })),
+            }
+          : null,
+      );
     } catch (error) {
       setPostListState((current) => ({
         ...current,
-        items: current.items.map((item) =>
-          item.id === targetPostId
-            ? {
-                ...item,
-                myAgree: targetItem.myAgree,
-                agreeCount: targetItem.agreeCount,
-              }
-            : item,
-        ),
+        items: updateSinglePostItem(current.items, targetPostId, (item) => ({
+          ...item,
+          myAgree: targetItem.myAgree,
+          agreeCount: targetItem.agreeCount,
+        })),
         errorMessage:
           error instanceof Error
             ? error.message
-            : "공감 상태를 반영하지 못했습니다.",
+            : "맞아요 상태를 반영하지 못했습니다.",
       }));
+      setPendingFeedSnapshot((current) =>
+        current
+          ? {
+              ...current,
+              items: updateSinglePostItem(current.items, targetPostId, (item) => ({
+                ...item,
+                myAgree: targetItem.myAgree,
+                agreeCount: targetItem.agreeCount,
+              })),
+            }
+          : null,
+      );
     } finally {
       setAgreePendingPostIds((current) =>
         current.filter((postId) => postId !== targetPostId),
@@ -615,15 +892,22 @@ export function HomeScreen({
       setPostListState((current) => ({
         ...current,
         errorMessage: null,
-        items: current.items.map((item) =>
-          item.id === postId
-            ? {
+        items: updateSinglePostItem(current.items, postId, (item) => ({
+          ...item,
+          canReport: false,
+        })),
+      }));
+      setPendingFeedSnapshot((current) =>
+        current
+          ? {
+              ...current,
+              items: updateSinglePostItem(current.items, postId, (item) => ({
                 ...item,
                 canReport: false,
-              }
-            : item,
-        ),
-      }));
+              })),
+            }
+          : null,
+      );
       setActiveReportPostId(null);
     } catch (error) {
       setPostListState((current) => ({
@@ -651,7 +935,9 @@ export function HomeScreen({
       <DongPostsScreen
         activeMenuPostId={activeMenuPostId}
         activeReportPostId={activeReportPostId}
+        animateComposeDongPlaceholder={shouldAnimateComposeDongPlaceholder}
         currentDongName={currentDongName}
+        onApplyPendingUpdates={handleApplyPendingFeedSnapshot}
         onCloseMenu={handleCloseMenu}
         onCloseReportDialog={handleCloseReportDialog}
         onCompose={handleCompose}
@@ -661,6 +947,7 @@ export function HomeScreen({
         obscurePosts={obscureGlobalFallbackList}
         onSelectReport={handleSelectReport}
         onToggleAgree={handleToggleAgree}
+        pendingNewItemsCount={pendingFeedSnapshot?.newItemsCount ?? 0}
         reportSubmitting={reportSubmitting}
         runtimeNotice={runtimeNotice}
         state={postListState}
