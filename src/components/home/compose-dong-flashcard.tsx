@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useEffect, useRef, useState } from "react";
 
 export const COMPOSE_DONG_PLACEHOLDER_LABEL = "우리 동네";
 
@@ -62,20 +62,32 @@ export function ComposeDongFlashcard({
   const [fittingCandidates, setFittingCandidates] = useState<
     readonly string[]
   >(DEFAULT_PLACEHOLDER_DONG_CANDIDATES);
+  const [cardWidthPx, setCardWidthPx] = useState<number | null>(null);
   const measureRef = useRef<HTMLSpanElement | null>(null);
   const finalLabelRef = useRef(label);
   const hasStartedIntroRef = useRef(false);
   const hasCompletedIntroRef = useRef(false);
+  const placeholderCardWidthRef = useRef<number | null>(null);
+  const expandedCardWidthRef = useRef<number | null>(null);
   const introCandidatesRef = useRef<readonly string[]>(
     DEFAULT_PLACEHOLDER_DONG_CANDIDATES,
   );
 
-  useEffect(() => {
-    if (
-      !animatePlaceholder ||
-      !measureRef.current ||
-      typeof window === "undefined"
-    ) {
+  function applyCardWidth(mode: "placeholder" | "final") {
+    const nextWidth =
+      mode === "final"
+        ? expandedCardWidthRef.current ?? placeholderCardWidthRef.current
+        : placeholderCardWidthRef.current ?? expandedCardWidthRef.current;
+
+    if (typeof nextWidth !== "number") {
+      return;
+    }
+
+    setCardWidthPx((current) => (current === nextWidth ? current : nextWidth));
+  }
+
+  useLayoutEffect(() => {
+    if (!measureRef.current || typeof window === "undefined") {
       return;
     }
 
@@ -91,9 +103,15 @@ export function ComposeDongFlashcard({
         return Math.ceil(measureElement.getBoundingClientRect().width);
       };
 
-      const nextCardWidthPx = measureWidth(COMPOSE_DONG_PLACEHOLDER_LABEL);
+      const nextPlaceholderCardWidthPx = measureWidth(
+        COMPOSE_DONG_PLACEHOLDER_LABEL,
+      );
+      const nextExpandedCardWidthPx = Math.max(
+        nextPlaceholderCardWidthPx,
+        measureWidth(finalLabelRef.current),
+      );
       const nextCandidates = PLACEHOLDER_DONG_CANDIDATES.filter(
-        (candidate) => measureWidth(candidate) <= nextCardWidthPx,
+        (candidate) => measureWidth(candidate) <= nextPlaceholderCardWidthPx,
       );
 
       measureElement.textContent =
@@ -103,7 +121,14 @@ export function ComposeDongFlashcard({
         return;
       }
 
+      placeholderCardWidthRef.current = nextPlaceholderCardWidthPx;
+      expandedCardWidthRef.current = nextExpandedCardWidthPx;
       setFittingCandidates(nextCandidates);
+      applyCardWidth(
+        hasStartedIntroRef.current && !hasCompletedIntroRef.current
+          ? "placeholder"
+          : "final",
+      );
     };
 
     measureCandidateWidths();
@@ -126,7 +151,7 @@ export function ComposeDongFlashcard({
       cancelled = true;
       window.removeEventListener("resize", handleResize);
     };
-  }, [animatePlaceholder]);
+  }, [animatePlaceholder, label]);
 
   useEffect(() => {
     if (animatePlaceholder) {
@@ -167,6 +192,7 @@ export function ComposeDongFlashcard({
       setSequence([finalLabelRef.current]);
       setCurrentIndex(0);
       setIncomingLabel(null);
+      applyCardWidth("final");
       return;
     }
 
@@ -183,6 +209,7 @@ export function ComposeDongFlashcard({
       setSequence([finalLabelRef.current]);
       setCurrentIndex(0);
       setIncomingLabel(null);
+      applyCardWidth("final");
       return;
     }
 
@@ -198,6 +225,7 @@ export function ComposeDongFlashcard({
       finalLabelRef.current,
     ];
 
+    applyCardWidth("placeholder");
     setSequence(introSequence);
     setCurrentIndex(0);
     setIncomingLabel(null);
@@ -223,6 +251,11 @@ export function ComposeDongFlashcard({
       dwellTimer = window.setTimeout(() => {
         const nextIndex = index + 1;
         const nextLabel = getStepLabel(nextIndex);
+
+        if (nextIndex >= introSequence.length - 1) {
+          applyCardWidth("final");
+        }
+
         setIncomingLabel(nextLabel);
 
         flipTimer = window.setTimeout(() => {
@@ -273,7 +306,10 @@ export function ComposeDongFlashcard({
       >
         {COMPOSE_DONG_PLACEHOLDER_LABEL}
       </span>
-      <span className="compose-dong-flashcard">
+      <span
+        className="compose-dong-flashcard"
+        style={cardWidthPx ? { width: `${cardWidthPx}px` } : undefined}
+      >
         <span
           aria-hidden="true"
           className="compose-dong-flashcard__card compose-dong-flashcard__card--sizer"

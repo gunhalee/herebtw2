@@ -19,6 +19,7 @@ type NominatimFeatureCollection = {
         county?: string;
         city?: string;
         state?: string;
+        country?: string;
         country_code?: string;
         admin?: {
           level8?: string;
@@ -152,6 +153,15 @@ async function fetchReverseGeocodeFromProvider(input: {
       geocoding.state,
     );
     const countryCode = geocoding.country_code?.toLowerCase() ?? null;
+    const overseasAdministrativeDongFallbackNames =
+      countryCode === "kr"
+        ? []
+        : [
+            geocoding.city,
+            geocoding.county,
+            geocoding.state,
+            geocoding.country,
+          ];
     const mappedAdministrativeDong = resolveAdministrativeDongMapping({
       sidoName,
       sigunguName,
@@ -159,7 +169,8 @@ async function fetchReverseGeocodeFromProvider(input: {
     });
     const administrativeDongName =
       mappedAdministrativeDong?.administrativeDongName ??
-      pickAdministrativeDongName(...administrativeDongCandidateNames);
+      pickAdministrativeDongName(...administrativeDongCandidateNames) ??
+      pickAdministrativeDongName(...overseasAdministrativeDongFallbackNames);
 
     if (!administrativeDongName) {
       throw new Error("Reverse geocoding could not determine a dong name.");
