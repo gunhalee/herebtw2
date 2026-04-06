@@ -459,7 +459,7 @@ export function DongPostsScreen({
             display: "grid",
             fontSize: "16px",
             fontWeight: 700,
-            gridTemplateColumns: "30px 1fr 30px",
+            gridTemplateColumns: "30px minmax(0, 1fr) 30px",
             lineHeight: 1.35,
             padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
             transform: "translateY(-1px)",
@@ -478,9 +478,13 @@ export function DongPostsScreen({
           <span
             style={{
               alignItems: "center",
-              display: "inline-flex",
+              display: "flex",
               gap: "0.04em",
+              justifyContent: "center",
+              justifySelf: "stretch",
+              minWidth: 0,
               textAlign: "center",
+              width: "100%",
             }}
           >
             <span
