@@ -17,6 +17,7 @@ export type PostDetailSheetProps = {
   onClose?: () => void;
   onToggleAgree?: () => void;
   onProgressChange?: (progress: number) => void;
+  onSelectReport?: (postId: string) => void;
 };
 
 export function PostDetailSheet({
@@ -24,6 +25,7 @@ export function PostDetailSheet({
   onClose,
   onToggleAgree,
   onProgressChange,
+  onSelectReport,
 }: PostDetailSheetProps) {
   const [viewportHeight, setViewportHeight] = useState(800);
   const [sheetHeight, setSheetHeight] = useState(620);
@@ -78,6 +80,12 @@ export function PostDetailSheet({
     const progress = Math.max(0, Math.min(1, (sheetHeight - snapPoints.mid) / denominator));
     onProgressChange?.(progress);
   }, [onProgressChange, sheetHeight, snapPoints.expanded, snapPoints.mid, state.open]);
+
+  const reportPostId = state.postId;
+  const handleSelectReport =
+    reportPostId && state.canReport
+      ? () => onSelectReport?.(reportPostId)
+      : undefined;
 
   if (!state.open) {
     return null;
@@ -384,7 +392,10 @@ export function PostDetailSheet({
           agreeCount={state.agreeCount}
           onToggle={onToggleAgree}
         />
-        <ReportButton disabled={!state.canReport} />
+        <ReportButton
+          disabled={!state.canReport}
+          onClick={handleSelectReport}
+        />
         <DeletePostButton
           canDelete={state.canDelete}
           deleteRemainingSeconds={state.deleteRemainingSeconds}

@@ -23,6 +23,7 @@ export type SlidingPostSheetProps = {
   onCloseDetail?: () => void;
   onToggleAgree?: () => void;
   onProgressChange?: (progress: number) => void;
+  onSelectReport?: (postId: string) => void;
 };
 
 export function SlidingPostSheet({
@@ -32,6 +33,7 @@ export function SlidingPostSheet({
   onCloseDetail,
   onToggleAgree,
   onProgressChange,
+  onSelectReport,
 }: SlidingPostSheetProps) {
   const [viewportHeight, setViewportHeight] = useState(800);
   const [sheetHeight, setSheetHeight] = useState(316);
@@ -176,6 +178,11 @@ export function SlidingPostSheet({
   }
 
   const pseudoReadCount = Math.max(12, detailState.agreeCount * 9 + 23);
+  const reportPostId = detailState.postId;
+  const handleSelectReport =
+    reportPostId && detailState.canReport
+      ? () => onSelectReport?.(reportPostId)
+      : undefined;
 
   return (
     <section
@@ -429,7 +436,10 @@ export function SlidingPostSheet({
                 agreeCount={detailState.agreeCount}
                 onToggle={onToggleAgree}
               />
-              <ReportButton disabled={!detailState.canReport} />
+              <ReportButton
+                disabled={!detailState.canReport}
+                onClick={handleSelectReport}
+              />
               <DeletePostButton
                 canDelete={detailState.canDelete}
                 deleteRemainingSeconds={detailState.deleteRemainingSeconds}
