@@ -1,9 +1,11 @@
 import { fail, ok } from "../../../../lib/api/response";
+import { createPostEngagementSnapshotToken } from "../../../../lib/posts/engagement-snapshot-token";
 import { loadPostEngagementSnapshotRepository } from "../../../../lib/posts/repository";
 
 type PostEngagementSnapshotRequest = {
   anonymousDeviceId?: string;
   postIds?: string[];
+  snapshotToken?: string;
 };
 
 function isUuid(value: string) {
@@ -36,10 +38,26 @@ export async function POST(request: Request) {
     anonymousDeviceId: body.anonymousDeviceId?.trim() || undefined,
     postIds,
   });
+  const snapshotToken = createPostEngagementSnapshotToken(snapshot.items);
 
-  return ok(snapshot, {
-    headers: {
-      "Cache-Control": "private, no-store, max-age=0",
+  if (body.snapshotToken === snapshotToken) {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Cache-Control": "private, no-store, max-age=0",
+      },
+    });
+  }
+
+  return ok(
+    {
+      ...snapshot,
+      snapshotToken,
     },
-  });
+    {
+      headers: {
+        "Cache-Control": "private, no-store, max-age=0",
+      },
+    },
+  );
 }

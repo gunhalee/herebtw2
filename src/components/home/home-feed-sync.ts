@@ -1,5 +1,6 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { writeCachedNearbyPostList } from "../../lib/posts/browser-nearby-post-cache";
+import { createPostEngagementSnapshotToken } from "../../lib/posts/engagement-snapshot-token";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 import {
@@ -156,15 +157,23 @@ export async function syncHomePostEngagement({
   }
 
   const loadedPostIds = latestPostListState.items.map((item) => item.id);
+  const snapshotToken = createPostEngagementSnapshotToken(
+    latestPostListState.items,
+  );
   engagementSyncInFlightRef.current = true;
 
   try {
     const data = await fetchPostEngagementSnapshot(
       loadedPostIds,
       latestAppShellState.anonymousDeviceId ?? undefined,
+      snapshotToken,
     );
 
     if (isCancelled()) {
+      return;
+    }
+
+    if (!data) {
       return;
     }
 

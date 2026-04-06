@@ -23,6 +23,7 @@ export type PostEngagementSnapshotResponse = {
     agreeCount: number;
     myAgree: boolean;
   }>;
+  snapshotToken: string;
 };
 
 const DEFAULT_FEED_PAGE_LIMIT = 10;
@@ -130,12 +131,15 @@ export async function fetchNearbyFeedSync(
 export async function fetchPostEngagementSnapshot(
   postIds: string[],
   anonymousDeviceId?: string,
+  snapshotToken?: string,
 ) {
   return fetchClientApiData<PostEngagementSnapshotResponse>({
+    allowNoContent: true,
     errorMessage: "맞아요 상태를 갱신하지 못했습니다.",
     init: createJsonPostRequestInit({
       anonymousDeviceId,
       postIds,
+      snapshotToken,
     }),
     path: "/api/posts/engagement",
   });

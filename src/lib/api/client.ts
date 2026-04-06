@@ -8,6 +8,7 @@ type FetchClientApiDataParams = {
   errorMessage: string;
   init?: RequestInit;
   path: string;
+  allowNoContent?: boolean;
   timeoutErrorMessage?: string;
   timeoutMs?: number;
 };
@@ -75,13 +76,24 @@ function parseApiResponse<T>(responseText: string) {
   }
 }
 
+export async function fetchClientApiData<T>(
+  params: FetchClientApiDataParams & {
+    allowNoContent: true;
+  },
+): Promise<T | null>;
+export async function fetchClientApiData<T>(
+  params: FetchClientApiDataParams & {
+    allowNoContent?: false;
+  },
+): Promise<T>;
 export async function fetchClientApiData<T>({
+  allowNoContent,
   errorMessage,
   init,
   path,
   timeoutErrorMessage,
   timeoutMs = CLIENT_API_REQUEST_TIMEOUT_MS,
-}: FetchClientApiDataParams): Promise<T> {
+}: FetchClientApiDataParams): Promise<T | null> {
   const abortState = createClientRequestAbortState(
     init?.signal,
     timeoutMs,
@@ -92,6 +104,11 @@ export async function fetchClientApiData<T>({
       ...init,
       signal: abortState.signal,
     });
+
+    if (allowNoContent && response.status === 204) {
+      return null;
+    }
+
     const responseText = await response.text();
     const json = parseApiResponse<T>(responseText);
 
