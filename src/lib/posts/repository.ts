@@ -962,8 +962,8 @@ export async function reportPostRepository(
     throw new Error("Failed to ensure device identity.");
   }
 
-  await supabaseInsert(
-    "post_reports?select=id,post_id,reporter_device_id,reason_code",
+  await supabaseUpsert(
+    "post_reports?on_conflict=post_id,reporter_device_id&select=id,post_id,reporter_device_id,reason_code",
     {
       post_id: postId,
       reporter_device_id: device.id,

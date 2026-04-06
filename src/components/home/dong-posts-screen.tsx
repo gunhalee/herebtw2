@@ -305,6 +305,7 @@ export type DongPostsScreenProps = {
   scrollTargetPostId?: string | null;
   state: PostListState;
   runtimeNotice?: string | null;
+  reportErrorMessage?: string | null;
   pendingNewItemsCount?: number;
   activeMenuPostId?: string | null;
   activeReportPostId?: string | null;
@@ -329,6 +330,7 @@ export function DongPostsScreen({
   scrollTargetPostId,
   state,
   runtimeNotice,
+  reportErrorMessage = null,
   pendingNewItemsCount = 0,
   activeMenuPostId,
   activeReportPostId,
@@ -786,6 +788,8 @@ export function DongPostsScreen({
             >
               이 글을 신고할까요?
             </h2>
+
+            {reportErrorMessage ? <ErrorState message={reportErrorMessage} /> : null}
 
             <div
               style={{

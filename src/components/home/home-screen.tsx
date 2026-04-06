@@ -201,6 +201,7 @@ export function HomeScreen({
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const [activeReportPostId, setActiveReportPostId] = useState<string | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportErrorMessage, setReportErrorMessage] = useState<string | null>(null);
   const [agreePendingPostIds, setAgreePendingPostIds] = useState<string[]>([]);
   const [feedLocation, setFeedLocation] = useState<PostLocation | null>(null);
   const [locationResolving, setLocationResolving] = useState(false);
@@ -1044,6 +1045,7 @@ export function HomeScreen({
   }
 
   function handleSelectReport(postId: string) {
+    setReportErrorMessage(null);
     setActiveReportPostId(postId);
     setActiveMenuPostId(null);
   }
@@ -1053,6 +1055,7 @@ export function HomeScreen({
       return;
     }
 
+    setReportErrorMessage(null);
     setActiveReportPostId(null);
   }
 
@@ -1189,8 +1192,9 @@ export function HomeScreen({
     }
 
     try {
-      const anonymousDeviceId = await ensureDeviceReady();
       setReportSubmitting(true);
+      setReportErrorMessage(null);
+      const anonymousDeviceId = await ensureDeviceReady();
 
       const response = await fetch(`/api/posts/${postId}/report`, {
         method: "POST",
@@ -1230,14 +1234,18 @@ export function HomeScreen({
             }
           : null,
       );
+      setReportErrorMessage(null);
       setActiveReportPostId(null);
     } catch (error) {
+      const nextErrorMessage =
+        error instanceof Error
+          ? error.message
+          : "신고를 접수하지 못했습니다.";
+
+      setReportErrorMessage(nextErrorMessage);
       setPostListState((current) => ({
         ...current,
-        errorMessage:
-          error instanceof Error
-            ? error.message
-            : "신고를 접수하지 못했습니다.",
+        errorMessage: nextErrorMessage,
       }));
     } finally {
       setReportSubmitting(false);
@@ -1274,6 +1282,7 @@ export function HomeScreen({
         scrollTargetPostId={pendingAppliedScrollTargetPostId}
         onToggleAgree={handleToggleAgree}
         pendingNewItemsCount={pendingFeedSnapshot?.newItemsCount ?? 0}
+        reportErrorMessage={reportErrorMessage}
         reportSubmitting={reportSubmitting}
         runtimeNotice={runtimeNotice}
         state={postListState}
