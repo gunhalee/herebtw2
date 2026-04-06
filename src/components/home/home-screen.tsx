@@ -12,6 +12,7 @@ import {
   writeCachedAdministrativeLocation,
   type AdministrativeLocationSnapshot,
 } from "../../lib/geo/browser-administrative-location";
+import { quantizeLocationTo100MeterGrid } from "../../lib/geo/location-buckets";
 import { getCurrentBrowserCoordinates } from "../../lib/geo/browser-location";
 import type { ApiResponse } from "../../types/api";
 import type { AppShellState } from "../../types/device";
@@ -111,25 +112,22 @@ export function HomeScreen({
   const obscureGlobalFallbackList =
     appShellState.readOnlyMode && feedSortMode === "global";
 
-  async function fetchPostsList(
-    anonymousDeviceId: string,
-    location?: PostLocation,
+  async function fetchNearbyPostsList(
+    location: PostLocation,
     cursor?: string | null,
   ) {
-    const response = await fetch("/api/posts/list", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        anonymousDeviceId,
-        location,
-        pagination: {
-          limit: 10,
-          cursor: cursor ?? undefined,
-        },
-      }),
+    const quantizedLocation = quantizeLocationTo100MeterGrid(location);
+    const params = new URLSearchParams({
+      limit: "10",
+      latitudeBucket100m: String(quantizedLocation.latitudeBucket100m),
+      longitudeBucket100m: String(quantizedLocation.longitudeBucket100m),
     });
+
+    if (cursor) {
+      params.set("cursor", cursor);
+    }
+
+    const response = await fetch(`/api/feed/nearby?${params.toString()}`);
     const json = (await response.json()) as ApiResponse<PostsListResponse>;
 
     if (!response.ok || !json.success || !json.data) {
@@ -268,7 +266,7 @@ export function HomeScreen({
 
         const shouldFetchGlobalFeed = !resolvedCoordinates && !hasInitialGlobalFeed;
         const data = resolvedCoordinates
-          ? await fetchPostsList(anonymousDeviceId, resolvedCoordinates)
+          ? await fetchNearbyPostsList(resolvedCoordinates)
           : shouldFetchGlobalFeed
             ? await fetchGlobalPostsList()
             : null;
@@ -363,8 +361,7 @@ export function HomeScreen({
 
       setFeedSortMode(feedLocation ? "nearby" : "global");
       const data = feedLocation
-        ? await fetchPostsList(
-            await ensureDeviceReady(),
+        ? await fetchNearbyPostsList(
             feedLocation,
             postListState.nextCursor,
           )

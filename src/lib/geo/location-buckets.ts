@@ -46,6 +46,26 @@ export function quantizeLocationTo100MeterGrid(
   };
 }
 
+export function dequantizeLocationFrom100MeterGridBuckets(input: {
+  latitudeBucket100m: number;
+  longitudeBucket100m: number;
+}): QuantizedLocation {
+  const latitude =
+    (input.latitudeBucket100m * LOCATION_BUCKET_SIZE_METERS) /
+    METERS_PER_DEGREE_LATITUDE;
+  const metersPerDegreeLongitude = getMetersPerDegreeLongitude(latitude);
+  const longitude =
+    (input.longitudeBucket100m * LOCATION_BUCKET_SIZE_METERS) /
+    metersPerDegreeLongitude;
+
+  return {
+    latitude,
+    longitude,
+    latitudeBucket100m: input.latitudeBucket100m,
+    longitudeBucket100m: input.longitudeBucket100m,
+  };
+}
+
 export function formatBucketedDistance(distanceMeters: number) {
   if (!Number.isFinite(distanceMeters) || distanceMeters >= 900000) {
     return "거리 미확인";
