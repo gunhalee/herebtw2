@@ -40,6 +40,14 @@ type NearbyFeedSyncResponse = {
   newItemsCount: number;
 };
 
+type PostEngagementSnapshotResponse = {
+  items: Array<{
+    id: string;
+    agreeCount: number;
+    myAgree: boolean;
+  }>;
+};
+
 type ResolveLocationResponse = {
   location: {
     administrativeDongName: string;
@@ -111,6 +119,34 @@ function patchPostListItems(
   });
 }
 
+function patchPostEngagementItems(
+  currentItems: PostListState["items"],
+  incomingItems: PostEngagementSnapshotResponse["items"],
+  options?: {
+    excludedPostIds?: Set<string>;
+  },
+) {
+  const incomingItemMap = new Map(incomingItems.map((item) => [item.id, item]));
+
+  return currentItems.map((item) => {
+    if (options?.excludedPostIds?.has(item.id)) {
+      return item;
+    }
+
+    const incomingItem = incomingItemMap.get(item.id);
+
+    if (!incomingItem) {
+      return item;
+    }
+
+    return {
+      ...item,
+      agreeCount: incomingItem.agreeCount,
+      myAgree: incomingItem.myAgree,
+    };
+  });
+}
+
 function updateSinglePostItem(
   items: PostListState["items"],
   targetPostId: string,
@@ -178,6 +214,8 @@ export function HomeScreen({
   const postListStateRef = useRef(postListState);
   const feedLocationRef = useRef(feedLocation);
   const syncInFlightRef = useRef(false);
+  const engagementSyncInFlightRef = useRef(false);
+  const agreePendingPostIdsRef = useRef(agreePendingPostIds);
   const hasInitialGlobalFeed =
     initialPostListState.sort === "latest" && !initialPostListState.loading;
 
@@ -209,6 +247,10 @@ export function HomeScreen({
   useEffect(() => {
     feedLocationRef.current = feedLocation;
   }, [feedLocation]);
+
+  useEffect(() => {
+    agreePendingPostIdsRef.current = agreePendingPostIds;
+  }, [agreePendingPostIds]);
 
   useEffect(() => {
     if (typeof document === "undefined") {
@@ -389,6 +431,30 @@ export function HomeScreen({
 
     if (!response.ok || !json.success || !json.data) {
       throw new Error(json.error?.message ?? "피드 갱신에 실패했습니다.");
+    }
+
+    return json.data;
+  }
+
+  async function fetchPostEngagementSnapshot(
+    postIds: string[],
+    anonymousDeviceId?: string,
+  ) {
+    const response = await fetch("/api/posts/engagement", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+      body: JSON.stringify({
+        anonymousDeviceId,
+        postIds,
+      }),
+    });
+    const json = (await response.json()) as ApiResponse<PostEngagementSnapshotResponse>;
+
+    if (!response.ok || !json.success || !json.data) {
+      throw new Error(json.error?.message ?? "따봉 상태를 갱신하지 못했습니다.");
     }
 
     return json.data;
@@ -710,6 +776,88 @@ export function HomeScreen({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [dataSourceMode, feedLocation, feedSortMode]);
+
+  useEffect(() => {
+    if (dataSourceMode !== "supabase") {
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function runPostEngagementSync() {
+      if (
+        cancelled ||
+        engagementSyncInFlightRef.current ||
+        typeof document === "undefined" ||
+        document.hidden
+      ) {
+        return;
+      }
+
+      const latestAppShellState = appShellStateRef.current;
+      const latestPostListState = postListStateRef.current;
+
+      if (
+        latestPostListState.loading ||
+        latestPostListState.loadingMore ||
+        latestPostListState.items.length === 0
+      ) {
+        return;
+      }
+
+      const loadedPostIds = latestPostListState.items.map((item) => item.id);
+      engagementSyncInFlightRef.current = true;
+
+      try {
+        const data = await fetchPostEngagementSnapshot(
+          loadedPostIds,
+          latestAppShellState.anonymousDeviceId ?? undefined,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!matchesLoadedPostIds(postListStateRef.current.items, loadedPostIds)) {
+          return;
+        }
+
+        setPostListState((current) => ({
+          ...current,
+          items: patchPostEngagementItems(current.items, data.items, {
+            excludedPostIds: new Set(agreePendingPostIdsRef.current),
+          }),
+        }));
+      } catch {
+        return;
+      } finally {
+        engagementSyncInFlightRef.current = false;
+      }
+    }
+
+    void runPostEngagementSync();
+
+    const intervalId = window.setInterval(() => {
+      void runPostEngagementSync();
+    }, 5000);
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        void runPostEngagementSync();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [dataSourceMode]);
 
   async function ensureDeviceReady() {
     if (appShellState.anonymousDeviceId) {

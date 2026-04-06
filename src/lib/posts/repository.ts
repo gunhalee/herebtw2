@@ -547,6 +547,71 @@ export async function syncNearbyFeedRepository(input: {
   };
 }
 
+export async function loadPostEngagementSnapshotRepository(input: {
+  anonymousDeviceId?: string;
+  postIds?: string[];
+}) {
+  const requestedPostIds = Array.from(
+    new Set((input.postIds ?? []).filter((postId) => isUuid(postId))),
+  ).slice(0, 50);
+
+  if (requestedPostIds.length === 0) {
+    return {
+      items: [] as Array<{
+        id: string;
+        agreeCount: number;
+        myAgree: boolean;
+      }>,
+    };
+  }
+
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    const itemMap = new Map(
+      getMockPostListState().items.map((item) => [item.id, item]),
+    );
+
+    return {
+      items: requestedPostIds
+        .map((postId) => {
+          const item = itemMap.get(postId);
+
+          if (!item) {
+            return null;
+          }
+
+          return {
+            id: postId,
+            agreeCount: item.agreeCount,
+            myAgree: item.myAgree,
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null),
+    };
+  }
+
+  const device = input.anonymousDeviceId
+    ? await ensureDeviceIdentity(input.anonymousDeviceId)
+    : null;
+  const [engagementRows, myReactionRows] = await Promise.all([
+    loadEngagementRows(requestedPostIds),
+    loadMyAgreeRows(device?.id, requestedPostIds),
+  ]);
+  const engagementMap = new Map(
+    engagementRows.map((row) => [row.post_id, Number(row.agree_count)]),
+  );
+  const myAgreeSet = new Set(myReactionRows.map((row) => row.post_id));
+
+  return {
+    items: requestedPostIds.map((postId) => ({
+      id: postId,
+      agreeCount: engagementMap.get(postId) ?? 0,
+      myAgree: myAgreeSet.has(postId),
+    })),
+  };
+}
+
 export async function loadGlobalPostsListRepository(input: {
   limit?: number;
   cursor?: string;
