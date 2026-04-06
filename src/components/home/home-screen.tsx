@@ -14,6 +14,10 @@ import {
 } from "../../lib/geo/browser-administrative-location";
 import { quantizeLocationTo100MeterGrid } from "../../lib/geo/location-buckets";
 import { getCurrentBrowserCoordinates } from "../../lib/geo/browser-location";
+import {
+  readCachedNearbyPostList,
+  writeCachedNearbyPostList,
+} from "../../lib/posts/browser-nearby-post-cache";
 import type { ApiResponse } from "../../types/api";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
@@ -87,6 +91,7 @@ export function HomeScreen({
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const [activeReportPostId, setActiveReportPostId] = useState<string | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [agreePendingPostIds, setAgreePendingPostIds] = useState<string[]>([]);
   const [feedLocation, setFeedLocation] = useState<PostLocation | null>(null);
   const [locationResolving, setLocationResolving] = useState(false);
   const [feedSortMode, setFeedSortMode] = useState<"nearby" | "global">(
@@ -134,6 +139,13 @@ export function HomeScreen({
       throw new Error(
         json.error?.message ?? "동네 글을 불러오지 못했습니다.",
       );
+    }
+
+    if (!cursor) {
+      writeCachedNearbyPostList(location, {
+        items: json.data.items,
+        nextCursor: json.data.nextCursor,
+      });
     }
 
     return json.data;
@@ -230,6 +242,23 @@ export function HomeScreen({
 
           if (cachedAdministrativeLocation) {
             applyAdministrativeLocation(cachedAdministrativeLocation);
+          }
+
+          const cachedNearbyPostList =
+            readCachedNearbyPostList(resolvedCoordinates);
+
+          if (cachedNearbyPostList) {
+            setFeedSortMode("nearby");
+            setPostListState((current) => ({
+              ...current,
+              items: cachedNearbyPostList.items,
+              nextCursor: cachedNearbyPostList.nextCursor,
+              loading: false,
+              loadingMore: false,
+              empty: cachedNearbyPostList.items.length === 0,
+              errorMessage: null,
+              sort: "distance",
+            }));
           }
 
           void resolveAdministrativeLocation(resolvedCoordinates)
@@ -418,7 +447,38 @@ export function HomeScreen({
       return;
     }
 
+    if (agreePendingPostIds.includes(targetPostId)) {
+      return;
+    }
+
+    const targetItem = postListState.items.find((item) => item.id === targetPostId);
+
+    if (!targetItem) {
+      return;
+    }
+
+    const optimisticMyAgree = !targetItem.myAgree;
+    const optimisticAgreeCount = Math.max(
+      0,
+      targetItem.agreeCount + (optimisticMyAgree ? 1 : -1),
+    );
+
     try {
+      setAgreePendingPostIds((current) => [...current, targetPostId]);
+      setPostListState((current) => ({
+        ...current,
+        errorMessage: null,
+        items: current.items.map((item) =>
+          item.id === targetPostId
+            ? {
+                ...item,
+                myAgree: optimisticMyAgree,
+                agreeCount: optimisticAgreeCount,
+              }
+            : item,
+        ),
+      }));
+
       const anonymousDeviceId = await ensureDeviceReady();
       const response = await fetch(`/api/posts/${targetPostId}/agree/toggle`, {
         method: "POST",
@@ -459,11 +519,24 @@ export function HomeScreen({
     } catch (error) {
       setPostListState((current) => ({
         ...current,
+        items: current.items.map((item) =>
+          item.id === targetPostId
+            ? {
+                ...item,
+                myAgree: targetItem.myAgree,
+                agreeCount: targetItem.agreeCount,
+              }
+            : item,
+        ),
         errorMessage:
           error instanceof Error
             ? error.message
             : "공감 상태를 반영하지 못했습니다.",
       }));
+    } finally {
+      setAgreePendingPostIds((current) =>
+        current.filter((postId) => postId !== targetPostId),
+      );
     }
   }
 

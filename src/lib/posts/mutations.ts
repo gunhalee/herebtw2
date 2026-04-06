@@ -106,14 +106,10 @@ export async function createPostDraft(
 }
 
 export async function toggleAgreeState(
-  state: Pick<PostDetailState, "myAgree" | "agreeCount">,
-  postId?: string | null,
+  postId: string,
   anonymousDeviceId?: string,
 ) {
-  const result = await toggleAgreeRepository(
-    postId ?? "post_toggle_mock",
-    anonymousDeviceId,
-  );
+  const result = await toggleAgreeRepository(postId, anonymousDeviceId);
 
   return {
     myAgree: result.agreed,

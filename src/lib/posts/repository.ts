@@ -201,6 +201,11 @@ type ReactionRow = {
   reaction_type: string;
 };
 
+type ToggleAgreeRpcRow = {
+  agreed: boolean;
+  agree_count: number;
+};
+
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
@@ -800,53 +805,18 @@ export async function toggleAgreeRepository(
     };
   }
 
-  const device = await ensureDeviceIdentity(anonymousDeviceId);
-
-  if (!device) {
-    throw new Error("Failed to ensure device identity.");
-  }
-
-  const existingRows = await supabaseSelect<ReactionRow[]>(
-    `post_reactions?select=id,post_id,device_id,reaction_type&post_id=eq.${postId}&device_id=eq.${device.id}&reaction_type=eq.agree`,
-  );
-
-  if (existingRows && existingRows.length > 0) {
-    await supabaseDelete<ReactionRow[]>(
-      `post_reactions?id=eq.${existingRows[0].id}&select=id`,
-    );
-
-    const engagementRows =
-      (await supabaseSelect<PostEngagementRow[]>(
-        `post_engagement_view?select=post_id,agree_count&post_id=eq.${postId}`,
-      )) ?? [];
-
-    return {
-      mode: "supabase" as const,
-      postId,
-      agreed: false,
-      agreeCount: Number(engagementRows[0]?.agree_count ?? 0),
-    };
-  }
-
-  await supabaseInsert<ReactionRow[]>(
-    "post_reactions?select=id,post_id,device_id,reaction_type",
-    {
-      post_id: postId,
-      device_id: device.id,
-      reaction_type: "agree",
-    },
-  );
-
-  const engagementRows =
-    (await supabaseSelect<PostEngagementRow[]>(
-      `post_engagement_view?select=post_id,agree_count&post_id=eq.${postId}`,
-    )) ?? [];
+  const rpcRows =
+    (await supabaseRpc<ToggleAgreeRpcRow[]>("toggle_post_agree", {
+      target_post_id: postId,
+      viewer_anonymous_device_id: anonymousDeviceId,
+    })) ?? [];
+  const rpcRow = rpcRows[0];
 
   return {
     mode: "supabase" as const,
     postId,
-    agreed: true,
-    agreeCount: Number(engagementRows[0]?.agree_count ?? 0),
+    agreed: Boolean(rpcRow?.agreed),
+    agreeCount: Number(rpcRow?.agree_count ?? 0),
   };
 }
 
