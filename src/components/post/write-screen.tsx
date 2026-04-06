@@ -4,6 +4,10 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { PageShell } from "../common/page-shell";
 import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
+import {
+  readCachedAdministrativeLocation,
+  writeCachedAdministrativeLocation,
+} from "../../lib/geo/browser-administrative-location";
 import { getCurrentBrowserCoordinates } from "../../lib/geo/browser-location";
 import {
   uiColors,
@@ -25,6 +29,30 @@ type ResolvedLocation = {
 type ResolveLocationResponse = {
   location: ResolvedLocation;
 };
+
+async function resolveAdministrativeLocation(location: {
+  latitude: number;
+  longitude: number;
+}) {
+  const response = await fetch("/api/location/resolve", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      location,
+    }),
+  });
+  const json = (await response.json()) as ApiResponse<ResolveLocationResponse>;
+
+  if (!response.ok || !json.success || !json.data) {
+    throw new Error(
+      json.error?.message ?? "현재 위치를 확인하지 못했어요.",
+    );
+  }
+
+  return json.data.location;
+}
 
 function createInitialComposeState(): PostComposeState {
   return {
@@ -78,32 +106,22 @@ export function WriteScreen({ dataSourceMode }: WriteScreenProps) {
     let cancelled = false;
 
     async function resolveLocation() {
-      try {
-        const coordinates = await getCurrentBrowserCoordinates();
-        const response = await fetch("/api/location/resolve", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            location: coordinates,
-          }),
-        });
-        const json = (await response.json()) as ApiResponse<ResolveLocationResponse>;
+      let displayedCachedLocation = false;
 
-        if (!response.ok || !json.success || !json.data) {
-          throw new Error(
-            json.error?.message ?? "현재 위치를 확인하지 못했어요.",
-          );
-        }
-
+      function applyResolvedLocation(
+        nextLocation: ResolvedLocation,
+        options?: {
+          verified?: boolean;
+        },
+      ) {
         if (cancelled) {
           return;
         }
 
-        const nextLocation = json.data.location;
         setResolvedLocation(nextLocation);
-        setLocationStatusText(null);
+        setLocationStatusText(
+          options?.verified ? null : "행정동을 다시 확인하는 중이에요.",
+        );
         setComposeState((current) => ({
           ...current,
           locationResolved: true,
@@ -111,8 +129,42 @@ export function WriteScreen({ dataSourceMode }: WriteScreenProps) {
           resolvedDongCode: nextLocation.administrativeDongCode,
           errorMessage: null,
         }));
+      }
+
+      try {
+        const coordinates = await getCurrentBrowserCoordinates();
+        const cachedAdministrativeLocation =
+          readCachedAdministrativeLocation(coordinates);        
+
+        if (cachedAdministrativeLocation) {
+          applyResolvedLocation(
+            {
+              ...coordinates,
+              ...cachedAdministrativeLocation,
+            },
+            {
+              verified: false,
+            },
+          );
+          displayedCachedLocation = true;
+        }
+
+        const verifiedLocation = await resolveAdministrativeLocation(coordinates);
+
+        writeCachedAdministrativeLocation(coordinates, {
+          administrativeDongName: verifiedLocation.administrativeDongName,
+          administrativeDongCode: verifiedLocation.administrativeDongCode,
+        });
+        applyResolvedLocation(verifiedLocation, {
+          verified: true,
+        });
       } catch (error) {
         if (cancelled) {
+          return;
+        }
+
+        if (displayedCachedLocation) {
+          setLocationStatusText("최근 확인한 행정동 기준으로 표시 중이에요.");
           return;
         }
 

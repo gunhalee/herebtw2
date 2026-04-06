@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DongPostsScreen } from "./dong-posts-screen";
-import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
+import {
+  ensureRegisteredBrowserDevice,
+  getOrCreateBrowserAnonymousDeviceId,
+} from "../../lib/device/browser-device";
+import {
+  readCachedAdministrativeLocation,
+  writeCachedAdministrativeLocation,
+  type AdministrativeLocationSnapshot,
+} from "../../lib/geo/browser-administrative-location";
 import { getCurrentBrowserCoordinates } from "../../lib/geo/browser-location";
 import type { ApiResponse } from "../../types/api";
 import type { AppShellState } from "../../types/device";
@@ -46,6 +54,27 @@ function mergePostItems(
   ];
 }
 
+async function resolveAdministrativeLocation(location: PostLocation) {
+  const response = await fetch("/api/location/resolve", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      location,
+    }),
+  });
+  const json = (await response.json()) as ApiResponse<ResolveLocationResponse>;
+
+  if (!response.ok || !json.success || !json.data) {
+    throw new Error(
+      json.error?.message ?? "현재 위치를 행정동으로 확인하지 못했습니다.",
+    );
+  }
+
+  return json.data.location;
+}
+
 export function HomeScreen({
   dataSourceMode,
   initialAppShellState,
@@ -58,9 +87,11 @@ export function HomeScreen({
   const [activeReportPostId, setActiveReportPostId] = useState<string | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [feedLocation, setFeedLocation] = useState<PostLocation | null>(null);
+  const [locationResolving, setLocationResolving] = useState(false);
 
   const currentDongName =
     appShellState.selectedDongName ??
+    (locationResolving ? "행정동 확인 중" : null) ??
     postListState.items[0]?.administrativeDongName ??
     "우리 동네";
   const runtimeNotice =
@@ -103,7 +134,11 @@ export function HomeScreen({
 
     async function bootstrapDeviceAndPosts() {
       try {
-        const anonymousDeviceId = await ensureRegisteredBrowserDevice();
+        const anonymousDeviceId = getOrCreateBrowserAnonymousDeviceId();
+
+        if (!anonymousDeviceId) {
+          throw new Error("브라우저에서 디바이스를 준비하지 못했습니다.");
+        }
 
         if (cancelled) {
           return;
@@ -115,52 +150,74 @@ export function HomeScreen({
           deviceReady: true,
         }));
 
-        async function bootstrapLocation() {
-          const coordinates = await getCurrentBrowserCoordinates();
-          const locationResponse = await fetch("/api/location/resolve", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              location: coordinates,
-            }),
-          });
-          const locationJson =
-            (await locationResponse.json()) as ApiResponse<ResolveLocationResponse>;
+        void ensureRegisteredBrowserDevice().catch(() => undefined);
 
-          if (
-            locationResponse.ok &&
-            locationJson.success &&
-            locationJson.data &&
-            !cancelled
-          ) {
-            const resolvedLocation = locationJson.data.location;
-
-            setAppShellState((current) => ({
-              ...current,
-              permissionMode: "granted",
-              selectedDongCode: resolvedLocation.administrativeDongCode,
-              selectedDongName: resolvedLocation.administrativeDongName,
-            }));
+        function applyAdministrativeLocation(
+          resolvedLocation: AdministrativeLocationSnapshot,
+          options?: {
+            final?: boolean;
+          },
+        ) {
+          if (cancelled) {
+            return;
           }
 
-          return coordinates;
+          setAppShellState((current) => ({
+            ...current,
+            permissionMode: "granted",
+            selectedDongCode: resolvedLocation.administrativeDongCode,
+            selectedDongName: resolvedLocation.administrativeDongName,
+          }));
+
+          if (options?.final) {
+            setLocationResolving(false);
+          }
         }
 
-        let resolvedCoordinates:
-          | {
-              latitude: number;
-              longitude: number;
-            }
-          | undefined;
+        let resolvedCoordinates: PostLocation | undefined;
 
         try {
-          resolvedCoordinates = await bootstrapLocation();
+          resolvedCoordinates = await getCurrentBrowserCoordinates();
+
+          if (cancelled) {
+            return;
+          }
+
           setFeedLocation(resolvedCoordinates);
+          setAppShellState((current) => ({
+            ...current,
+            permissionMode: "granted",
+            selectedDongCode: null,
+            selectedDongName: null,
+          }));
+          setLocationResolving(true);
+
+          const cachedAdministrativeLocation =
+            readCachedAdministrativeLocation(resolvedCoordinates);
+
+          if (cachedAdministrativeLocation) {
+            applyAdministrativeLocation(cachedAdministrativeLocation);
+          }
+
+          void resolveAdministrativeLocation(resolvedCoordinates)
+            .then((resolvedLocation) => {
+              applyAdministrativeLocation(resolvedLocation, {
+                final: true,
+              });
+              writeCachedAdministrativeLocation(
+                resolvedCoordinates!,
+                resolvedLocation,
+              );
+            })
+            .catch(() => {
+              if (!cancelled) {
+                setLocationResolving(false);
+              }
+            });
         } catch (error) {
           if (!cancelled) {
             setFeedLocation(null);
+            setLocationResolving(false);
             setAppShellState((current) => ({
               ...current,
               permissionMode: getPermissionMode(error),
