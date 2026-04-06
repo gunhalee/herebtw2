@@ -660,11 +660,13 @@ export function DongPostsScreen({
                         shouldObscurePosts ? "global-feed-preview__card" : undefined
                       }
                       style={
-                        shouldObscurePosts
-                          ? ({
-                              animationDelay: `${index * 120}ms`,
-                            } satisfies CSSProperties)
-                          : undefined
+                        ({
+                          animationDelay: shouldObscurePosts
+                            ? `${index * 120}ms`
+                            : undefined,
+                          position: "relative",
+                          zIndex: item.id === activeMenuPostId ? 2 : undefined,
+                        } satisfies CSSProperties)
                       }
                     >
                       <PostListItem
