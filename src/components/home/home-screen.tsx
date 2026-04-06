@@ -89,13 +89,19 @@ export function HomeScreen({
   const [feedLocation, setFeedLocation] = useState<PostLocation | null>(null);
   const [locationResolving, setLocationResolving] = useState(false);
   const [feedSortMode, setFeedSortMode] = useState<"nearby" | "global">(
-    initialAppShellState.readOnlyMode ? "global" : "nearby",
+    initialPostListState.sort === "latest" || initialAppShellState.readOnlyMode
+      ? "global"
+      : "nearby",
   );
+  const hasInitialGlobalFeed =
+    initialPostListState.sort === "latest" && !initialPostListState.loading;
 
   const currentDongName =
     appShellState.selectedDongName ??
     (locationResolving ? "행정동 확인 중" : null) ??
-    (appShellState.readOnlyMode ? null : postListState.items[0]?.administrativeDongName) ??
+    (postListState.sort === "distance"
+      ? postListState.items[0]?.administrativeDongName
+      : null) ??
     "우리 동네";
   const runtimeNotice =
     dataSourceMode === "mock"
@@ -129,6 +135,27 @@ export function HomeScreen({
     if (!response.ok || !json.success || !json.data) {
       throw new Error(
         json.error?.message ?? "동네 글을 불러오지 못했습니다.",
+      );
+    }
+
+    return json.data;
+  }
+
+  async function fetchGlobalPostsList(cursor?: string | null) {
+    const params = new URLSearchParams({
+      limit: "10",
+    });
+
+    if (cursor) {
+      params.set("cursor", cursor);
+    }
+
+    const response = await fetch(`/api/feed/global?${params.toString()}`);
+    const json = (await response.json()) as ApiResponse<PostsListResponse>;
+
+    if (!response.ok || !json.success || !json.data) {
+      throw new Error(
+        json.error?.message ?? "전역 피드를 불러오지 못했습니다.",
       );
     }
 
@@ -239,10 +266,27 @@ export function HomeScreen({
           return;
         }
 
-        setFeedSortMode(resolvedCoordinates ? "nearby" : "global");
-        const data = await fetchPostsList(anonymousDeviceId, resolvedCoordinates);
+        const shouldFetchGlobalFeed = !resolvedCoordinates && !hasInitialGlobalFeed;
+        const data = resolvedCoordinates
+          ? await fetchPostsList(anonymousDeviceId, resolvedCoordinates)
+          : shouldFetchGlobalFeed
+            ? await fetchGlobalPostsList()
+            : null;
 
         if (cancelled) {
+          return;
+        }
+
+        setFeedSortMode(resolvedCoordinates ? "nearby" : "global");
+
+        if (!data) {
+          setPostListState((current) => ({
+            ...current,
+            loading: false,
+            loadingMore: false,
+            empty: current.items.length === 0,
+            errorMessage: null,
+          }));
           return;
         }
 
@@ -254,6 +298,7 @@ export function HomeScreen({
           loadingMore: false,
           empty: data.items.length === 0,
           errorMessage: null,
+          sort: resolvedCoordinates ? "distance" : "latest",
         }));
       } catch (error) {
         if (cancelled) {
@@ -310,8 +355,6 @@ export function HomeScreen({
     }
 
     try {
-      const anonymousDeviceId = await ensureDeviceReady();
-
       setPostListState((current) => ({
         ...current,
         loadingMore: true,
@@ -319,11 +362,13 @@ export function HomeScreen({
       }));
 
       setFeedSortMode(feedLocation ? "nearby" : "global");
-      const data = await fetchPostsList(
-        anonymousDeviceId,
-        feedLocation ?? undefined,
-        postListState.nextCursor,
-      );
+      const data = feedLocation
+        ? await fetchPostsList(
+            await ensureDeviceReady(),
+            feedLocation,
+            postListState.nextCursor,
+          )
+        : await fetchGlobalPostsList(postListState.nextCursor);
 
       setPostListState((current) => {
         const mergedItems = mergePostItems(current.items, data.items);
@@ -335,6 +380,7 @@ export function HomeScreen({
           loadingMore: false,
           empty: mergedItems.length === 0,
           errorMessage: null,
+          sort: feedLocation ? "distance" : "latest",
         };
       });
     } catch (error) {

@@ -22,7 +22,7 @@ export type PostListState = {
   loadingMore: boolean;
   empty: boolean;
   errorMessage: string | null;
-  sort: "distance";
+  sort: "distance" | "latest";
 };
 
 export type PostDetailState = {

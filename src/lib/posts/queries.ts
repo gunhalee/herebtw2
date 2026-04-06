@@ -1,9 +1,23 @@
+import { unstable_cache } from "next/cache";
 import type { AppShellState } from "../../types/device";
 import type { PostDetailState, PostListState } from "../../types/post";
 import { hasSupabaseServerConfig } from "../supabase/config";
 import { serializePostDetailState, serializePostListItem } from "./serializers";
 import { getMockPostDetailState } from "./mock-data";
-import { loadPostDetailRepository, loadPostsListRepository } from "./repository";
+import {
+  loadGlobalPostsListRepository,
+  loadPostDetailRepository,
+  loadPostsListRepository,
+} from "./repository";
+
+const loadCachedGlobalPostsList = unstable_cache(
+  async () => loadGlobalPostsListRepository({ limit: 10 }),
+  ["posts-global-feed"],
+  {
+    revalidate: 10,
+    tags: ["posts-global-feed"],
+  },
+);
 
 export function getInitialAppShellState(
   anonymousDeviceId?: string | null,
@@ -25,20 +39,12 @@ export async function getHomePageState(): Promise<{
 }> {
   const appShellState = getInitialAppShellState();
 
-  // In Supabase mode the client fetches the real list on mount, so we keep
-  // the server render free of live data dependencies to avoid slow builds.
   if (hasSupabaseServerConfig()) {
+    const postListState = await loadCachedGlobalPostsList();
+
     return {
       appShellState,
-      postListState: {
-        items: [],
-        nextCursor: null,
-        loading: true,
-        loadingMore: false,
-        empty: false,
-        errorMessage: null,
-        sort: "distance",
-      },
+      postListState,
       postDetailState: serializePostDetailState(getMockPostDetailState()),
     };
   }

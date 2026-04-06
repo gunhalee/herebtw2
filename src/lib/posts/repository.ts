@@ -48,6 +48,11 @@ type PostListCursor = {
   postId: string;
 };
 
+type GlobalPostListCursor = {
+  createdAt: string;
+  postId: string;
+};
+
 function toRadians(value: number) {
   return (value * Math.PI) / 180;
 }
@@ -142,6 +147,39 @@ function decodePostListCursor(cursor: string | undefined) {
   }
 }
 
+function encodeGlobalPostListCursor(post: Pick<PostRow, "id" | "created_at">) {
+  const payload: GlobalPostListCursor = {
+    createdAt: post.created_at,
+    postId: post.id,
+  };
+
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+}
+
+function decodeGlobalPostListCursor(cursor: string | undefined) {
+  if (!cursor) {
+    return null;
+  }
+
+  try {
+    const decoded = Buffer.from(cursor, "base64url").toString("utf8");
+    const payload = JSON.parse(decoded) as Partial<GlobalPostListCursor>;
+
+    if (
+      typeof payload.createdAt !== "string" ||
+      !payload.createdAt ||
+      typeof payload.postId !== "string" ||
+      !isUuid(payload.postId)
+    ) {
+      return null;
+    }
+
+    return payload as GlobalPostListCursor;
+  } catch {
+    return null;
+  }
+}
+
 type PostEngagementRow = {
   post_id: string;
   agree_count: number;
@@ -175,6 +213,63 @@ function buildInFilter(values: string[]) {
   return values.map((value) => `"${value}"`).join(",");
 }
 
+async function loadEngagementRows(postIds: string[]) {
+  if (postIds.length === 0) {
+    return [];
+  }
+
+  return (
+    (await supabaseSelect<PostEngagementRow[]>(
+      `post_engagement_view?select=post_id,agree_count&post_id=in.(${buildInFilter(postIds)})`,
+    )) ?? []
+  );
+}
+
+async function loadMyAgreeRows(deviceId: string | undefined, postIds: string[]) {
+  if (!deviceId || postIds.length === 0) {
+    return [];
+  }
+
+  return (
+    (await supabaseSelect<ReactionRow[]>(
+      `post_reactions?select=id,post_id,device_id,reaction_type&device_id=eq.${deviceId}&reaction_type=eq.agree&post_id=in.(${buildInFilter(postIds)})`,
+    )) ?? []
+  );
+}
+
+function buildPostListItems(
+  posts: Array<
+    Pick<PostRow, "id" | "content" | "administrative_dong_name" | "created_at" | "latitude" | "longitude"> & {
+      distance_meters?: number | null;
+    }
+  >,
+  options?: {
+    viewerLocation?: PostLocation;
+    engagementRows?: PostEngagementRow[];
+    myReactionRows?: ReactionRow[];
+    canReport?: boolean;
+  },
+) {
+  const engagementMap = new Map(
+    (options?.engagementRows ?? []).map((row) => [row.post_id, Number(row.agree_count)]),
+  );
+  const myReactionSet = new Set(
+    (options?.myReactionRows ?? []).map((row) => row.post_id),
+  );
+
+  return posts.map((post) => ({
+    id: post.id,
+    content: post.content,
+    administrativeDongName: post.administrative_dong_name,
+    distanceMeters: getPostDistanceMeters(post, options?.viewerLocation),
+    relativeTime: formatRelativeTime(post.created_at),
+    agreeCount: engagementMap.get(post.id) ?? 0,
+    myAgree: myReactionSet.has(post.id),
+    canReport: options?.canReport ?? true,
+    isHighlighted: false,
+  }));
+}
+
 export async function loadPostsListRepository(input: {
   anonymousDeviceId?: string;
   limit?: number;
@@ -204,38 +299,13 @@ export async function loadPostsListRepository(input: {
   const hasMore = posts.length > limit;
   const selectedPosts = hasMore ? posts.slice(0, limit) : posts;
   const postIds = selectedPosts.map((post) => post.id);
-
-  const engagementRows =
-    postIds.length > 0
-      ? ((await supabaseSelect<PostEngagementRow[]>(
-          `post_engagement_view?select=post_id,agree_count&post_id=in.(${buildInFilter(postIds)})`,
-        )) ?? [])
-      : [];
-
-  const myReactionRows =
-    device && postIds.length > 0
-      ? ((await supabaseSelect<ReactionRow[]>(
-          `post_reactions?select=id,post_id,device_id,reaction_type&device_id=eq.${device.id}&reaction_type=eq.agree&post_id=in.(${buildInFilter(postIds)})`,
-        )) ?? [])
-      : [];
-
-  const engagementMap = new Map(
-    engagementRows.map((row) => [row.post_id, Number(row.agree_count)]),
-  );
-  const myReactionSet = new Set(myReactionRows.map((row) => row.post_id));
-
-  const items = selectedPosts
-    .map((post) => ({
-      id: post.id,
-      content: post.content,
-      administrativeDongName: post.administrative_dong_name,
-      distanceMeters: getPostDistanceMeters(post, input.location),
-      relativeTime: formatRelativeTime(post.created_at),
-      agreeCount: engagementMap.get(post.id) ?? 0,
-      myAgree: myReactionSet.has(post.id),
-      canReport: true,
-      isHighlighted: false,
-    }));
+  const engagementRows = await loadEngagementRows(postIds);
+  const myReactionRows = await loadMyAgreeRows(device?.id, postIds);
+  const items = buildPostListItems(selectedPosts, {
+    viewerLocation: input.location,
+    engagementRows,
+    myReactionRows,
+  });
 
   return {
     items,
@@ -248,6 +318,53 @@ export async function loadPostsListRepository(input: {
     empty: items.length === 0,
     errorMessage: null,
     sort: "distance" as const,
+  };
+}
+
+export async function loadGlobalPostsListRepository(input: {
+  limit?: number;
+  cursor?: string;
+}) {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    const mockState = getMockPostListState();
+
+    return {
+      ...mockState,
+      sort: "latest" as const,
+    };
+  }
+
+  const limit = Math.min(Math.max(input.limit ?? 10, 1), 50);
+  const cursor = decodeGlobalPostListCursor(input.cursor);
+  const cursorFilter = cursor
+    ? `&or=(created_at.lt.${encodeURIComponent(cursor.createdAt)},and(created_at.eq.${encodeURIComponent(cursor.createdAt)},id.gt.${cursor.postId}))`
+    : "";
+  const posts =
+    (await supabaseSelect<PostRow[]>(
+      `posts?select=id,content,administrative_dong_name,created_at,delete_expires_at,latitude,longitude&status=eq.active&order=created_at.desc&order=id.asc&limit=${limit + 1}${cursorFilter}`,
+    )) ?? [];
+  const hasMore = posts.length > limit;
+  const selectedPosts = hasMore ? posts.slice(0, limit) : posts;
+  const postIds = selectedPosts.map((post) => post.id);
+  const engagementRows = await loadEngagementRows(postIds);
+  const items = buildPostListItems(selectedPosts, {
+    engagementRows,
+    canReport: false,
+  });
+
+  return {
+    items,
+    nextCursor:
+      hasMore && selectedPosts.length > 0
+        ? encodeGlobalPostListCursor(selectedPosts[selectedPosts.length - 1])
+        : null,
+    loading: false,
+    loadingMore: false,
+    empty: items.length === 0,
+    errorMessage: null,
+    sort: "latest" as const,
   };
 }
 
