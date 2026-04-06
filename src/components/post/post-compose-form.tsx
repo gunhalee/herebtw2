@@ -11,6 +11,7 @@ import {
 
 export type PostComposeFormProps = PostComposeState & {
   locationStatusText?: string | null;
+  locationStatusTone?: "neutral" | "danger";
   onChangeContent?: (value: string) => void;
   onSubmit?: FormEventHandler<HTMLFormElement>;
   submitDisabled?: boolean;
@@ -24,6 +25,7 @@ export function PostComposeForm({
   errorMessage,
   locationResolved,
   locationStatusText,
+  locationStatusTone = "neutral",
   resolvedDongName,
   submitting,
   onChangeContent,
@@ -52,7 +54,11 @@ export function PostComposeForm({
     >
       <p
         style={{
-          color: locationResolved ? uiColors.textStrong : uiColors.danger,
+          color: locationResolved
+            ? uiColors.textStrong
+            : locationStatusTone === "danger"
+              ? uiColors.danger
+              : uiColors.textMuted,
           fontSize: uiTypography.body.fontSize,
           margin: 0,
         }}

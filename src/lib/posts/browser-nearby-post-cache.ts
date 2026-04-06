@@ -7,9 +7,12 @@ const NEARBY_POST_CACHE_TTL_MS = 1000 * 60 * 3;
 type CachedNearbyPostList = {
   cacheKey: string;
   cachedAt: number;
+  location?: PostLocation;
   items: PostListState["items"];
   nextCursor: string | null;
 };
+
+type CachedNearbyPostListState = Pick<PostListState, "items" | "nextCursor">;
 
 function getNearbyPostCacheKey(location: PostLocation) {
   const quantizedLocation = quantizeLocationTo100MeterGrid(location);
@@ -22,7 +25,7 @@ function getNearbyPostCacheKey(location: PostLocation) {
 
 export function readCachedNearbyPostList(
   location: PostLocation,
-): Pick<PostListState, "items" | "nextCursor"> | null {
+): CachedNearbyPostListState | null {
   if (typeof window === "undefined") {
     return null;
   }
@@ -45,12 +48,42 @@ export function readCachedNearbyPostList(
       return null;
     }
 
+    return getCachedNearbyPostListState(cached);
+  } catch {
+    return null;
+  }
+}
+
+export function readLatestCachedNearbyPostList():
+  | (CachedNearbyPostListState & {
+      location: PostLocation;
+    })
+  | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const raw = window.localStorage.getItem(NEARBY_POST_CACHE_STORAGE_KEY);
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const cached = JSON.parse(raw) as Partial<CachedNearbyPostList>;
+
+    if (
+      typeof cached.cachedAt !== "number" ||
+      Date.now() - cached.cachedAt > NEARBY_POST_CACHE_TTL_MS ||
+      !Array.isArray(cached.items) ||
+      !isValidCachedLocation(cached.location)
+    ) {
+      return null;
+    }
+
     return {
-      items: cached.items as PostListState["items"],
-      nextCursor:
-        typeof cached.nextCursor === "string" || cached.nextCursor === null
-          ? cached.nextCursor
-          : null,
+      ...getCachedNearbyPostListState(cached),
+      location: cached.location,
     };
   } catch {
     return null;
@@ -59,7 +92,7 @@ export function readCachedNearbyPostList(
 
 export function writeCachedNearbyPostList(
   location: PostLocation,
-  state: Pick<PostListState, "items" | "nextCursor">,
+  state: CachedNearbyPostListState,
 ) {
   if (typeof window === "undefined") {
     return;
@@ -68,6 +101,7 @@ export function writeCachedNearbyPostList(
   const payload: CachedNearbyPostList = {
     cacheKey: getNearbyPostCacheKey(location),
     cachedAt: Date.now(),
+    location,
     items: state.items,
     nextCursor: state.nextCursor,
   };
@@ -75,5 +109,27 @@ export function writeCachedNearbyPostList(
   window.localStorage.setItem(
     NEARBY_POST_CACHE_STORAGE_KEY,
     JSON.stringify(payload),
+  );
+}
+
+function getCachedNearbyPostListState(
+  cached: Partial<CachedNearbyPostList>,
+): CachedNearbyPostListState {
+  return {
+    items: cached.items as PostListState["items"],
+    nextCursor:
+      typeof cached.nextCursor === "string" || cached.nextCursor === null
+        ? cached.nextCursor
+        : null,
+  };
+}
+
+function isValidCachedLocation(
+  location: Partial<PostLocation> | null | undefined,
+): location is PostLocation {
+  return Boolean(
+    location &&
+      Number.isFinite(location.latitude) &&
+      Number.isFinite(location.longitude),
   );
 }

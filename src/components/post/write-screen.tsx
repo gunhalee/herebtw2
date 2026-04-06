@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { PageShell } from "../common/page-shell";
 import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
@@ -101,6 +101,31 @@ export function WriteScreen({ dataSourceMode }: WriteScreenProps) {
   const [locationStatusText, setLocationStatusText] = useState<string | null>(
     "현재 위치를 확인하는 중이에요.",
   );
+  const [locationStatusTone, setLocationStatusTone] = useState<
+    "neutral" | "danger"
+  >("neutral");
+  const deviceRegistrationPromiseRef = useRef<Promise<string> | null>(null);
+
+  function ensureDeviceRegistrationStarted() {
+    if (!deviceRegistrationPromiseRef.current) {
+      deviceRegistrationPromiseRef.current = ensureRegisteredBrowserDevice().catch(
+        (error) => {
+          deviceRegistrationPromiseRef.current = null;
+          throw error;
+        },
+      );
+    }
+
+    return deviceRegistrationPromiseRef.current;
+  }
+
+  useEffect(() => {
+    if (dataSourceMode !== "supabase") {
+      return;
+    }
+
+    void ensureDeviceRegistrationStarted().catch(() => undefined);
+  }, [dataSourceMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +144,7 @@ export function WriteScreen({ dataSourceMode }: WriteScreenProps) {
         }
 
         setResolvedLocation(nextLocation);
+        setLocationStatusTone("neutral");
         setLocationStatusText(
           options?.verified ? null : "행정동을 다시 확인하는 중이에요.",
         );
@@ -164,11 +190,13 @@ export function WriteScreen({ dataSourceMode }: WriteScreenProps) {
         }
 
         if (displayedCachedLocation) {
+          setLocationStatusTone("neutral");
           setLocationStatusText("최근 확인한 행정동 기준으로 표시 중이에요.");
           return;
         }
 
         setResolvedLocation(null);
+        setLocationStatusTone("danger");
         setLocationStatusText(getLocationErrorMessage(error));
         setComposeState((current) => ({
           ...current,
@@ -224,7 +252,7 @@ export function WriteScreen({ dataSourceMode }: WriteScreenProps) {
     }));
 
     try {
-      const anonymousDeviceId = await ensureRegisteredBrowserDevice();
+      const anonymousDeviceId = await ensureDeviceRegistrationStarted();
       const response = await fetch("/api/posts", {
         method: "POST",
         headers: {
@@ -323,6 +351,7 @@ export function WriteScreen({ dataSourceMode }: WriteScreenProps) {
       <PostComposeForm
         {...composeState}
         locationStatusText={locationStatusText}
+        locationStatusTone={locationStatusTone}
         onChangeContent={handleChangeContent}
         onSubmit={handleSubmit}
         submitDisabled={dataSourceMode !== "supabase"}

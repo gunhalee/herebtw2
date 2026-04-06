@@ -16,6 +16,7 @@ import { quantizeLocationTo100MeterGrid } from "../../lib/geo/location-buckets";
 import { getCurrentBrowserCoordinates } from "../../lib/geo/browser-location";
 import {
   readCachedNearbyPostList,
+  readLatestCachedNearbyPostList,
   writeCachedNearbyPostList,
 } from "../../lib/posts/browser-nearby-post-cache";
 import type { ApiResponse } from "../../types/api";
@@ -195,6 +196,37 @@ export function HomeScreen({
 
         void ensureRegisteredBrowserDevice().catch(() => undefined);
 
+        const latestCachedNearbyPostList =
+          dataSourceMode === "supabase" ? readLatestCachedNearbyPostList() : null;
+
+        if (latestCachedNearbyPostList) {
+          setFeedSortMode("nearby");
+          setLocationResolving(true);
+          setPostListState((current) => ({
+            ...current,
+            items: latestCachedNearbyPostList.items,
+            nextCursor: null,
+            loading: false,
+            loadingMore: false,
+            empty: latestCachedNearbyPostList.items.length === 0,
+            errorMessage: null,
+            sort: "distance",
+          }));
+
+          const latestCachedAdministrativeLocation =
+            readCachedAdministrativeLocation(latestCachedNearbyPostList.location);
+
+          if (latestCachedAdministrativeLocation) {
+            setAppShellState((current) => ({
+              ...current,
+              selectedDongCode:
+                latestCachedAdministrativeLocation.administrativeDongCode,
+              selectedDongName:
+                latestCachedAdministrativeLocation.administrativeDongName,
+            }));
+          }
+        }
+
         function applyAdministrativeLocation(
           resolvedLocation: AdministrativeLocationSnapshot,
           options?: {
@@ -286,6 +318,11 @@ export function HomeScreen({
               permissionMode,
               readOnlyMode: permissionMode === "denied",
             }));
+
+            if (latestCachedNearbyPostList && hasInitialGlobalFeed) {
+              setFeedSortMode("global");
+              setPostListState(initialPostListState);
+            }
           }
         }
 
@@ -349,7 +386,7 @@ export function HomeScreen({
     return () => {
       cancelled = true;
     };
-  }, [dataSourceMode]);
+  }, [dataSourceMode, hasInitialGlobalFeed, initialPostListState]);
 
   async function ensureDeviceReady() {
     if (appShellState.anonymousDeviceId) {
