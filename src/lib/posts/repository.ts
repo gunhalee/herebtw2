@@ -201,6 +201,13 @@ type ReactionRow = {
   reaction_type: string;
 };
 
+type ReportRow = {
+  id: string;
+  post_id: string;
+  reporter_device_id: string;
+  reason_code: string;
+};
+
 type ToggleAgreeRpcRow = {
   agreed: boolean;
   agree_count: number;
@@ -360,6 +367,18 @@ async function loadMyAgreeRows(deviceId: string | undefined, postIds: string[]) 
   );
 }
 
+async function loadMyReportRows(deviceId: string | undefined, postIds: string[]) {
+  if (!deviceId || postIds.length === 0) {
+    return [];
+  }
+
+  return (
+    (await supabaseSelect<ReportRow[]>(
+      `post_reports?select=id,post_id,reporter_device_id,reason_code&reporter_device_id=eq.${deviceId}&post_id=in.(${buildInFilter(postIds)})`,
+    )) ?? []
+  );
+}
+
 function buildPostListItems(
   posts: Array<
     Pick<PostRow, "id" | "content" | "administrative_dong_name" | "created_at" | "latitude" | "longitude"> & {
@@ -431,8 +450,15 @@ export async function loadPostsListRepository(input: {
       : null);
 
   if (rpcPosts && !fallbackReason) {
-    const hasMore = rpcPosts.length > limit;
-    const selectedPosts = hasMore ? rpcPosts.slice(0, limit) : rpcPosts;
+    const visibleRpcPosts = input.anonymousDeviceId
+      ? rpcPosts.filter((post) => post.can_report !== false)
+      : rpcPosts;
+    const hasMore =
+      visibleRpcPosts.length > limit ||
+      (rpcPosts.length > limit && visibleRpcPosts.length === limit);
+    const selectedPosts = hasMore
+      ? visibleRpcPosts.slice(0, limit)
+      : visibleRpcPosts;
     const items = selectedPosts.map((post) => ({
       id: post.id,
       content: post.content,
@@ -491,12 +517,18 @@ export async function loadPostsListRepository(input: {
   const hasMore = posts.length > limit;
   const selectedPosts = hasMore ? posts.slice(0, limit) : posts;
   const postIds = selectedPosts.map((post) => post.id);
-  const engagementRows = await loadEngagementRows(postIds);
-  const myReactionRows = await loadMyAgreeRows(device?.id, postIds);
-  const items = buildPostListItems(selectedPosts, {
+  const [engagementRows, myReactionRows, myReportRows] = await Promise.all([
+    loadEngagementRows(postIds),
+    loadMyAgreeRows(device?.id, postIds),
+    loadMyReportRows(device?.id, postIds),
+  ]);
+  const reportedPostIdSet = new Set(myReportRows.map((row) => row.post_id));
+  const visiblePosts = selectedPosts.filter((post) => !reportedPostIdSet.has(post.id));
+  const visiblePostIdSet = new Set(visiblePosts.map((post) => post.id));
+  const items = buildPostListItems(visiblePosts, {
     viewerLocation: input.location,
-    engagementRows,
-    myReactionRows,
+    engagementRows: engagementRows.filter((row) => visiblePostIdSet.has(row.post_id)),
+    myReactionRows: myReactionRows.filter((row) => visiblePostIdSet.has(row.post_id)),
   });
 
   logFeedMetrics("info", "load_posts_list", {

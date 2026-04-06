@@ -155,6 +155,13 @@ function updateSinglePostItem(
   return items.map((item) => (item.id === targetPostId ? updater(item) : item));
 }
 
+function removeSinglePostItem(
+  items: PostListState["items"],
+  targetPostId: string,
+) {
+  return items.filter((item) => item.id !== targetPostId);
+}
+
 function matchesLoadedPostIds(
   items: PostListState["items"],
   loadedPostIds: string[],
@@ -202,6 +209,8 @@ export function HomeScreen({
   const [activeReportPostId, setActiveReportPostId] = useState<string | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportErrorMessage, setReportErrorMessage] = useState<string | null>(null);
+  const [reportSuccessMessage, setReportSuccessMessage] = useState<string | null>(null);
+  const [reportSuccessPostId, setReportSuccessPostId] = useState<string | null>(null);
   const [agreePendingPostIds, setAgreePendingPostIds] = useState<string[]>([]);
   const [feedLocation, setFeedLocation] = useState<PostLocation | null>(null);
   const [locationResolving, setLocationResolving] = useState(false);
@@ -380,6 +389,7 @@ export function HomeScreen({
   async function fetchNearbyPostsList(
     location: PostLocation,
     cursor?: string | null,
+    anonymousDeviceId?: string,
   ) {
     const quantizedLocation = quantizeLocationTo100MeterGrid(location);
     const params = new URLSearchParams({
@@ -390,6 +400,10 @@ export function HomeScreen({
 
     if (cursor) {
       params.set("cursor", cursor);
+    }
+
+    if (anonymousDeviceId) {
+      params.set("anonymousDeviceId", anonymousDeviceId);
     }
 
     const response = await fetch(`/api/feed/nearby?${params.toString()}`);
@@ -593,7 +607,7 @@ export function HomeScreen({
 
         const shouldFetchGlobalFeed = !resolvedCoordinates && !hasInitialGlobalFeed;
         const data = resolvedCoordinates
-          ? await fetchNearbyPostsList(resolvedCoordinates)
+          ? await fetchNearbyPostsList(resolvedCoordinates, null, anonymousDeviceId)
           : shouldFetchGlobalFeed
             ? await fetchGlobalPostsList()
             : null;
@@ -929,7 +943,11 @@ export function HomeScreen({
     try {
       const latestLocation = feedLocationRef.current;
       const data = latestLocation
-        ? await fetchNearbyPostsList(latestLocation)
+        ? await fetchNearbyPostsList(
+            latestLocation,
+            null,
+            appShellStateRef.current.anonymousDeviceId ?? undefined,
+          )
         : await fetchGlobalPostsList();
 
       setFeedSortMode(latestLocation ? "nearby" : "global");
@@ -1008,7 +1026,11 @@ export function HomeScreen({
 
       setFeedSortMode(feedLocation ? "nearby" : "global");
       const data = feedLocation
-        ? await fetchNearbyPostsList(feedLocation, postListState.nextCursor)
+        ? await fetchNearbyPostsList(
+            feedLocation,
+            postListState.nextCursor,
+            appShellStateRef.current.anonymousDeviceId ?? undefined,
+          )
         : await fetchGlobalPostsList(postListState.nextCursor);
 
       setPostListState((current) => {
@@ -1046,6 +1068,8 @@ export function HomeScreen({
 
   function handleSelectReport(postId: string) {
     setReportErrorMessage(null);
+    setReportSuccessMessage(null);
+    setReportSuccessPostId(null);
     setActiveReportPostId(postId);
     setActiveMenuPostId(null);
   }
@@ -1057,6 +1081,44 @@ export function HomeScreen({
 
     setReportErrorMessage(null);
     setActiveReportPostId(null);
+  }
+
+  function handleCloseReportSuccessDialog() {
+    const targetPostId = reportSuccessPostId;
+
+    if (targetPostId) {
+      const currentState = postListStateRef.current;
+      const nextItems = removeSinglePostItem(currentState.items, targetPostId);
+      const nextState: PostListState = {
+        ...currentState,
+        items: nextItems,
+        empty: nextItems.length === 0,
+        errorMessage: null,
+      };
+
+      postListStateRef.current = nextState;
+      setPostListState(nextState);
+      setPendingFeedSnapshot((current) =>
+        current
+          ? {
+              ...current,
+              items: removeSinglePostItem(current.items, targetPostId),
+            }
+          : null,
+      );
+
+      const latestLocation = feedLocationRef.current;
+
+      if (latestLocation) {
+        writeCachedNearbyPostList(latestLocation, {
+          items: nextItems,
+          nextCursor: nextState.nextCursor,
+        });
+      }
+    }
+
+    setReportSuccessPostId(null);
+    setReportSuccessMessage(null);
   }
 
   async function handleToggleAgree(targetPostId?: string) {
@@ -1194,6 +1256,7 @@ export function HomeScreen({
     try {
       setReportSubmitting(true);
       setReportErrorMessage(null);
+      setReportSuccessMessage(null);
       const anonymousDeviceId = await ensureDeviceReady();
 
       const response = await fetch(`/api/posts/${postId}/report`, {
@@ -1235,6 +1298,8 @@ export function HomeScreen({
           : null,
       );
       setReportErrorMessage(null);
+      setReportSuccessPostId(postId);
+      setReportSuccessMessage("신고가 접수되었어요.");
       setActiveReportPostId(null);
     } catch (error) {
       const nextErrorMessage =
@@ -1272,6 +1337,7 @@ export function HomeScreen({
         onApplyPendingUpdates={handleApplyPendingFeedSnapshot}
         onCloseMenu={handleCloseMenu}
         onCloseReportDialog={handleCloseReportDialog}
+        onCloseReportSuccessDialog={handleCloseReportSuccessDialog}
         onCompose={handleCompose}
         onConfirmReport={handleReport}
         onLoadMore={handleLoadMore}
@@ -1283,6 +1349,7 @@ export function HomeScreen({
         onToggleAgree={handleToggleAgree}
         pendingNewItemsCount={pendingFeedSnapshot?.newItemsCount ?? 0}
         reportErrorMessage={reportErrorMessage}
+        reportSuccessMessage={reportSuccessMessage}
         reportSubmitting={reportSubmitting}
         runtimeNotice={runtimeNotice}
         state={postListState}

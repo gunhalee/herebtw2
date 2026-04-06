@@ -306,6 +306,7 @@ export type DongPostsScreenProps = {
   state: PostListState;
   runtimeNotice?: string | null;
   reportErrorMessage?: string | null;
+  reportSuccessMessage?: string | null;
   pendingNewItemsCount?: number;
   activeMenuPostId?: string | null;
   activeReportPostId?: string | null;
@@ -320,6 +321,7 @@ export type DongPostsScreenProps = {
   onCloseMenu?: () => void;
   onSelectReport?: (postId: string) => void;
   onCloseReportDialog?: () => void;
+  onCloseReportSuccessDialog?: () => void;
   onConfirmReport?: () => void;
 };
 
@@ -331,6 +333,7 @@ export function DongPostsScreen({
   state,
   runtimeNotice,
   reportErrorMessage = null,
+  reportSuccessMessage = null,
   pendingNewItemsCount = 0,
   activeMenuPostId,
   activeReportPostId,
@@ -345,6 +348,7 @@ export function DongPostsScreen({
   onCloseMenu,
   onSelectReport,
   onCloseReportDialog,
+  onCloseReportSuccessDialog,
   onConfirmReport,
 }: DongPostsScreenProps) {
   const activeReportPost =
@@ -700,7 +704,7 @@ export function DongPostsScreen({
             {shouldObscurePosts ? (
               <div aria-hidden="true" className="global-feed-preview__veil">
                 <div className="global-feed-preview__badge">
-                  위치를 허용하면 근처 글의 내용을 읽을 수 있어요.
+                  서비스 이용을 위해 위치 권한을 허용해주세요.
                 </div>
               </div>
             ) : null}
@@ -744,6 +748,80 @@ export function DongPostsScreen({
           >
             새 글 {pendingNewItemsCount}개 이어보기
           </button>
+        </div>
+      ) : null}
+
+      {reportSuccessMessage ? (
+        <div
+          aria-live="polite"
+          onClick={onCloseReportSuccessDialog}
+          style={{
+            alignItems: "center",
+            background: "rgba(17, 24, 39, 0.28)",
+            display: "flex",
+            inset: 0,
+            justifyContent: "center",
+            padding: uiSpacing.pageX,
+            position: "absolute",
+            zIndex: 31,
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              background: uiColors.surface,
+              border: `1px solid ${uiColors.border}`,
+              borderRadius: "22px",
+              boxShadow: "0 12px 28px rgba(17, 24, 39, 0.14)",
+              color: uiColors.textStrong,
+              display: "flex",
+              flexDirection: "column",
+              gap: uiSpacing.lg,
+              maxWidth: "320px",
+              padding: `${uiSpacing.xl} ${uiSpacing.xl}`,
+              textAlign: "center",
+              width: "100%",
+            }}
+          >
+            <h2
+              style={{
+                color: uiColors.textStrong,
+                fontSize: "15px",
+                fontWeight: 700,
+                lineHeight: 1.4,
+                margin: 0,
+              }}
+            >
+              {reportSuccessMessage}
+            </h2>
+            <p
+              style={{
+                color: uiColors.textMuted,
+                fontSize: "13px",
+                lineHeight: 1.5,
+                margin: 0,
+              }}
+            >
+              운영자가 확인할 예정입니다.
+            </p>
+            <button
+              onClick={onCloseReportSuccessDialog}
+              style={{
+                appearance: "none",
+                background: "#f3f5f7",
+                border: "1px solid rgba(17, 24, 39, 0.08)",
+                borderRadius: uiRadius.pill,
+                color: uiColors.textStrong,
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: 600,
+                padding: `${uiSpacing.md} ${uiSpacing.lg}`,
+              }}
+              type="button"
+            >
+              확인
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -814,7 +892,7 @@ export function DongPostsScreen({
                 }}
                 type="button"
               >
-                취소
+                닫기
               </button>
               <button
                 disabled={reportSubmitting}
@@ -833,7 +911,7 @@ export function DongPostsScreen({
                 }}
                 type="button"
               >
-                {reportSubmitting ? "처리 중.." : "신고"}
+                {reportSubmitting ? "처리 중.." : "예"}
               </button>
             </div>
           </div>

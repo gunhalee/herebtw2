@@ -18,6 +18,7 @@ export async function GET(request: Request) {
   const longitudeBucket100m = parseBucket(searchParams.get("longitudeBucket100m"));
   const limit = Number(searchParams.get("limit") ?? "10");
   const cursor = searchParams.get("cursor") ?? undefined;
+  const anonymousDeviceId = searchParams.get("anonymousDeviceId")?.trim() || undefined;
 
   if (latitudeBucket100m === null || longitudeBucket100m === null) {
     return fail({
@@ -31,6 +32,7 @@ export async function GET(request: Request) {
     longitudeBucket100m,
   });
   const postListState = await loadPostsListRepository({
+    anonymousDeviceId,
     limit: Number.isFinite(limit) ? limit : 10,
     cursor,
     location: quantizedLocation,
@@ -38,15 +40,14 @@ export async function GET(request: Request) {
 
   return ok(
     {
-      items: postListState.items.map((item) => ({
-        ...item,
-        canReport: true,
-      })),
+      items: postListState.items,
       nextCursor: postListState.nextCursor,
     },
     {
       headers: {
-        "Cache-Control": "public, s-maxage=10, stale-while-revalidate=50",
+        "Cache-Control": anonymousDeviceId
+          ? "private, no-store, max-age=0"
+          : "public, s-maxage=10, stale-while-revalidate=50",
       },
     },
   );
