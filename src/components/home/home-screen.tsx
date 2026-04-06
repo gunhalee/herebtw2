@@ -1078,6 +1078,7 @@ export function HomeScreen({
         activeReportPostId={activeReportPostId}
         animateComposeDongPlaceholder={shouldAnimateComposeDongPlaceholder}
         currentDongName={currentDongName}
+        interactionLocked={composePanelOpen || composePermissionDialogOpen}
         onApplyPendingUpdates={handleApplyPendingFeedSnapshot}
         onCloseMenu={handleCloseMenu}
         onCloseReportDialog={handleCloseReportDialog}

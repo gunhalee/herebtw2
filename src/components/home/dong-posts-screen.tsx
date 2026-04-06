@@ -301,6 +301,7 @@ function ComposeDongFlashcard({
 export type DongPostsScreenProps = {
   currentDongName: string;
   animateComposeDongPlaceholder?: boolean;
+  interactionLocked?: boolean;
   state: PostListState;
   runtimeNotice?: string | null;
   pendingNewItemsCount?: number;
@@ -322,6 +323,7 @@ export type DongPostsScreenProps = {
 export function DongPostsScreen({
   currentDongName,
   animateComposeDongPlaceholder = false,
+  interactionLocked = false,
   state,
   runtimeNotice,
   pendingNewItemsCount = 0,
@@ -530,7 +532,9 @@ export function DongPostsScreen({
           flexDirection: "column",
           minHeight: 0,
           overflow: "hidden",
+          pointerEvents: interactionLocked ? "none" : "auto",
           position: "relative",
+          touchAction: interactionLocked ? "none" : "auto",
         }}
       >
         <div
@@ -540,13 +544,15 @@ export function DongPostsScreen({
             flexDirection: "column",
             gap: uiSpacing.md,
             minHeight: 0,
-            overflowY: "auto",
+            overflowY: interactionLocked ? "hidden" : "auto",
+            overscrollBehavior: interactionLocked ? "none" : "auto",
             padding: `${uiSpacing.lg} ${uiSpacing.pageX} ${
               shouldShowPendingUpdatesButton
                 ? "calc(96px + env(safe-area-inset-bottom, 0px))"
                 : uiSpacing.xxxl
             }`,
             position: "relative",
+            touchAction: interactionLocked ? "none" : "pan-y",
           }}
         >
           {activeMenuPostId ? (
