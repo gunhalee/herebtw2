@@ -29,6 +29,7 @@ const PLACEHOLDER_DONG_CANDIDATES = [
 const COMPOSE_DONG_FLASHCARD_FLIP_DURATION_MS = 520;
 const COMPOSE_DONG_FLASHCARD_INITIAL_DWELL_MS = 500;
 const COMPOSE_DONG_FLASHCARD_DWELL_MS = 820;
+const COMPOSE_DONG_FLASHCARD_RANDOM_STEP_COUNT = 3;
 const PLACEHOLDER_DONG_LABEL_LENGTH = [...PLACEHOLDER_DONG_LABEL].length;
 const DEFAULT_PLACEHOLDER_DONG_CANDIDATES = PLACEHOLDER_DONG_CANDIDATES.filter(
   (label) => getDongLabelLength(label) <= PLACEHOLDER_DONG_LABEL_LENGTH,
@@ -191,7 +192,10 @@ function ComposeDongFlashcard({
 
     const introSequence = [
       PLACEHOLDER_DONG_LABEL,
-      ...pickRandomDongSequence(introCandidatesRef.current, 4),
+      ...pickRandomDongSequence(
+        introCandidatesRef.current,
+        COMPOSE_DONG_FLASHCARD_RANDOM_STEP_COUNT,
+      ),
       finalLabelRef.current,
     ];
 
@@ -349,7 +353,7 @@ export function DongPostsScreen({
     <section
       aria-label="nearby-posts-screen"
       style={{
-        background: "#f7f4ec",
+        background: "#ffffff",
         display: "flex",
         flexDirection: "column",
         height: "100%",

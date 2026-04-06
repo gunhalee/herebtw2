@@ -1066,7 +1066,7 @@ export function HomeScreen({
   return (
     <div
       style={{
-        background: "#f7f4ec",
+        background: "#ffffff",
         height: "100dvh",
         overflow: "hidden",
         position: "relative",

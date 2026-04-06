@@ -6,7 +6,7 @@
 
 html,
 body {
-  background: #f7f4ec;
+  background: #ffffff;
   height: 100%;
   margin: 0;
   padding: 0;
@@ -16,6 +16,11 @@ body {
   color: #111827;
   font-family: "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   overflow-x: hidden;
+}
+
+html.compose-sheet-open,
+body.compose-sheet-open {
+  background: #ffffff;
 }
 
 * {
@@ -293,6 +298,10 @@ input {
 .compose-sheet-panel {
   animation: compose-sheet-rise 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
   overscroll-behavior: contain;
+}
+
+#sheet-post-content {
+  touch-action: pan-y;
 }
 
 @keyframes global-feed-preview-drop {

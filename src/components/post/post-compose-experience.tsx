@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { PageShell } from "../common/page-shell";
 import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
 import {
@@ -154,6 +155,7 @@ export function PostComposeExperience({
   >("neutral");
   const deviceRegistrationPromiseRef = useRef<Promise<string> | null>(null);
   const isSheet = presentation === "sheet";
+  const [sheetPortalReady, setSheetPortalReady] = useState(false);
   const [sheetViewportLayout, setSheetViewportLayout] =
     useState<SheetViewportLayout>(readSheetViewportLayout);
 
@@ -183,29 +185,77 @@ export function PostComposeExperience({
       return;
     }
 
+    const root = document.documentElement;
+    const body = document.body;
     const scrollY = window.scrollY;
-    const previousOverflow = document.body.style.overflow;
-    const previousPosition = document.body.style.position;
-    const previousTop = document.body.style.top;
-    const previousLeft = document.body.style.left;
-    const previousRight = document.body.style.right;
-    const previousWidth = document.body.style.width;
+    const previousRootOverflow = root.style.overflow;
+    const previousRootOverscrollBehavior = root.style.overscrollBehavior;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyPosition = body.style.position;
+    const previousBodyTop = body.style.top;
+    const previousBodyLeft = body.style.left;
+    const previousBodyRight = body.style.right;
+    const previousBodyWidth = body.style.width;
+    const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
 
-    document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
+    root.classList.add("compose-sheet-open");
+    body.classList.add("compose-sheet-open");
+    root.style.overflow = "hidden";
+    root.style.overscrollBehavior = "none";
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overscrollBehavior = "none";
+
+    const shouldAllowNativeScroll = (target: EventTarget | null) =>
+      target instanceof Element && target.closest("#sheet-post-content") !== null;
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!shouldAllowNativeScroll(event.target)) {
+        event.preventDefault();
+      }
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      if (!shouldAllowNativeScroll(event.target)) {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    document.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
-      document.body.style.overflow = previousOverflow;
-      document.body.style.position = previousPosition;
-      document.body.style.top = previousTop;
-      document.body.style.left = previousLeft;
-      document.body.style.right = previousRight;
-      document.body.style.width = previousWidth;
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("wheel", handleWheel);
+      root.classList.remove("compose-sheet-open");
+      body.classList.remove("compose-sheet-open");
+      root.style.overflow = previousRootOverflow;
+      root.style.overscrollBehavior = previousRootOverscrollBehavior;
+      body.style.overflow = previousBodyOverflow;
+      body.style.position = previousBodyPosition;
+      body.style.top = previousBodyTop;
+      body.style.left = previousBodyLeft;
+      body.style.right = previousBodyRight;
+      body.style.width = previousBodyWidth;
+      body.style.overscrollBehavior = previousBodyOverscrollBehavior;
       window.scrollTo(0, scrollY);
+    };
+  }, [isSheet]);
+
+  useEffect(() => {
+    if (!isSheet) {
+      setSheetPortalReady(false);
+      return;
+    }
+
+    setSheetPortalReady(true);
+
+    return () => {
+      setSheetPortalReady(false);
     };
   }, [isSheet]);
 
@@ -553,7 +603,7 @@ export function PostComposeExperience({
     );
   }
 
-  return (
+  const sheetOverlay = (
     <div
       aria-modal="true"
       className="compose-sheet-overlay"
@@ -760,4 +810,10 @@ export function PostComposeExperience({
       </section>
     </div>
   );
+
+  if (!sheetPortalReady || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(sheetOverlay, document.body);
 }
