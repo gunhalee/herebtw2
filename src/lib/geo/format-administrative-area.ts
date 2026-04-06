@@ -28,6 +28,10 @@ function nonEmptyParts(value: string | null | undefined) {
     .filter(Boolean);
 }
 
+function containsHangul(value: string) {
+  return /[가-힣]/.test(value);
+}
+
 const SIDO_SHORT_NAMES = new Map<string, string>([
   ["서울특별시", "서울"],
   ["부산광역시", "부산"],
@@ -86,10 +90,20 @@ export function shortenSidoName(sidoName: string | null | undefined) {
 export function normalizeAdministrativeDongName(
   administrativeDongName: string,
 ) {
+  const trimmedName = administrativeDongName.trim();
+
+  if (!trimmedName) {
+    return trimmedName;
+  }
+
+  if (!containsHangul(trimmedName)) {
+    return trimmedName;
+  }
+
   const parts = nonEmptyParts(administrativeDongName);
 
   if (parts.length === 0) {
-    return administrativeDongName.trim();
+    return trimmedName;
   }
 
   const preferredPart = parts.find((part) => /(읍|면|동)$/.test(part));

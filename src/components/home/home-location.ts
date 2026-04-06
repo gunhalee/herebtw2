@@ -37,12 +37,6 @@ function applyGrantedAdministrativeSelection(
   });
 }
 
-function isDomesticAdministrativeLocation(location: {
-  countryCode: string | null;
-}) {
-  return location.countryCode === null || location.countryCode === "kr";
-}
-
 function refreshAdministrativeLocation(
   location: PostLocation,
   options: {
@@ -53,14 +47,6 @@ function refreshAdministrativeLocation(
   void resolveAdministrativeLocation(location)
     .then((resolvedLocation) => {
       if (!options.isMounted()) {
-        return;
-      }
-
-      if (!isDomesticAdministrativeLocation(resolvedLocation)) {
-        applyGrantedAdministrativeSelection(
-          options.setAdministrativeLocationSelection,
-          null,
-        );
         return;
       }
 
