@@ -31,6 +31,11 @@ type ResolveLocationResponse = {
   location: ResolvedLocation;
 };
 
+type SheetViewportLayout = {
+  keyboardInset: number;
+  viewportHeight: number;
+};
+
 export type PostComposeExperienceProps = {
   dataSourceMode: "supabase" | "mock";
   presentation?: "page" | "sheet";
@@ -96,6 +101,40 @@ function getLocationErrorMessage(error: unknown) {
   return "현재 위치를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.";
 }
 
+function readSheetViewportLayout(): SheetViewportLayout {
+  if (typeof window === "undefined") {
+    return {
+      keyboardInset: 0,
+      viewportHeight: 720,
+    };
+  }
+
+  const visualViewport = window.visualViewport;
+
+  if (!visualViewport) {
+    return {
+      keyboardInset: 0,
+      viewportHeight: window.innerHeight,
+    };
+  }
+
+  const viewportHeight = Math.round(visualViewport.height);
+  const layoutViewportHeight = Math.max(
+    window.innerHeight,
+    Math.round(visualViewport.height + visualViewport.offsetTop),
+  );
+  const keyboardInset = Math.max(
+    0,
+    layoutViewportHeight -
+      Math.round(visualViewport.height + visualViewport.offsetTop),
+  );
+
+  return {
+    keyboardInset,
+    viewportHeight,
+  };
+}
+
 export function PostComposeExperience({
   dataSourceMode,
   presentation = "page",
@@ -114,8 +153,9 @@ export function PostComposeExperience({
     "neutral" | "danger"
   >("neutral");
   const deviceRegistrationPromiseRef = useRef<Promise<string> | null>(null);
-  const sheetTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const isSheet = presentation === "sheet";
+  const [sheetViewportLayout, setSheetViewportLayout] =
+    useState<SheetViewportLayout>(readSheetViewportLayout);
 
   function ensureDeviceRegistrationStarted() {
     if (!deviceRegistrationPromiseRef.current) {
@@ -143,11 +183,29 @@ export function PostComposeExperience({
       return;
     }
 
+    const scrollY = window.scrollY;
     const previousOverflow = document.body.style.overflow;
+    const previousPosition = document.body.style.position;
+    const previousTop = document.body.style.top;
+    const previousLeft = document.body.style.left;
+    const previousRight = document.body.style.right;
+    const previousWidth = document.body.style.width;
+
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.body.style.position = previousPosition;
+      document.body.style.top = previousTop;
+      document.body.style.left = previousLeft;
+      document.body.style.right = previousRight;
+      document.body.style.width = previousWidth;
+      window.scrollTo(0, scrollY);
     };
   }, [isSheet]);
 
@@ -170,14 +228,27 @@ export function PostComposeExperience({
   }, [isSheet, onDismiss]);
 
   useEffect(() => {
-    if (!isSheet || !sheetTextareaRef.current) {
+    if (!isSheet || typeof window === "undefined") {
       return;
     }
 
-    const textarea = sheetTextareaRef.current;
-    textarea.style.height = "0px";
-    textarea.style.height = `${Math.max(220, textarea.scrollHeight)}px`;
-  }, [composeState.content, isSheet]);
+    const visualViewport = window.visualViewport;
+
+    const syncViewportLayout = () => {
+      setSheetViewportLayout(readSheetViewportLayout());
+    };
+
+    syncViewportLayout();
+    window.addEventListener("resize", syncViewportLayout);
+    visualViewport?.addEventListener("resize", syncViewportLayout);
+    visualViewport?.addEventListener("scroll", syncViewportLayout);
+
+    return () => {
+      window.removeEventListener("resize", syncViewportLayout);
+      visualViewport?.removeEventListener("resize", syncViewportLayout);
+      visualViewport?.removeEventListener("scroll", syncViewportLayout);
+    };
+  }, [isSheet]);
 
   useEffect(() => {
     let cancelled = false;
@@ -457,6 +528,21 @@ export function PostComposeExperience({
     !composeState.locationResolved ||
     composeState.charCount < 1 ||
     composeState.charCount > 100;
+  const sheetViewportAvailableHeight = Math.max(
+    320,
+    sheetViewportLayout.viewportHeight - 12,
+  );
+  const sheetPreferredHeight =
+    sheetViewportLayout.keyboardInset > 0
+      ? sheetViewportAvailableHeight
+      : Math.min(
+          460,
+          Math.max(360, Math.round(sheetViewportLayout.viewportHeight * 0.52)),
+        );
+  const sheetHeight = Math.min(
+    sheetPreferredHeight,
+    sheetViewportAvailableHeight,
+  );
 
   if (!isSheet) {
     return (
@@ -482,14 +568,15 @@ export function PostComposeExperience({
       <section
         className="compose-sheet-panel"
         style={{
-          background: "#fffdfa",
+          background: "#ffffff",
           borderTopLeftRadius: "28px",
           borderTopRightRadius: "28px",
           boxShadow: uiShadow.sheet,
           display: "flex",
           flexDirection: "column",
-          maxHeight: "min(64dvh, 540px)",
-          minHeight: "min(46dvh, 420px)",
+          height: `${sheetHeight}px`,
+          marginBottom: `${sheetViewportLayout.keyboardInset}px`,
+          maxHeight: `${sheetViewportAvailableHeight}px`,
           overflow: "hidden",
           padding: `${uiSpacing.md} ${uiSpacing.pageX} calc(${uiSpacing.lg} + env(safe-area-inset-bottom, 0px))`,
           position: "relative",
@@ -502,7 +589,7 @@ export function PostComposeExperience({
             alignItems: "center",
             display: "flex",
             flexDirection: "column",
-            gap: uiSpacing.md,
+            gap: uiSpacing.sm,
             height: "100%",
           }}
         >
@@ -522,10 +609,10 @@ export function PostComposeExperience({
                 border: "none",
                 color: uiColors.textMuted,
                 cursor: "pointer",
-                fontSize: "16px",
+                fontSize: "18px",
                 fontWeight: 700,
                 justifySelf: "start",
-                minHeight: "36px",
+                minHeight: "40px",
                 padding: `${uiSpacing.xs} 0`,
               }}
               type="button"
@@ -560,10 +647,10 @@ export function PostComposeExperience({
                 border: "none",
                 color: sheetSubmitDisabled ? "#9ca3af" : uiColors.buttonPrimary,
                 cursor: sheetSubmitDisabled ? "default" : "pointer",
-                fontSize: "16px",
+                fontSize: "18px",
                 fontWeight: 700,
                 justifySelf: "end",
-                minHeight: "36px",
+                minHeight: "40px",
                 padding: `${uiSpacing.xs} 0`,
               }}
               type="submit"
@@ -576,6 +663,7 @@ export function PostComposeExperience({
             style={{
               alignSelf: "stretch",
               flex: 1,
+              minHeight: 0,
               position: "relative",
             }}
           >
@@ -584,20 +672,21 @@ export function PostComposeExperience({
               maxLength={100}
               onChange={(event) => handleChangeContent(event.target.value)}
               placeholder="지금 이 곳에서 느끼는 감정을 적어보세요"
-              ref={sheetTextareaRef}
               style={{
                 background: "transparent",
                 border: "none",
                 color: uiColors.textStrong,
                 fontSize: "20px",
                 fontWeight: 500,
-                height: "220px",
+                height: "100%",
                 lineHeight: 1.55,
+                minHeight: 0,
                 outline: "none",
-                overflowY: "hidden",
-                padding: `${uiSpacing.sm} 0 calc(${uiSpacing.xl} + 22px)`,
+                overflowY: "auto",
+                padding: `${uiSpacing.sm} 0 calc(${uiSpacing.xl} + 26px)`,
                 resize: "none",
                 verticalAlign: "top",
+                WebkitOverflowScrolling: "touch",
                 width: "100%",
               }}
               value={composeState.content}

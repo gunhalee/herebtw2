@@ -272,9 +272,11 @@ input {
   align-items: flex-end;
   animation: compose-sheet-fade-in 180ms ease-out both;
   display: flex;
+  height: 100dvh;
   inset: 0;
   justify-content: center;
   overscroll-behavior: contain;
+  overflow: hidden;
   position: fixed;
   z-index: 12;
 }
