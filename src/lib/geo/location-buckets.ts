@@ -2,6 +2,8 @@ import type { PostLocation } from "../../types/post";
 
 const METERS_PER_DEGREE_LATITUDE = 111320;
 const LOCATION_BUCKET_SIZE_METERS = 100;
+const MAX_PLAUSIBLE_DISTANCE_METERS = 20_100_000;
+export const GLOBAL_FEED_DISTANCE_SENTINEL_METERS = -1;
 
 function toRadians(value: number) {
   return (value * Math.PI) / 180;
@@ -67,7 +69,15 @@ export function dequantizeLocationFrom100MeterGridBuckets(input: {
 }
 
 export function formatBucketedDistance(distanceMeters: number) {
-  if (!Number.isFinite(distanceMeters) || distanceMeters >= 900000) {
+  if (distanceMeters === GLOBAL_FEED_DISTANCE_SENTINEL_METERS) {
+    return "전체 피드";
+  }
+
+  if (
+    !Number.isFinite(distanceMeters) ||
+    distanceMeters < 0 ||
+    distanceMeters > MAX_PLAUSIBLE_DISTANCE_METERS
+  ) {
     return "거리 미확인";
   }
 

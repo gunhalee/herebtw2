@@ -3,7 +3,10 @@ import type {
   PostListState,
   PostLocation,
 } from "../../types/post";
-import { quantizeLocationTo100MeterGrid } from "../geo/location-buckets";
+import {
+  GLOBAL_FEED_DISTANCE_SENTINEL_METERS,
+  quantizeLocationTo100MeterGrid,
+} from "../geo/location-buckets";
 import { hasSupabaseServerConfig } from "../supabase/config";
 import {
   supabaseInsert,
@@ -419,6 +422,7 @@ function buildPostListItems(
     engagementRows?: PostEngagementRow[];
     myReactionRows?: ReactionRow[];
     canReport?: boolean;
+    distanceMetersOverride?: number;
   },
 ) {
   const engagementMap = new Map(
@@ -432,7 +436,9 @@ function buildPostListItems(
     id: post.id,
     content: post.content,
     administrativeDongName: post.administrative_dong_name,
-    distanceMeters: getPostDistanceMeters(post, options?.viewerLocation),
+    distanceMeters:
+      options?.distanceMetersOverride ??
+      getPostDistanceMeters(post, options?.viewerLocation),
     relativeTime: formatRelativeTime(post.created_at),
     agreeCount: engagementMap.get(post.id) ?? 0,
     myAgree: myReactionSet.has(post.id),
@@ -447,13 +453,14 @@ function buildRpcPostListItems(
     myAgree?: boolean;
     canReport?: boolean;
     fallbackCanReport?: boolean;
+    distanceMetersOverride?: number;
   },
 ) {
   return posts.map((post) => ({
     id: post.id,
     content: post.content,
     administrativeDongName: post.administrative_dong_name,
-    distanceMeters: post.distance_meters,
+    distanceMeters: options?.distanceMetersOverride ?? post.distance_meters,
     relativeTime: formatRelativeTime(post.created_at),
     agreeCount: post.agree_count ?? 0,
     myAgree: options?.myAgree ?? post.my_agree ?? false,
@@ -760,6 +767,7 @@ export async function loadGlobalPostsListRepository(input: {
     const items = buildRpcPostListItems(selectedPosts, {
       myAgree: false,
       canReport: false,
+      distanceMetersOverride: GLOBAL_FEED_DISTANCE_SENTINEL_METERS,
     });
 
     logFeedMetrics("info", "load_posts_list", {
@@ -801,6 +809,7 @@ export async function loadGlobalPostsListRepository(input: {
   const items = buildPostListItems(selectedPosts, {
     engagementRows,
     canReport: false,
+    distanceMetersOverride: GLOBAL_FEED_DISTANCE_SENTINEL_METERS,
   });
 
   logFeedMetrics("info", "load_posts_list", {
