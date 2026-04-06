@@ -38,9 +38,18 @@ type PostRow = {
   delete_expires_at: string;
 };
 
+const FEED_RPC_DISTANCE_FALLBACK_METERS = 2147483647;
+
 type NearbyPostRow = PostRow & {
   distance_meters: number;
+  agree_count?: number;
+  my_agree?: boolean;
+  can_report?: boolean;
 };
+
+type FeedScope = "nearby" | "global";
+
+type FeedFallbackReason = "missing_rpc" | "unexpected_rpc_shape";
 
 type PostListCursor = {
   distanceMeters: number;
@@ -213,6 +222,115 @@ function buildInFilter(values: string[]) {
   return values.map((value) => `"${value}"`).join(",");
 }
 
+function getMonotonicTimeMs() {
+  if (typeof performance !== "undefined" && typeof performance.now === "function") {
+    return performance.now();
+  }
+
+  return Date.now();
+}
+
+function getElapsedTimeMs(startedAtMs: number) {
+  return Math.round(getMonotonicTimeMs() - startedAtMs);
+}
+
+function buildFeedMetricsContext(input: {
+  scope: FeedScope;
+  anonymousDeviceId?: string;
+  cursor: PostListCursor | null;
+  limit: number;
+  location?: PostLocation;
+}) {
+  return {
+    scope: input.scope,
+    limit: input.limit,
+    hasCursor: Boolean(input.cursor),
+    hasViewerLocation: Boolean(input.location),
+    hasAnonymousDeviceId: Boolean(input.anonymousDeviceId),
+  };
+}
+
+function logFeedMetrics(
+  level: "info" | "warn" | "error",
+  event: string,
+  payload: Record<string, unknown>,
+) {
+  const prefix = `[posts-feed] ${event}`;
+
+  if (level === "warn") {
+    console.warn(prefix, payload);
+    return;
+  }
+
+  if (level === "error") {
+    console.error(prefix, payload);
+    return;
+  }
+
+  console.info(prefix, payload);
+}
+
+function isFeedRpcRow(row: NearbyPostRow) {
+  return (
+    typeof row.agree_count === "number" &&
+    typeof row.my_agree === "boolean" &&
+    typeof row.can_report === "boolean"
+  );
+}
+
+function shouldFallbackToLegacyFeedRpc(error: unknown) {
+  return (
+    error instanceof Error &&
+    /list_posts_feed/i.test(error.message) &&
+    /(404|Could not find the function|PGRST)/i.test(error.message)
+  );
+}
+
+async function loadPostsFeedRpc(input: {
+  scope: FeedScope;
+  anonymousDeviceId?: string;
+  limit: number;
+  cursor: PostListCursor | null;
+  location?: PostLocation;
+}) {
+  const startedAtMs = getMonotonicTimeMs();
+
+  try {
+    const rows =
+      (await supabaseRpc<NearbyPostRow[]>("list_posts_feed", {
+        viewer_latitude: input.location?.latitude ?? null,
+        viewer_longitude: input.location?.longitude ?? null,
+        viewer_anonymous_device_id: input.anonymousDeviceId ?? null,
+        cursor_distance_meters: input.cursor?.distanceMeters ?? null,
+        cursor_created_at: input.cursor?.createdAt ?? null,
+        cursor_post_id: input.cursor?.postId ?? null,
+        result_limit: input.limit + 1,
+      })) ?? [];
+
+    return {
+      rows,
+      durationMs: getElapsedTimeMs(startedAtMs),
+      fallbackReason: null as FeedFallbackReason | null,
+    };
+  } catch (error) {
+    if (shouldFallbackToLegacyFeedRpc(error)) {
+      return {
+        rows: null,
+        durationMs: getElapsedTimeMs(startedAtMs),
+        fallbackReason: "missing_rpc" as FeedFallbackReason,
+      };
+    }
+
+    logFeedMetrics("error", "rpc_failed", {
+      ...buildFeedMetricsContext(input),
+      rpcDurationMs: getElapsedTimeMs(startedAtMs),
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+
+    throw error;
+  }
+}
+
 async function loadEngagementRows(postIds: string[]) {
   if (postIds.length === 0) {
     return [];
@@ -282,11 +400,80 @@ export async function loadPostsListRepository(input: {
     return getMockPostListState();
   }
 
+  const startedAtMs = getMonotonicTimeMs();
+  const limit = Math.min(Math.max(input.limit ?? 10, 1), 50);
+  const cursor = decodePostListCursor(input.cursor);
+  const sort: PostListState["sort"] = input.location ? "distance" : "latest";
+  const metricsContext = buildFeedMetricsContext({
+    scope: "nearby",
+    anonymousDeviceId: input.anonymousDeviceId,
+    cursor,
+    limit,
+    location: input.location,
+  });
+  const rpcResult = await loadPostsFeedRpc({
+    scope: "nearby",
+    anonymousDeviceId: input.anonymousDeviceId,
+    limit,
+    cursor,
+    location: input.location,
+  });
+  const rpcPosts = rpcResult.rows;
+  const fallbackReason =
+    rpcResult.fallbackReason ??
+    (rpcPosts && rpcPosts.length > 0 && !isFeedRpcRow(rpcPosts[0]!)
+      ? "unexpected_rpc_shape"
+      : null);
+
+  if (rpcPosts && !fallbackReason) {
+    const hasMore = rpcPosts.length > limit;
+    const selectedPosts = hasMore ? rpcPosts.slice(0, limit) : rpcPosts;
+    const items = selectedPosts.map((post) => ({
+      id: post.id,
+      content: post.content,
+      administrativeDongName: post.administrative_dong_name,
+      distanceMeters: post.distance_meters,
+      relativeTime: formatRelativeTime(post.created_at),
+      agreeCount: post.agree_count ?? 0,
+      myAgree: post.my_agree ?? false,
+      canReport: post.can_report ?? Boolean(input.anonymousDeviceId),
+      isHighlighted: false,
+    }));
+
+    logFeedMetrics("info", "load_posts_list", {
+      ...metricsContext,
+      path: "rpc",
+      itemCount: items.length,
+      hasMore,
+      rpcDurationMs: rpcResult.durationMs,
+      totalDurationMs: getElapsedTimeMs(startedAtMs),
+    });
+
+    return {
+      items,
+      nextCursor:
+        hasMore && selectedPosts.length > 0
+          ? encodePostListCursor(selectedPosts[selectedPosts.length - 1]!)
+          : null,
+      loading: false,
+      loadingMore: false,
+      empty: items.length === 0,
+      errorMessage: null,
+      sort,
+    };
+  }
+
+  if (fallbackReason) {
+    logFeedMetrics("warn", "legacy_fallback", {
+      ...metricsContext,
+      fallbackReason,
+      rpcDurationMs: rpcResult.durationMs,
+    });
+  }
+
   const device = input.anonymousDeviceId
     ? await ensureDeviceIdentity(input.anonymousDeviceId)
     : null;
-  const limit = Math.min(Math.max(input.limit ?? 10, 1), 50);
-  const cursor = decodePostListCursor(input.cursor);
   const posts =
     (await supabaseRpc<NearbyPostRow[]>("list_nearby_posts", {
       viewer_latitude: input.location?.latitude ?? null,
@@ -307,6 +494,15 @@ export async function loadPostsListRepository(input: {
     myReactionRows,
   });
 
+  logFeedMetrics("info", "load_posts_list", {
+    ...metricsContext,
+    path: "legacy",
+    itemCount: items.length,
+    hasMore,
+    rpcDurationMs: rpcResult.durationMs,
+    totalDurationMs: getElapsedTimeMs(startedAtMs),
+  });
+
   return {
     items,
     nextCursor:
@@ -317,7 +513,7 @@ export async function loadPostsListRepository(input: {
     loadingMore: false,
     empty: items.length === 0,
     errorMessage: null,
-    sort: "distance" as const,
+    sort,
   };
 }
 
@@ -336,10 +532,95 @@ export async function loadGlobalPostsListRepository(input: {
     };
   }
 
+  const startedAtMs = getMonotonicTimeMs();
   const limit = Math.min(Math.max(input.limit ?? 10, 1), 50);
-  const cursor = decodeGlobalPostListCursor(input.cursor);
-  const cursorFilter = cursor
-    ? `&or=(created_at.lt.${encodeURIComponent(cursor.createdAt)},and(created_at.eq.${encodeURIComponent(cursor.createdAt)},id.gt.${cursor.postId}))`
+  const cursor =
+    decodePostListCursor(input.cursor) ??
+    (() => {
+      const legacyCursor = decodeGlobalPostListCursor(input.cursor);
+
+      if (!legacyCursor) {
+        return null;
+      }
+
+      return {
+        distanceMeters: FEED_RPC_DISTANCE_FALLBACK_METERS,
+        createdAt: legacyCursor.createdAt,
+        postId: legacyCursor.postId,
+      } satisfies PostListCursor;
+    })();
+  const metricsContext = buildFeedMetricsContext({
+    scope: "global",
+    cursor,
+    limit,
+  });
+  const rpcResult = await loadPostsFeedRpc({
+    scope: "global",
+    limit,
+    cursor,
+  });
+  const rpcPosts = rpcResult.rows;
+  const fallbackReason =
+    rpcResult.fallbackReason ??
+    (rpcPosts && rpcPosts.length > 0 && !isFeedRpcRow(rpcPosts[0]!)
+      ? "unexpected_rpc_shape"
+      : null);
+
+  if (rpcPosts && !fallbackReason) {
+    const hasMore = rpcPosts.length > limit;
+    const selectedPosts = hasMore ? rpcPosts.slice(0, limit) : rpcPosts;
+    const items = selectedPosts.map((post) => ({
+      id: post.id,
+      content: post.content,
+      administrativeDongName: post.administrative_dong_name,
+      distanceMeters: post.distance_meters,
+      relativeTime: formatRelativeTime(post.created_at),
+      agreeCount: post.agree_count ?? 0,
+      myAgree: false,
+      canReport: false,
+      isHighlighted: false,
+    }));
+
+    logFeedMetrics("info", "load_posts_list", {
+      ...metricsContext,
+      path: "rpc",
+      itemCount: items.length,
+      hasMore,
+      rpcDurationMs: rpcResult.durationMs,
+      totalDurationMs: getElapsedTimeMs(startedAtMs),
+    });
+
+    return {
+      items,
+      nextCursor:
+        hasMore && selectedPosts.length > 0
+          ? encodePostListCursor(selectedPosts[selectedPosts.length - 1]!)
+          : null,
+      loading: false,
+      loadingMore: false,
+      empty: items.length === 0,
+      errorMessage: null,
+      sort: "latest" as const,
+    };
+  }
+
+  if (fallbackReason) {
+    logFeedMetrics("warn", "legacy_fallback", {
+      ...metricsContext,
+      fallbackReason,
+      rpcDurationMs: rpcResult.durationMs,
+    });
+  }
+
+  const legacyCursor = decodeGlobalPostListCursor(input.cursor) ??
+    (cursor
+      ? {
+          createdAt: cursor.createdAt,
+          postId: cursor.postId,
+        }
+      : null);
+  const cursorFilter = legacyCursor
+    ? `&or=(created_at.lt.${encodeURIComponent(legacyCursor.createdAt)},and(created_at.eq.${encodeURIComponent(legacyCursor.createdAt)},id.gt.${legacyCursor.postId}))`
     : "";
   const posts =
     (await supabaseSelect<PostRow[]>(
@@ -352,6 +633,15 @@ export async function loadGlobalPostsListRepository(input: {
   const items = buildPostListItems(selectedPosts, {
     engagementRows,
     canReport: false,
+  });
+
+  logFeedMetrics("info", "load_posts_list", {
+    ...metricsContext,
+    path: "legacy",
+    itemCount: items.length,
+    hasMore,
+    rpcDurationMs: rpcResult.durationMs,
+    totalDurationMs: getElapsedTimeMs(startedAtMs),
   });
 
   return {
