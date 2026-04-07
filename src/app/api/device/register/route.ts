@@ -1,14 +1,21 @@
+import { readJsonBody } from "../../../../lib/api/request";
 import { fail, ok } from "../../../../lib/api/response";
 import { syncDeviceRepository } from "../../../../lib/posts/repository";
 
 type RegisterDeviceRequest = {
-  anonymousDeviceId: string;
+  anonymousDeviceId?: string;
 };
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as RegisterDeviceRequest;
+  const bodyResult = await readJsonBody<RegisterDeviceRequest>(request);
 
-  if (!body.anonymousDeviceId?.trim()) {
+  if (!bodyResult.ok) {
+    return bodyResult.response;
+  }
+
+  const anonymousDeviceId = bodyResult.body.anonymousDeviceId?.trim();
+
+  if (!anonymousDeviceId) {
     return fail(
       {
         code: "INVALID_DEVICE_ID",
@@ -18,13 +25,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await syncDeviceRepository(body.anonymousDeviceId);
+  const result = await syncDeviceRepository(anonymousDeviceId);
 
   return ok({
     device: {
       id: result.device?.id ?? null,
       anonymousDeviceId:
-        result.device?.anonymous_device_id ?? body.anonymousDeviceId,
+        result.device?.anonymous_device_id ?? anonymousDeviceId,
     },
   });
 }

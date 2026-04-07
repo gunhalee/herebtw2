@@ -3,11 +3,13 @@ import {
   ensureRegisteredBrowserDevice,
   getOrCreateBrowserAnonymousDeviceId,
 } from "../../lib/device/browser-device";
-import type { AdministrativeLocationSnapshot } from "../../lib/geo/browser-administrative-location";
-import { getCurrentBrowserCoordinates } from "../../lib/geo/browser-location";
+import {
+  ensureBrowserLocationCoordinates,
+  primeBrowserLocationSession,
+} from "../../lib/geo/browser-location-session";
 import { readLatestCachedNearbyPostList } from "../../lib/posts/browser-nearby-post-cache";
 import type { AppShellState } from "../../types/device";
-import type { PostListState, PostLocation } from "../../types/post";
+import type { PostListState } from "../../types/post";
 import { fetchActiveHomeFeedPage } from "./home-feed-api";
 import {
   buildPostListErrorState,
@@ -15,30 +17,18 @@ import {
   type PendingFeedSnapshot,
 } from "./home-feed-state";
 
-type SetAdministrativeLocationSelection = (
-  location: AdministrativeLocationSnapshot | null,
-  options: {
-    permissionMode: AppShellState["permissionMode"];
-    readOnlyMode: boolean;
-  },
-) => void;
-
 type BootstrapHomeFeedParams = {
   dataSourceMode: "supabase" | "mock";
   hasInitialGlobalFeed: boolean;
   initialPostListState: PostListState;
   isCancelled: () => boolean;
   setAppShellState: Dispatch<SetStateAction<AppShellState>>;
-  setFeedLocation: Dispatch<SetStateAction<PostLocation | null>>;
   setFeedSortMode: Dispatch<SetStateAction<"nearby" | "global">>;
   setPostListState: Dispatch<SetStateAction<PostListState>>;
   setPendingFeedSnapshot: Dispatch<SetStateAction<PendingFeedSnapshot | null>>;
   applyCachedNearbyPostListState: (
     input: Pick<PostListState, "items" | "nextCursor">,
   ) => void;
-  hydrateHomeLocationFromCoordinates: (location: PostLocation) => void;
-  setAdministrativeLocationSelection: SetAdministrativeLocationSelection;
-  getPermissionMode: (error: unknown) => AppShellState["permissionMode"];
 };
 
 export async function bootstrapHomeFeed({
@@ -47,14 +37,10 @@ export async function bootstrapHomeFeed({
   initialPostListState,
   isCancelled,
   setAppShellState,
-  setFeedLocation,
   setFeedSortMode,
   setPostListState,
   setPendingFeedSnapshot,
   applyCachedNearbyPostListState,
-  hydrateHomeLocationFromCoordinates,
-  setAdministrativeLocationSelection,
-  getPermissionMode,
 }: BootstrapHomeFeedParams) {
   const anonymousDeviceId = getOrCreateBrowserAnonymousDeviceId();
 
@@ -78,37 +64,27 @@ export async function bootstrapHomeFeed({
     dataSourceMode === "supabase" ? readLatestCachedNearbyPostList() : null;
 
   if (latestCachedNearbyPostList) {
+    primeBrowserLocationSession(latestCachedNearbyPostList.location);
     applyCachedNearbyPostListState({
       ...latestCachedNearbyPostList,
       nextCursor: null,
     });
   }
 
-  let resolvedCoordinates: PostLocation | undefined;
+  const locationSession = await ensureBrowserLocationCoordinates();
 
-  try {
-    resolvedCoordinates = await getCurrentBrowserCoordinates();
+  if (isCancelled()) {
+    return;
+  }
 
-    if (isCancelled()) {
-      return;
-    }
+  const resolvedCoordinates =
+    locationSession.permissionMode === "denied"
+      ? null
+      : locationSession.coordinates;
 
-    hydrateHomeLocationFromCoordinates(resolvedCoordinates);
-  } catch (error) {
-    if (!isCancelled()) {
-      const permissionMode = getPermissionMode(error);
-
-      setFeedLocation(null);
-      setAdministrativeLocationSelection(null, {
-        permissionMode,
-        readOnlyMode: permissionMode === "denied",
-      });
-
-      if (latestCachedNearbyPostList && hasInitialGlobalFeed) {
-        setFeedSortMode("global");
-        setPostListState(initialPostListState);
-      }
-    }
+  if (!resolvedCoordinates && latestCachedNearbyPostList && hasInitialGlobalFeed) {
+    setFeedSortMode("global");
+    setPostListState(initialPostListState);
   }
 
   if (dataSourceMode !== "supabase") {
@@ -142,12 +118,12 @@ export async function bootstrapHomeFeed({
 
   setPendingFeedSnapshot(null);
   setPostListState((current) =>
-      buildReadyPostListState(current, {
-        items: result.data.items,
-        nextCursor: result.data.nextCursor,
-        sort: result.postSort,
-      }),
-    );
+    buildReadyPostListState(current, {
+      items: result.data.items,
+      nextCursor: result.data.nextCursor,
+      sort: result.postSort,
+    }),
+  );
 }
 
 export function applyBootstrapError(
@@ -157,7 +133,9 @@ export function applyBootstrapError(
   setPostListState((current) =>
     buildPostListErrorState(
       current,
-      error instanceof Error ? error.message : "피드를 불러오지 못했습니다.",
+      error instanceof Error
+        ? error.message
+        : "피드를 불러오지 못했습니다.",
     ),
   );
 }

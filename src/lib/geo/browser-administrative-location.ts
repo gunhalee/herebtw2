@@ -1,4 +1,5 @@
 import type { PostLocation } from "../../types/post";
+import { quantizeLocationTo100MeterGrid } from "./location-buckets";
 
 const ADMINISTRATIVE_LOCATION_STORAGE_KEY =
   "herebtw.cachedAdministrativeLocation";
@@ -15,6 +16,15 @@ type CachedAdministrativeLocation = AdministrativeLocationSnapshot & {
 };
 
 function getAdministrativeLocationCacheKey(location: PostLocation) {
+  const quantizedLocation = quantizeLocationTo100MeterGrid(location);
+
+  return [
+    quantizedLocation.latitudeBucket100m,
+    quantizedLocation.longitudeBucket100m,
+  ].join(":");
+}
+
+function getLegacyAdministrativeLocationCacheKey(location: PostLocation) {
   return `${location.latitude.toFixed(4)}:${location.longitude.toFixed(4)}`;
 }
 
@@ -33,9 +43,12 @@ export function readCachedAdministrativeLocation(
 
   try {
     const cached = JSON.parse(raw) as Partial<CachedAdministrativeLocation>;
+    const currentCacheKey = getAdministrativeLocationCacheKey(location);
+    const legacyCacheKey = getLegacyAdministrativeLocationCacheKey(location);
 
     if (
-      cached.cacheKey !== getAdministrativeLocationCacheKey(location) ||
+      (cached.cacheKey !== currentCacheKey &&
+        cached.cacheKey !== legacyCacheKey) ||
       typeof cached.cachedAt !== "number" ||
       Date.now() - cached.cachedAt > ADMINISTRATIVE_LOCATION_CACHE_TTL_MS ||
       typeof cached.administrativeDongName !== "string" ||

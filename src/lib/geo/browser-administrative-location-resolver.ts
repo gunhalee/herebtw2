@@ -23,15 +23,24 @@ export async function resolveAdministrativeLocation(
     }),
     path: "/api/location/resolve",
     timeoutErrorMessage:
-      "현재 위치 확인이 지연되고 있어요. 다시 시도해주세요.",
+      "현재 위치 확인이 지연되고 있어요. 다시 시도해 주세요.",
   });
 
   return data.location;
 }
 
+export function getBrowserLocationPermissionMode(
+  error: unknown,
+): "unknown" | "denied" {
+  return error instanceof Error &&
+    error.message === "GEOLOCATION_PERMISSION_DENIED"
+    ? "denied"
+    : "unknown";
+}
+
 export function getBrowserLocationErrorMessage(error: unknown) {
   if (!(error instanceof Error)) {
-    return "현재 위치를 확인하지 못했어요. 다시 시도해주세요.";
+    return "현재 위치를 확인하지 못했어요. 다시 시도해 주세요.";
   }
 
   if (error.message === "GEOLOCATION_PERMISSION_DENIED") {
@@ -39,7 +48,7 @@ export function getBrowserLocationErrorMessage(error: unknown) {
   }
 
   if (error.message === "GEOLOCATION_TIMEOUT") {
-    return "위치 확인 시간이 초과됐어요. 다시 시도해주세요.";
+    return "위치 확인 시간이 초과됐어요. 다시 시도해 주세요.";
   }
 
   if (error.message === "GEOLOCATION_UNAVAILABLE") {
@@ -47,8 +56,8 @@ export function getBrowserLocationErrorMessage(error: unknown) {
   }
 
   if (error.message === "GEOLOCATION_POSITION_UNAVAILABLE") {
-    return "현재 위치를 아직 찾지 못했어요. 다시 시도해주세요.";
+    return "현재 위치를 아직 찾지 못했어요. 다시 시도해 주세요.";
   }
 
-  return "현재 위치를 확인하지 못했어요. 다시 시도해주세요.";
+  return "현재 위치를 확인하지 못했어요. 다시 시도해 주세요.";
 }

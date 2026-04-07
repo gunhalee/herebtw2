@@ -38,7 +38,12 @@ export function PostComposeExperience({
   onSuccess,
 }: PostComposeExperienceProps) {
   const [composeState, setComposeState] = useState(createInitialComposeState);
-  const { locationStatusText, locationStatusTone, resolvedLocation } =
+  const {
+    locationReadyForSubmit,
+    locationStatusText,
+    locationStatusTone,
+    resolvedLocation,
+  } =
     useComposeLocation({
       setComposeState,
     });
@@ -49,6 +54,7 @@ export function PostComposeExperience({
     useComposeSubmit({
       composeState,
       dataSourceMode,
+      locationReadyForSubmit,
       onDismiss,
       onSuccess,
       resolvedLocation,

@@ -17,6 +17,7 @@ import type { PostListState, PostLocation } from "../../types/post";
 type UseHomeFeedListActionsParams = {
   dataSourceMode: "supabase" | "mock";
   appShellStateRef: MutableRefObject<AppShellState>;
+  feedSortMode: "nearby" | "global";
   postListState: PostListState;
   postListStateRef: MutableRefObject<PostListState>;
   feedLocation: PostLocation | null;
@@ -30,6 +31,7 @@ type UseHomeFeedListActionsParams = {
 export function useHomeFeedListActions({
   dataSourceMode,
   appShellStateRef,
+  feedSortMode,
   postListState,
   postListStateRef,
   feedLocation,
@@ -83,10 +85,13 @@ export function useHomeFeedListActions({
       setPendingFeedSnapshot(null);
       setPostListState((current) => buildLoadingMorePostListState(current));
 
-      const result = await fetchActiveHomeFeedPage(feedLocation, {
+      const result = await fetchActiveHomeFeedPage(
+        feedSortMode === "nearby" ? feedLocation : null,
+        {
         anonymousDeviceId: appShellStateRef.current.anonymousDeviceId ?? undefined,
         cursor: postListState.nextCursor,
-      });
+        },
+      );
 
       setFeedSortMode(result.feedSortMode);
       setPostListState((current) => {

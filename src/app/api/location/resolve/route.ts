@@ -1,3 +1,4 @@
+import { readJsonBody } from "../../../../lib/api/request";
 import { fail, ok } from "../../../../lib/api/response";
 import { formatAdministrativeAreaName } from "../../../../lib/geo/format-administrative-area";
 import { createLocationResolutionToken } from "../../../../lib/geo/location-resolution-token";
@@ -14,9 +15,15 @@ type ResolveLocationRequest = {
 };
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as ResolveLocationRequest;
+  const bodyResult = await readJsonBody<ResolveLocationRequest>(request);
 
-  if (!isValidCoordinateInput(body.location)) {
+  if (!bodyResult.ok) {
+    return bodyResult.response;
+  }
+
+  const { location } = bodyResult.body;
+
+  if (!isValidCoordinateInput(location)) {
     return fail(
       {
         code: "INVALID_LOCATION",
@@ -27,21 +34,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    const location = await resolveLocationFromCoordinates(body.location);
+    const resolvedLocation = await resolveLocationFromCoordinates(location);
     const formattedAdministrativeAreaName = formatAdministrativeAreaName({
-      sidoName: location.sidoName,
-      sigunguName: location.sigunguName,
-      administrativeDongName: location.administrativeDongName,
+      sidoName: resolvedLocation.sidoName,
+      sigunguName: resolvedLocation.sigunguName,
+      administrativeDongName: resolvedLocation.administrativeDongName,
     });
 
     return ok({
       location: {
-        ...location,
+        ...resolvedLocation,
         formattedAdministrativeAreaName,
         locationResolutionToken: createLocationResolutionToken({
-          administrativeDongCode: location.administrativeDongCode,
+          administrativeDongCode: resolvedLocation.administrativeDongCode,
           formattedAdministrativeAreaName,
-          location: body.location,
+          location,
         }),
       },
     });

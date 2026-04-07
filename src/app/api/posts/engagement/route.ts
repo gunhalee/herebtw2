@@ -1,3 +1,4 @@
+import { readJsonBody } from "../../../../lib/api/request";
 import { fail, ok } from "../../../../lib/api/response";
 import { createPostEngagementSnapshotToken } from "../../../../lib/posts/engagement-snapshot-token";
 import { loadPostEngagementSnapshotRepository } from "../../../../lib/posts/repository";
@@ -15,10 +16,17 @@ function isUuid(value: string) {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as PostEngagementSnapshotRequest;
+  const bodyResult = await readJsonBody<PostEngagementSnapshotRequest>(request);
+
+  if (!bodyResult.ok) {
+    return bodyResult.response;
+  }
+
+  const { anonymousDeviceId, postIds: inputPostIds, snapshotToken } =
+    bodyResult.body;
   const postIds = Array.from(
     new Set(
-      (Array.isArray(body.postIds) ? body.postIds : [])
+      (Array.isArray(inputPostIds) ? inputPostIds : [])
         .map((postId) => postId.trim())
         .filter((postId) => isUuid(postId)),
     ),
@@ -35,12 +43,12 @@ export async function POST(request: Request) {
   }
 
   const snapshot = await loadPostEngagementSnapshotRepository({
-    anonymousDeviceId: body.anonymousDeviceId?.trim() || undefined,
+    anonymousDeviceId: anonymousDeviceId?.trim() || undefined,
     postIds,
   });
-  const snapshotToken = createPostEngagementSnapshotToken(snapshot.items);
+  const nextSnapshotToken = createPostEngagementSnapshotToken(snapshot.items);
 
-  if (body.snapshotToken === snapshotToken) {
+  if (snapshotToken === nextSnapshotToken) {
     return new Response(null, {
       status: 204,
       headers: {
@@ -52,7 +60,7 @@ export async function POST(request: Request) {
   return ok(
     {
       ...snapshot,
-      snapshotToken,
+      snapshotToken: nextSnapshotToken,
     },
     {
       headers: {

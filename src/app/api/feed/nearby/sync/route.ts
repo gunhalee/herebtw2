@@ -1,3 +1,4 @@
+import { readJsonBody } from "../../../../../lib/api/request";
 import { fail, ok } from "../../../../../lib/api/response";
 import { syncNearbyFeedRepository } from "../../../../../lib/posts/repository";
 
@@ -16,9 +17,15 @@ function isFiniteNumber(value: unknown): value is number {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as NearbyFeedSyncRequest;
-  const latitude = body.location?.latitude;
-  const longitude = body.location?.longitude;
+  const bodyResult = await readJsonBody<NearbyFeedSyncRequest>(request);
+
+  if (!bodyResult.ok) {
+    return bodyResult.response;
+  }
+
+  const { anonymousDeviceId, limit, loadedPostIds, location } = bodyResult.body;
+  const latitude = location?.latitude;
+  const longitude = location?.longitude;
 
   if (!isFiniteNumber(latitude) || !isFiniteNumber(longitude)) {
     return fail(
@@ -31,9 +38,9 @@ export async function POST(request: Request) {
   }
 
   const syncState = await syncNearbyFeedRepository({
-    anonymousDeviceId: body.anonymousDeviceId?.trim() || undefined,
-    loadedPostIds: Array.isArray(body.loadedPostIds) ? body.loadedPostIds : [],
-    limit: isFiniteNumber(body.limit) ? body.limit : undefined,
+    anonymousDeviceId: anonymousDeviceId?.trim() || undefined,
+    loadedPostIds: Array.isArray(loadedPostIds) ? loadedPostIds : [],
+    limit: isFiniteNumber(limit) ? limit : undefined,
     location: {
       latitude,
       longitude,
@@ -44,7 +51,7 @@ export async function POST(request: Request) {
     {
       items: syncState.items.map((item) => ({
         ...item,
-        canReport: body.anonymousDeviceId ? item.canReport : true,
+        canReport: anonymousDeviceId ? item.canReport : true,
       })),
       nextCursor: syncState.nextCursor,
       newItemsCount: syncState.newItemsCount,

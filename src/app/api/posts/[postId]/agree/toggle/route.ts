@@ -1,8 +1,9 @@
+import { readJsonBody } from "../../../../../../lib/api/request";
 import { fail, ok } from "../../../../../../lib/api/response";
 import { toggleAgreeState } from "../../../../../../lib/posts/mutations";
 
 type ToggleAgreeRequest = {
-  anonymousDeviceId: string;
+  anonymousDeviceId?: string;
 };
 
 type Context = {
@@ -13,9 +14,15 @@ type Context = {
 
 export async function POST(request: Request, context: Context) {
   const { postId } = await context.params;
-  const body = (await request.json()) as ToggleAgreeRequest;
+  const bodyResult = await readJsonBody<ToggleAgreeRequest>(request);
 
-  if (!body.anonymousDeviceId?.trim()) {
+  if (!bodyResult.ok) {
+    return bodyResult.response;
+  }
+
+  const anonymousDeviceId = bodyResult.body.anonymousDeviceId?.trim();
+
+  if (!anonymousDeviceId) {
     return fail(
       {
         code: "INVALID_DEVICE_ID",
@@ -25,7 +32,7 @@ export async function POST(request: Request, context: Context) {
     );
   }
 
-  const result = await toggleAgreeState(postId, body.anonymousDeviceId);
+  const result = await toggleAgreeState(postId, anonymousDeviceId);
 
   return ok({
     postId,

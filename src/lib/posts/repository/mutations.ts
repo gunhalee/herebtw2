@@ -37,9 +37,7 @@ async function syncDeviceRepository(anonymousDeviceId: string) {
   };
 }
 
-async function createPostRepository(
-  input: CreatePostRepositoryInput,
-) {
+async function createPostRepository(input: CreatePostRepositoryInput) {
   if (!hasSupabaseServerConfig() || !input.anonymousDeviceId) {
     return {
       mode: "mock" as const,
@@ -74,10 +72,7 @@ async function createPostRepository(
   };
 }
 
-async function toggleAgreeRepository(
-  postId: string,
-  anonymousDeviceId?: string,
-) {
+async function toggleAgreeRepository(postId: string, anonymousDeviceId?: string) {
   if (!hasSupabaseServerConfig() || !anonymousDeviceId) {
     return {
       mode: "mock" as const,
@@ -105,12 +100,16 @@ async function reportPostRepository(
   reasonCode: string,
   anonymousDeviceId?: string,
 ) {
-  if (!hasSupabaseServerConfig() || !anonymousDeviceId) {
+  if (!hasSupabaseServerConfig()) {
     return {
       mode: "mock" as const,
       postId,
       reasonCode,
     };
+  }
+
+  if (!anonymousDeviceId?.trim()) {
+    throw new Error("Missing anonymous device id.");
   }
 
   const device = await ensureDeviceIdentity(anonymousDeviceId);

@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, type Dispatch, type FormEvent, type SetStateAction } from "react";
+import {
+  useEffect,
+  useRef,
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
+} from "react";
 import { createJsonPostRequestInit, fetchClientApiData } from "../../lib/api/client";
 import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
 import type { ResolvedAdministrativeLocation } from "../../lib/geo/browser-administrative-location-resolver";
@@ -9,6 +15,7 @@ import type { PostComposeState } from "../../types/post";
 type UseComposeSubmitParams = {
   composeState: PostComposeState;
   dataSourceMode: "supabase" | "mock";
+  locationReadyForSubmit: boolean;
   onDismiss?: () => void;
   onSuccess?: () => void | Promise<void>;
   resolvedLocation: ResolvedAdministrativeLocation | null;
@@ -18,6 +25,7 @@ type UseComposeSubmitParams = {
 export function useComposeSubmit({
   composeState,
   dataSourceMode,
+  locationReadyForSubmit,
   onDismiss,
   onSuccess,
   resolvedLocation,
@@ -62,15 +70,16 @@ export function useComposeSubmit({
     if (dataSourceMode !== "supabase") {
       setComposeState((current) => ({
         ...current,
-        errorMessage: "실시간으로 글을 등록하려면 Supabase 연결이 필요해요.",
+        errorMessage:
+          "실시간으로 글을 등록하려면 Supabase 연결이 필요해요.",
       }));
       return;
     }
 
-    if (!resolvedLocation) {
+    if (!resolvedLocation || !locationReadyForSubmit) {
       setComposeState((current) => ({
         ...current,
-        errorMessage: "위치 확인이 끝난 뒤에 글을 등록할 수 있어요.",
+        errorMessage: "현재 위치 확인이 끝난 뒤에 글을 등록할 수 있어요.",
       }));
       return;
     }
@@ -99,7 +108,7 @@ export function useComposeSubmit({
           locationResolutionToken: resolvedLocation.locationResolutionToken,
         }),
         path: "/api/posts",
-        timeoutErrorMessage: "글 등록이 지연되고 있어요. 다시 시도해주세요.",
+        timeoutErrorMessage: "글 등록이 지연되고 있어요. 다시 시도해 주세요.",
       });
 
       if (onSuccess) {
@@ -124,7 +133,7 @@ export function useComposeSubmit({
     submitDisabled:
       dataSourceMode !== "supabase" ||
       composeState.submitting ||
-      !composeState.locationResolved ||
+      !locationReadyForSubmit ||
       composeState.charCount < 1 ||
       composeState.charCount > 100,
   };

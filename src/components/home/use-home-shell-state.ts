@@ -1,15 +1,21 @@
 "use client";
 
-import { useState, type Dispatch, type SetStateAction } from "react";
-import { hydrateHomeFeedLocationFromCoordinates } from "./home-location";
+import {
+  useEffect,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import {
   buildReadyPostListState,
   type PendingFeedSnapshot,
 } from "./home-feed-state";
 import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
-import type {
-  AdministrativeLocationSnapshot,
-} from "../../lib/geo/browser-administrative-location";
+import {
+  useBrowserLocationSession,
+  type BrowserLocationSessionState,
+} from "../../lib/geo/browser-location-session";
+import type { AdministrativeLocationSnapshot } from "../../lib/geo/browser-administrative-location";
 import { useDocumentScrollLock } from "../../lib/hooks/use-document-scroll-lock";
 import { useLatestRef } from "../../lib/hooks/use-latest-ref";
 import { useMountedRef } from "../../lib/hooks/use-mounted-ref";
@@ -18,7 +24,7 @@ import type { PostListState, PostLocation } from "../../types/post";
 
 const COMPOSE_PLACEHOLDER_DONG_NAME = "우리 동네";
 const MOCK_RUNTIME_NOTICE =
-  "Supabase 환경변수가 아직 설정되지 않아 샘플 데이터를 보여주고 있어요.";
+  "Supabase 연결이 아직 설정되지 않아 샘플 데이터를 보여주고 있어요.";
 
 type UseHomeShellStateParams = {
   dataSourceMode: "supabase" | "mock";
@@ -28,11 +34,33 @@ type UseHomeShellStateParams = {
   setPendingFeedSnapshot: Dispatch<SetStateAction<PendingFeedSnapshot | null>>;
 };
 
-function getHomePermissionMode(error: unknown): AppShellState["permissionMode"] {
-  return error instanceof Error &&
-    error.message === "GEOLOCATION_PERMISSION_DENIED"
-    ? "denied"
-    : "unknown";
+function applyLocationSessionToHomeShell(
+  locationSession: BrowserLocationSessionState,
+  options: {
+    setFeedLocation: Dispatch<SetStateAction<PostLocation | null>>;
+    setAdministrativeLocationSelection: (
+      location: AdministrativeLocationSnapshot | null,
+      state: {
+        permissionMode: AppShellState["permissionMode"];
+        readOnlyMode: boolean;
+      },
+    ) => void;
+  },
+) {
+  if (locationSession.permissionMode === "denied") {
+    options.setFeedLocation(null);
+    options.setAdministrativeLocationSelection(null, {
+      permissionMode: "denied",
+      readOnlyMode: true,
+    });
+    return;
+  }
+
+  options.setFeedLocation(locationSession.coordinates);
+  options.setAdministrativeLocationSelection(locationSession.resolvedLocation, {
+    permissionMode: locationSession.permissionMode,
+    readOnlyMode: false,
+  });
 }
 
 export function useHomeShellState({
@@ -49,6 +77,7 @@ export function useHomeShellState({
       ? "global"
       : "nearby",
   );
+  const locationSession = useBrowserLocationSession();
   const isMountedRef = useMountedRef();
   const appShellStateRef = useLatestRef(appShellState);
   const feedLocationRef = useLatestRef(feedLocation);
@@ -73,6 +102,13 @@ export function useHomeShellState({
     }));
   }
 
+  useEffect(() => {
+    applyLocationSessionToHomeShell(locationSession, {
+      setFeedLocation,
+      setAdministrativeLocationSelection,
+    });
+  }, [locationSession]);
+
   function applyCachedNearbyPostListState(
     input: Pick<PostListState, "items" | "nextCursor">,
   ) {
@@ -85,16 +121,6 @@ export function useHomeShellState({
         sort: "distance",
       }),
     );
-  }
-
-  function hydrateHomeLocationFromCoordinates(location: PostLocation) {
-    hydrateHomeFeedLocationFromCoordinates({
-      location,
-      isMounted: () => isMountedRef.current,
-      setFeedLocation,
-      setAdministrativeLocationSelection,
-      applyCachedNearbyPostListState,
-    });
   }
 
   async function ensureDeviceReady() {
@@ -124,16 +150,12 @@ export function useHomeShellState({
     feedLocation,
     feedLocationRef,
     feedSortMode,
-    getPermissionMode: getHomePermissionMode,
     hasInitialGlobalFeed,
-    hydrateHomeLocationFromCoordinates,
     isMountedRef,
     obscureGlobalFallbackList:
       appShellState.readOnlyMode && feedSortMode === "global",
     runtimeNotice: dataSourceMode === "mock" ? MOCK_RUNTIME_NOTICE : null,
-    setAdministrativeLocationSelection,
     setAppShellState,
-    setFeedLocation,
     setFeedSortMode,
   };
 }

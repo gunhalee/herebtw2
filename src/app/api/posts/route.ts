@@ -1,3 +1,4 @@
+import { readJsonBody } from "../../../lib/api/request";
 import { fail, ok } from "../../../lib/api/response";
 import { formatAdministrativeAreaName } from "../../../lib/geo/format-administrative-area";
 import { verifyLocationResolutionToken } from "../../../lib/geo/location-resolution-token";
@@ -46,19 +47,13 @@ async function resolveAdministrativeLocationForPost(input: {
 }
 
 export async function POST(request: Request) {
-  let body: CreatePostRequest;
+  const bodyResult = await readJsonBody<CreatePostRequest>(request);
 
-  try {
-    body = (await request.json()) as CreatePostRequest;
-  } catch {
-    return fail(
-      {
-        code: "INVALID_REQUEST",
-        message: "요청 형식을 다시 확인해주세요.",
-      },
-      400,
-    );
+  if (!bodyResult.ok) {
+    return bodyResult.response;
   }
+
+  const body = bodyResult.body;
 
   if (!body.anonymousDeviceId?.trim()) {
     return fail(
