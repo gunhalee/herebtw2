@@ -33,11 +33,11 @@ export function FloatingComposeButton({
           "0 18px 34px rgba(116, 94, 62, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.92)",
         cursor: disabled ? "default" : "pointer",
         display: "inline-flex",
-        gap: uiSpacing.sm,
-        height: "60px",
+        gap: uiSpacing.xs,
+        height: "54px",
         justifyContent: "center",
         opacity: disabled ? 0.6 : 1,
-        padding: `0 ${uiSpacing.lg} 0 ${uiSpacing.xl}`,
+        padding: `0 ${uiSpacing.md} 0 ${uiSpacing.lg}`,
         position: "absolute",
         right: uiSpacing.pageX,
         zIndex: 12,
@@ -47,7 +47,7 @@ export function FloatingComposeButton({
       <span
         style={{
           color: uiColors.textStrong,
-          fontSize: "15px",
+          fontSize: "14px",
           fontWeight: 700,
           letterSpacing: "-0.02em",
           lineHeight: 1,
@@ -62,8 +62,8 @@ export function FloatingComposeButton({
         alt=""
         aria-hidden="true"
         src={penWritingImage}
-        width={26}
-        height={26}
+        width={24}
+        height={24}
         style={{
           filter:
             disabled
@@ -71,15 +71,6 @@ export function FloatingComposeButton({
               : "drop-shadow(0 3px 8px rgba(17, 24, 39, 0.16))",
           position: "relative",
           zIndex: 1,
-        }}
-      />
-      <span
-        aria-hidden="true"
-        style={{
-          border: `1px solid ${uiColors.border}`,
-          borderRadius: uiRadius.pill,
-          inset: "5px",
-          position: "absolute",
         }}
       />
     </button>
