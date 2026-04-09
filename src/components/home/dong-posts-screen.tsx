@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { PostListState } from "../../types/post";
 import { DongPostsFeed } from "./dong-posts-feed";
+import { FloatingComposeButton } from "./floating-compose-button";
 import { DongPostsHeader } from "./dong-posts-header";
 import { HomeReportDialogs } from "./home-report-dialogs";
 import { PendingFeedUpdatesButton } from "./pending-feed-updates-button";
@@ -141,7 +142,6 @@ export function DongPostsScreen({
       <DongPostsHeader
         animateComposeDongPlaceholder={animateComposeDongPlaceholder}
         currentDongName={currentDongName}
-        onCompose={onCompose}
         runtimeNotice={runtimeNotice}
       />
 
@@ -165,6 +165,12 @@ export function DongPostsScreen({
           onApply={onApplyPendingUpdates}
         />
       ) : null}
+
+      <FloatingComposeButton
+        disabled={interactionLocked}
+        elevated={shouldShowPendingUpdatesButton}
+        onCompose={onCompose}
+      />
 
       <HomeReportDialogs
         onCloseReportDialog={onCloseReportDialog}

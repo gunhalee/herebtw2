@@ -1,0 +1,69 @@
+import Image from "next/image";
+import penWritingImage from "../pen_writing.png";
+import { uiColors, uiRadius, uiSpacing } from "../../lib/ui/tokens";
+
+type FloatingComposeButtonProps = {
+  elevated?: boolean;
+  disabled?: boolean;
+  onCompose?: () => void;
+};
+
+export function FloatingComposeButton({
+  elevated = false,
+  disabled = false,
+  onCompose,
+}: FloatingComposeButtonProps) {
+  const baseBottomOffset = elevated ? "92px" : "20px";
+
+  return (
+    <button
+      aria-label="글 작성"
+      disabled={disabled}
+      onClick={onCompose}
+      style={{
+        alignItems: "center",
+        appearance: "none",
+        backdropFilter: "blur(10px)",
+        background: "linear-gradient(180deg, #fffdfa 0%, #f8f2e8 100%)",
+        border: "1px solid #e7dccd",
+        borderRadius: uiRadius.pill,
+        bottom: `calc(${baseBottomOffset} + env(safe-area-inset-bottom, 0px))`,
+        boxShadow:
+          "0 18px 34px rgba(116, 94, 62, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.92)",
+        cursor: disabled ? "default" : "pointer",
+        display: "inline-flex",
+        height: "60px",
+        justifyContent: "center",
+        opacity: disabled ? 0.6 : 1,
+        position: "absolute",
+        right: uiSpacing.pageX,
+        width: "60px",
+        zIndex: 12,
+      }}
+      type="button"
+    >
+      <Image
+        alt=""
+        aria-hidden="true"
+        src={penWritingImage}
+        width={26}
+        height={26}
+        style={{
+          filter:
+            disabled
+              ? "grayscale(0.18) opacity(0.72)"
+              : "drop-shadow(0 3px 8px rgba(17, 24, 39, 0.16))",
+        }}
+      />
+      <span
+        aria-hidden="true"
+        style={{
+          border: `1px solid ${uiColors.border}`,
+          borderRadius: uiRadius.pill,
+          inset: "5px",
+          position: "absolute",
+        }}
+      />
+    </button>
+  );
+}

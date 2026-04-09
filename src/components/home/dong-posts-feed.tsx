@@ -59,8 +59,8 @@ export function DongPostsFeed({
           overscrollBehaviorY: interactionLocked ? "none" : "contain",
           padding: `${uiSpacing.lg} ${uiSpacing.pageX} ${
             shouldShowPendingUpdatesButton
-              ? "calc(96px + env(safe-area-inset-bottom, 0px))"
-              : uiSpacing.xxxl
+              ? "calc(172px + env(safe-area-inset-bottom, 0px))"
+              : "calc(108px + env(safe-area-inset-bottom, 0px))"
           }`,
           position: "relative",
           touchAction: interactionLocked ? "none" : "pan-y",

@@ -1,5 +1,3 @@
-import Image from "next/image";
-import penWritingImage from "../pen_writing.png";
 import { homeScreenCopy } from "../../lib/content/home-copy";
 import { uiColors, uiRadius, uiSpacing } from "../../lib/ui/tokens";
 import {
@@ -11,14 +9,12 @@ type DongPostsHeaderProps = {
   currentDongName: string;
   animateComposeDongPlaceholder?: boolean;
   runtimeNotice?: string | null;
-  onCompose?: () => void;
 };
 
 export function DongPostsHeader({
   currentDongName,
   animateComposeDongPlaceholder = false,
   runtimeNotice,
-  onCompose,
 }: DongPostsHeaderProps) {
   const composeCta = homeScreenCopy.composeCta(currentDongName);
   const shouldAnimatePlaceholderDong =
@@ -114,8 +110,7 @@ export function DongPostsHeader({
         </div>
       ) : null}
 
-      <button
-        onClick={onCompose}
+      <div
         style={{
           alignItems: "center",
           background: "linear-gradient(180deg, #fffdfa 0%, #f8f2e8 100%)",
@@ -124,33 +119,22 @@ export function DongPostsHeader({
           boxShadow:
             "0 14px 28px rgba(116, 94, 62, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9)",
           color: uiColors.textStrong,
-          cursor: "pointer",
-          display: "grid",
+          display: "flex",
           fontSize: "16px",
           fontWeight: 700,
-          gridTemplateColumns: "30px minmax(0, 1fr) 30px",
+          justifyContent: "center",
           lineHeight: 1.35,
           padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
           transform: "translateY(-1px)",
           width: "100%",
         }}
-        type="button"
       >
-        <span
-          aria-hidden="true"
-          style={{
-            display: "inline-block",
-            height: "30px",
-            width: "30px",
-          }}
-        />
         <span
           style={{
             alignItems: "center",
             display: "flex",
             gap: "0.04em",
             justifyContent: "center",
-            justifySelf: "stretch",
             minWidth: 0,
             textAlign: "center",
             width: "100%",
@@ -175,16 +159,7 @@ export function DongPostsHeader({
             {composeCta.suffix}
           </span>
         </span>
-        <span
-          style={{
-            display: "inline-flex",
-            justifySelf: "end",
-            transform: "translateX(-2px)",
-          }}
-        >
-          <Image alt="" src={penWritingImage} width={20} height={20} />
-        </span>
-      </button>
+      </div>
     </header>
   );
 }
