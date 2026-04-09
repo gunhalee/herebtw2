@@ -225,7 +225,7 @@ input {
   margin: 0 0.2em;
   min-height: 2em;
   perspective: 900px;
-  transition: width 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: width 180ms cubic-bezier(0.22, 1, 0.36, 1);
   vertical-align: middle;
 }
 
@@ -266,13 +266,13 @@ input {
 }
 
 .compose-dong-flashcard__card--leaving {
-  animation: compose-dong-flashcard-leave 520ms cubic-bezier(0.55, 0.04, 0.36, 1)
+  animation: compose-dong-flashcard-leave 340ms cubic-bezier(0.55, 0.04, 0.36, 1)
     both;
   transform-origin: 50% 0%;
 }
 
 .compose-dong-flashcard__card--entering {
-  animation: compose-dong-flashcard-enter 520ms cubic-bezier(0.22, 0.88, 0.33, 1)
+  animation: compose-dong-flashcard-enter 340ms cubic-bezier(0.22, 0.88, 0.33, 1)
     both;
   transform-origin: 50% 100%;
 }
