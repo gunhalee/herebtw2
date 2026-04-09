@@ -113,7 +113,7 @@ export function DongPostsHeader({
       <div
         style={{
           alignItems: "center",
-          background: "#f8f2e8",
+          background: "#ffed00",
           borderRadius: 0,
           color: "#000000",
           display: "flex",

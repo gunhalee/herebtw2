@@ -25,7 +25,7 @@ export function FloatingComposeButton({
         alignItems: "center",
         appearance: "none",
         backdropFilter: "blur(10px)",
-        background: "linear-gradient(180deg, #fffdfa 0%, #f8f2e8 100%)",
+        background: "linear-gradient(180deg, #fff89a 0%, #ffed00 100%)",
         border: "1px solid #e7dccd",
         borderRadius: uiRadius.pill,
         bottom: `calc(${baseBottomOffset} + env(safe-area-inset-bottom, 0px))`,
