@@ -31,7 +31,7 @@ export function DongPostsHeader({
         display: "flex",
         flexDirection: "column",
         gap: uiSpacing.md,
-        padding: `calc(env(safe-area-inset-top, 0px) + ${uiSpacing.pageY}) ${uiSpacing.pageX} ${uiSpacing.xxl}`,
+        padding: `calc(env(safe-area-inset-top, 0px) + ${uiSpacing.pageY}) ${uiSpacing.pageX} 0`,
         position: "relative",
         zIndex: 2,
       }}
@@ -113,18 +113,18 @@ export function DongPostsHeader({
       <div
         style={{
           alignItems: "center",
-          background: "#ffffff",
+          background: "#f8f2e8",
           border: "1px solid #e7dccd",
-          borderRadius: uiRadius.pill,
+          borderRadius: 0,
           color: "#000000",
           display: "flex",
           fontSize: "16px",
           fontWeight: 700,
           justifyContent: "center",
           lineHeight: 1.35,
-          padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
-          transform: "translateY(-1px)",
-          width: "100%",
+          marginInline: `calc(-1 * ${uiSpacing.pageX})`,
+          padding: `${uiSpacing.md} ${uiSpacing.pageX}`,
+          width: `calc(100% + ${uiSpacing.pageX} + ${uiSpacing.pageX})`,
         }}
       >
         <span
