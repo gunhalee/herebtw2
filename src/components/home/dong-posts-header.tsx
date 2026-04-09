@@ -113,10 +113,10 @@ export function DongPostsHeader({
       <div
         style={{
           alignItems: "center",
-          background: "linear-gradient(180deg, #fffdfa 0%, #f8f2e8 100%)",
+          background: "#ffffff",
           border: "1px solid #e7dccd",
           borderRadius: uiRadius.pill,
-          color: uiColors.textStrong,
+          color: "#000000",
           display: "flex",
           fontSize: "16px",
           fontWeight: 700,
@@ -140,7 +140,7 @@ export function DongPostsHeader({
         >
           <span
             style={{
-              color: uiColors.textMuted,
+              color: "#000000",
             }}
           >
             {composeCta.prefix}
@@ -151,7 +151,7 @@ export function DongPostsHeader({
           />
           <span
             style={{
-              color: uiColors.textMuted,
+              color: "#000000",
             }}
           >
             {composeCta.suffix}

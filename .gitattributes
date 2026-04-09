@@ -1,0 +1,21 @@
+# Normalize line endings consistently across platforms.
+* text=auto eol=lf
+
+# Keep common binaries untouched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Windows scripts should keep CRLF when present.
+*.bat text eol=crlf
+*.cmd text eol=crlf

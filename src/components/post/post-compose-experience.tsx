@@ -137,7 +137,7 @@ export function PostComposeExperience({
                 fontWeight: 700,
                 justifySelf: "start",
                 minHeight: "40px",
-                padding: `${uiSpacing.xs} 0`,
+                padding: `${uiSpacing.xs} ${uiSpacing.xs}`,
               }}
               type="button"
             >
@@ -175,7 +175,7 @@ export function PostComposeExperience({
                 fontWeight: 700,
                 justifySelf: "end",
                 minHeight: "40px",
-                padding: `${uiSpacing.xs} 0`,
+                padding: `${uiSpacing.xs} ${uiSpacing.xs}`,
               }}
               type="submit"
             >
