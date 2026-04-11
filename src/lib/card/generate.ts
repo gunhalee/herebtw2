@@ -5,37 +5,89 @@ import type { ReactNode } from "react";
 const CARD_WIDTH = 1080;
 const CARD_HEIGHT = 1350;
 
-async function loadFont(): Promise<ArrayBuffer> {
-  // Use Google Fonts API for Noto Sans KR
-  const response = await fetch(
-    "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap",
-  );
-  const css = await response.text();
-  const fontUrlMatch = css.match(/src:\s*url\(([^)]+)\)/);
+type CardFontData = {
+  regular: ArrayBuffer;
+  bold: ArrayBuffer;
+};
 
-  if (fontUrlMatch) {
-    const fontResponse = await fetch(fontUrlMatch[1]);
-    return fontResponse.arrayBuffer();
-  }
-
-  // Fallback: use a simple font
-  const fallback = await fetch(
-    "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff/Pretendard-Regular.woff",
-  );
-  return fallback.arrayBuffer();
+function extractFontUrlFromGoogleCss(css: string) {
+  const match = css.match(/src:\s*url\(([^)]+)\)/);
+  return match?.[1] ?? null;
 }
 
-let cachedFont: ArrayBuffer | null = null;
+async function loadGoogleFontByWeight(weight: 400 | 700) {
+  const response = await fetch(
+    `https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@${weight}&display=swap`,
+  );
 
-async function getFont(): Promise<ArrayBuffer> {
-  if (!cachedFont) {
-    cachedFont = await loadFont();
+  if (!response.ok) {
+    return null;
   }
-  return cachedFont;
+
+  const css = await response.text();
+  const fontUrl = extractFontUrlFromGoogleCss(css);
+
+  if (!fontUrl) {
+    return null;
+  }
+
+  const fontResponse = await fetch(fontUrl);
+  if (!fontResponse.ok) {
+    return null;
+  }
+
+  return fontResponse.arrayBuffer();
+}
+
+async function loadFallbackPretendardByWeight(weight: 400 | 700) {
+  const fileName = weight === 700 ? "Pretendard-Bold.woff" : "Pretendard-Regular.woff";
+  const response = await fetch(
+    `https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff/${fileName}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to load fallback font: ${fileName}`);
+  }
+
+  return response.arrayBuffer();
+}
+
+async function loadFonts(): Promise<CardFontData> {
+  const [googleRegular, googleBold] = await Promise.all([
+    loadGoogleFontByWeight(400),
+    loadGoogleFontByWeight(700),
+  ]);
+
+  if (googleRegular && googleBold) {
+    return {
+      regular: googleRegular,
+      bold: googleBold,
+    };
+  }
+
+  const [fallbackRegular, fallbackBold] = await Promise.all([
+    loadFallbackPretendardByWeight(400),
+    loadFallbackPretendardByWeight(700),
+  ]);
+
+  return {
+    regular: fallbackRegular,
+    bold: fallbackBold,
+  };
+}
+
+let cachedFonts: CardFontData | null = null;
+
+async function getFonts(): Promise<CardFontData> {
+  if (!cachedFonts) {
+    cachedFonts = await loadFonts();
+  }
+
+  return cachedFonts;
 }
 
 export async function generateCardPng(element: ReactNode): Promise<Buffer> {
-  const fontData = await getFont();
+  const fonts = await getFonts();
 
   const svg = await satori(element, {
     width: CARD_WIDTH,
@@ -43,8 +95,14 @@ export async function generateCardPng(element: ReactNode): Promise<Buffer> {
     fonts: [
       {
         name: "NotoSansKR",
-        data: fontData,
+        data: fonts.regular,
         weight: 400,
+        style: "normal",
+      },
+      {
+        name: "NotoSansKR",
+        data: fonts.bold,
+        weight: 700,
         style: "normal",
       },
     ],
