@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { findPostByUuidRepository } from "../../../../lib/posts/repository";
+import { createElement } from "react";
 import { generateCardPng } from "../../../../lib/card/generate";
 import { DeliveredVoterCard } from "../../../../lib/card/templates/delivered-voter";
-import { RepliedVoterCard } from "../../../../lib/card/templates/replied-voter";
 import { RepliedCandidateCard } from "../../../../lib/card/templates/replied-candidate";
-import { createElement } from "react";
+import { RepliedVoterCard } from "../../../../lib/card/templates/replied-voter";
+import { voicePageCandidateHeaderLine } from "../../../../lib/content/voice-page";
+import { formatAdministrativeAreaNameForHomeDisplay } from "../../../../lib/geo/format-administrative-area";
+import { findPostByUuidRepository } from "../../../../lib/posts/repository";
 
 type RouteContext = {
   params: Promise<{ uuid: string }>;
@@ -21,6 +23,12 @@ export async function GET(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }
 
+  const headerLine = voicePageCandidateHeaderLine(post.administrative_dong_name);
+  const dongDisplay =
+    formatAdministrativeAreaNameForHomeDisplay(
+      post.administrative_dong_name,
+    ).trim() || post.administrative_dong_name;
+
   let element;
 
   if (
@@ -30,8 +38,9 @@ export async function GET(request: Request, context: RouteContext) {
   ) {
     if (cardType === "candidate") {
       element = createElement(RepliedCandidateCard, {
+        headerLine,
         content: post.content,
-        dongName: post.administrative_dong_name,
+        dongName: dongDisplay,
         replyCandidateName: post.reply_candidate_name,
         replyContent: post.reply_content,
         replyIsPromise: post.reply_is_promise ?? false,
@@ -39,8 +48,9 @@ export async function GET(request: Request, context: RouteContext) {
       });
     } else {
       element = createElement(RepliedVoterCard, {
+        headerLine,
         content: post.content,
-        dongName: post.administrative_dong_name,
+        dongName: dongDisplay,
         createdAt: post.created_at,
         agreeCount: post.agree_count,
         replyCandidateName: post.reply_candidate_name,
@@ -50,8 +60,9 @@ export async function GET(request: Request, context: RouteContext) {
     }
   } else {
     element = createElement(DeliveredVoterCard, {
+      headerLine,
       content: post.content,
-      dongName: post.administrative_dong_name,
+      dongName: dongDisplay,
       createdAt: post.created_at,
       agreeCount: post.agree_count,
     });

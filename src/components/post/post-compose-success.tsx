@@ -1,13 +1,61 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Link } from "lucide-react";
+import Image from "next/image";
+import { Copy, Link } from "lucide-react";
+import checkmarkIcon from "../checkmark.svg";
 import {
+  uiBrandYellow,
   uiColors,
   uiRadius,
   uiSpacing,
   uiTypography,
 } from "../../lib/ui/tokens";
+
+const copyButtonSurface = {
+  idle: {
+    background: uiBrandYellow.surfaceSoft,
+    border: uiBrandYellow.borderSoft,
+    color: uiBrandYellow.textOnCta,
+  },
+  done: {
+    background: uiBrandYellow.surfaceWarm,
+    border: uiBrandYellow.borderWarm,
+    color: uiBrandYellow.textOnCta,
+  },
+} as const;
+
+/** viewBox 1:1 SVG — width·height 동일로만 그려 비율이 깨지지 않게 함 */
+function CheckmarkIcon({ sizePx }: { sizePx: number }) {
+  return (
+    <span
+      style={{
+        alignItems: "center",
+        display: "inline-flex",
+        flexShrink: 0,
+        height: sizePx,
+        justifyContent: "center",
+        lineHeight: 0,
+        width: sizePx,
+      }}
+    >
+      <Image
+        alt=""
+        height={sizePx}
+        src={checkmarkIcon}
+        width={sizePx}
+        style={{
+          display: "block",
+          height: sizePx,
+          maxHeight: sizePx,
+          maxWidth: sizePx,
+          objectFit: "contain",
+          width: sizePx,
+        }}
+      />
+    </span>
+  );
+}
 
 type PostComposeSuccessProps = {
   publicUuid: string;
@@ -49,19 +97,7 @@ export function PostComposeSuccess({
         height: "100%",
       }}
     >
-      <div
-        style={{
-          alignItems: "center",
-          background: "#ecfdf5",
-          borderRadius: "50%",
-          display: "flex",
-          height: 64,
-          justifyContent: "center",
-          width: 64,
-        }}
-      >
-        <Check size={32} color="#059669" strokeWidth={2.5} />
-      </div>
+      <CheckmarkIcon sizePx={56} />
 
       <div
         style={{
@@ -101,10 +137,16 @@ export function PostComposeSuccess({
         style={{
           alignItems: "center",
           appearance: "none",
-          background: copied ? "#ecfdf5" : uiColors.surfaceMuted,
-          border: `1px solid ${copied ? "#a7f3d0" : uiColors.border}`,
+          background: copied
+            ? copyButtonSurface.done.background
+            : copyButtonSurface.idle.background,
+          border: `1px solid ${
+            copied ? copyButtonSurface.done.border : copyButtonSurface.idle.border
+          }`,
           borderRadius: uiRadius.md,
-          color: copied ? "#059669" : uiColors.textBody,
+          color: copied
+            ? copyButtonSurface.done.color
+            : copyButtonSurface.idle.color,
           cursor: "pointer",
           display: "flex",
           fontSize: uiTypography.body.fontSize,
@@ -119,7 +161,7 @@ export function PostComposeSuccess({
       >
         {copied ? (
           <>
-            <Check size={16} />
+            <CheckmarkIcon sizePx={18} />
             복사됨
           </>
         ) : (
@@ -159,10 +201,12 @@ export function PostComposeSuccess({
         type="button"
         style={{
           appearance: "none",
-          background: uiColors.buttonPrimary,
-          border: "none",
+          background: uiBrandYellow.ctaGradient,
+          border: `1px solid ${uiBrandYellow.ctaBorder}`,
           borderRadius: uiRadius.md,
-          color: "#ffffff",
+          boxShadow:
+            "0 10px 22px rgba(116, 94, 62, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
+          color: uiBrandYellow.textOnCta,
           cursor: "pointer",
           fontSize: "15px",
           fontWeight: 700,

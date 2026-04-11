@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import { VoiceDetailScreen } from "../../../components/voice/voice-detail-screen";
-import { findPostByUuidRepository } from "../../../lib/posts/repository";
 import type { Metadata } from "next";
+import { VoiceDetailScreen } from "../../../components/voice/voice-detail-screen";
+import { voicePageCandidateHeaderLine } from "../../../lib/content/voice-page";
+import { findPostByUuidRepository } from "../../../lib/posts/repository";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "글을 찾을 수 없습니다" };
   }
 
-  const title = `${post.administrative_dong_name}에서 남긴 목소리`;
+  const title = voicePageCandidateHeaderLine(post.administrative_dong_name);
   const description = post.content.length > 50
     ? post.content.slice(0, 50) + "..."
     : post.content;

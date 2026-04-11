@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { uiColors, uiRadius, uiSpacing } from "../../lib/ui/tokens";
-import voteImage from "../vote.png";
+import checkmarkIcon from "../checkmark.svg";
 
 type FloatingComposeButtonProps = {
   elevated?: boolean;
@@ -61,14 +61,13 @@ export function FloatingComposeButton({
       <Image
         alt=""
         aria-hidden="true"
-        src={voteImage}
+        src={checkmarkIcon}
         width={24}
         height={24}
         style={{
-          filter:
-            disabled
-              ? "grayscale(0.18) opacity(0.72)"
-              : "drop-shadow(0 3px 8px rgba(17, 24, 39, 0.16))",
+          filter: disabled
+            ? "grayscale(0.18) opacity(0.72)"
+            : "drop-shadow(0 0 0.75px rgba(55, 48, 0, 0.55)) drop-shadow(0 2px 6px rgba(17, 24, 39, 0.18))",
           position: "relative",
           zIndex: 1,
         }}

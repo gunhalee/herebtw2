@@ -1,6 +1,8 @@
 import { CARD_WIDTH, CARD_HEIGHT } from "../generate";
+import { checkmarkCardImgSrc } from "../checkmark-card-img";
 
 type RepliedCandidateCardProps = {
+  headerLine: string;
   content: string;
   dongName: string;
   replyCandidateName: string;
@@ -9,7 +11,27 @@ type RepliedCandidateCardProps = {
   agreeCount: number;
 };
 
+const POST_CARD = {
+  background: "#ffffff",
+  border: "3px solid #fde68a",
+  borderRadius: "22px",
+  padding: "28px 32px",
+} as const;
+
+const BANNER = {
+  background: "linear-gradient(180deg, #fff89a 0%, #ffed00 100%)",
+  border: "1px solid #e7dccd",
+  borderRadius: "20px",
+  color: "#111827",
+  fontSize: "36px",
+  fontWeight: 700,
+  lineHeight: 1.35,
+  padding: "28px 36px",
+  width: "100%",
+} as const;
+
 export function RepliedCandidateCard({
+  headerLine,
   content,
   dongName,
   replyCandidateName,
@@ -20,60 +42,92 @@ export function RepliedCandidateCard({
   return (
     <div
       style={{
-        background: "linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%)",
+        background: "#f9fafb",
         display: "flex",
         flexDirection: "column",
         height: CARD_HEIGHT,
         justifyContent: "space-between",
-        padding: "80px",
+        padding: "56px 64px 72px",
         width: CARD_WIDTH,
       }}
     >
-      {/* Top */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-        <div
-          style={{
-            alignItems: "center",
-            background: "#2563eb",
-            borderRadius: "40px",
-            color: "#ffffff",
-            display: "flex",
-            fontSize: "28px",
-            fontWeight: 700,
-            gap: "12px",
-            padding: "12px 28px",
-            width: "fit-content",
-          }}
-        >
-          💬 {replyCandidateName} 후보가 답했습니다
-        </div>
-        <div style={{ color: "#64748b", display: "flex", fontSize: "28px" }}>
-          {dongName}
-        </div>
-      </div>
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          flexDirection: "column",
+          gap: "24px",
+          minHeight: 0,
+          width: "100%",
+        }}
+      >
+        <div style={{ ...BANNER, display: "flex" }}>{headerLine}</div>
 
-      {/* Content */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
         <div
           style={{
-            background: "rgba(255,255,255,0.6)",
-            borderRadius: "24px",
-            color: "#374151",
+            ...POST_CARD,
+            boxShadow: "0 2px 8px rgba(17, 24, 39, 0.06)",
             display: "flex",
-            fontSize: "36px",
-            lineHeight: 1.5,
-            padding: "28px 32px",
-            wordBreak: "keep-all",
+            flexDirection: "column",
+            gap: "18px",
           }}
         >
-          &ldquo;{content}&rdquo;
+          <div
+            style={{
+              color: "#8f96a3",
+              display: "flex",
+              fontSize: "22px",
+              fontWeight: 500,
+            }}
+          >
+            {dongName}
+          </div>
+          <div
+            style={{
+              color: "#111827",
+              display: "flex",
+              fontSize: "32px",
+              fontWeight: 500,
+              lineHeight: 1.5,
+              wordBreak: "keep-all",
+            }}
+          >
+            {content}
+          </div>
+          {agreeCount > 0 ? (
+            <div
+              style={{
+                alignItems: "center",
+                alignSelf: "flex-start",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid #e5e7eb",
+                borderRadius: "999px",
+                boxShadow: "0 8px 18px rgba(17, 24, 39, 0.12)",
+                display: "flex",
+                gap: "10px",
+                padding: "10px 18px",
+              }}
+            >
+              <img alt="" height={28} src={checkmarkCardImgSrc} width={28} />
+              <span
+                style={{
+                  color: "#111827",
+                  fontSize: "24px",
+                  fontWeight: 600,
+                  lineHeight: 1,
+                }}
+              >
+                {agreeCount}
+              </span>
+            </div>
+          ) : null}
         </div>
 
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "12px",
+            gap: "14px",
           }}
         >
           <div style={{ alignItems: "center", display: "flex", gap: "12px" }}>
@@ -81,7 +135,7 @@ export function RepliedCandidateCard({
               style={{
                 color: "#2563eb",
                 display: "flex",
-                fontSize: "32px",
+                fontSize: "28px",
                 fontWeight: 700,
               }}
             >
@@ -94,7 +148,7 @@ export function RepliedCandidateCard({
                   borderRadius: "8px",
                   color: "#78350f",
                   display: "flex",
-                  fontSize: "22px",
+                  fontSize: "20px",
                   fontWeight: 700,
                   padding: "4px 12px",
                 }}
@@ -107,7 +161,7 @@ export function RepliedCandidateCard({
             style={{
               color: "#0f172a",
               display: "flex",
-              fontSize: "44px",
+              fontSize: "34px",
               fontWeight: 700,
               lineHeight: 1.5,
               wordBreak: "keep-all",
@@ -118,32 +172,52 @@ export function RepliedCandidateCard({
         </div>
       </div>
 
-      {/* Bottom */}
       <div
         style={{
           alignItems: "flex-end",
           display: "flex",
           justifyContent: "space-between",
+          marginTop: "24px",
+          width: "100%",
         }}
       >
-        <div style={{ color: "#64748b", display: "flex", fontSize: "24px" }}>
-          공감 {agreeCount}명
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+          }}
+        >
+          <div
+            style={{
+              color: "#111827",
+              display: "flex",
+              fontSize: "36px",
+              fontWeight: 700,
+            }}
+          >
+            여기 근데
+          </div>
+          <div
+            style={{
+              color: "#374151",
+              display: "flex",
+              fontSize: "28px",
+              fontWeight: 600,
+            }}
+          >
+            한마디 할게요
+          </div>
         </div>
         <div
           style={{
-            color: "#94a3b8",
+            color: "#64748b",
             display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            gap: "4px",
+            fontSize: "26px",
+            fontWeight: 500,
           }}
         >
-          <div style={{ display: "flex", fontSize: "32px", fontWeight: 700 }}>
-            여기 근데
-          </div>
-          <div style={{ display: "flex", fontSize: "20px" }}>
-            herebtw.vercel.app
-          </div>
+          herebtw.vercel.app
         </div>
       </div>
     </div>

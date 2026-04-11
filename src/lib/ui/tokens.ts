@@ -29,6 +29,19 @@ export const uiColors = {
   markerWarm: "#c8602f",
 } as const;
 
+/** checkmark·플로팅 글쓰기(#ffed00)와 맞춘 옐로·앰버 계열 */
+export const uiBrandYellow = {
+  surfaceSoft: "#fffef5",
+  borderSoft: "#f5e6a8",
+  surfaceWarm: "#fffbeb",
+  borderWarm: "#fde68a",
+  /** 글 본문 카드 — 흰 배경 + 노란 테두리(약간 두껍게) */
+  postCardBorder: "3px solid #fde68a",
+  ctaGradient: "linear-gradient(180deg, #fff89a 0%, #ffed00 100%)",
+  ctaBorder: "#e7dccd",
+  textOnCta: "#111827",
+} as const;
+
 export const uiSpacing = {
   xs: "8px",
   sm: "10px",

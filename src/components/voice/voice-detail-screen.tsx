@@ -1,16 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import { CheckCircle, Copy, Download, MessageCircle } from "lucide-react";
+import checkmarkIcon from "../checkmark.svg";
+import { voicePageCandidateHeaderLine } from "../../lib/content/voice-page";
+import { formatAdministrativeAreaNameForHomeDisplay } from "../../lib/geo/format-administrative-area";
 import {
-  Check,
-  CheckCircle,
-  Copy,
-  Download,
-  Heart,
-  MessageCircle,
-  Send,
-} from "lucide-react";
-import {
+  uiBrandYellow,
   uiColors,
   uiRadius,
   uiSpacing,
@@ -39,6 +36,37 @@ type VoiceDetailScreenProps = {
   post: VoicePost;
 };
 
+function CheckmarkGlyph({ sizePx }: { sizePx: number }) {
+  return (
+    <span
+      style={{
+        alignItems: "center",
+        display: "inline-flex",
+        flexShrink: 0,
+        height: sizePx,
+        justifyContent: "center",
+        lineHeight: 0,
+        width: sizePx,
+      }}
+    >
+      <Image
+        alt=""
+        height={sizePx}
+        src={checkmarkIcon}
+        width={sizePx}
+        style={{
+          display: "block",
+          height: sizePx,
+          maxHeight: sizePx,
+          maxWidth: sizePx,
+          objectFit: "contain",
+          width: sizePx,
+        }}
+      />
+    </span>
+  );
+}
+
 export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
   const [copied, setCopied] = useState(false);
 
@@ -46,6 +74,11 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
     typeof window !== "undefined"
       ? `${window.location.origin}/v/${post.publicUuid}`
       : `/v/${post.publicUuid}`;
+
+  const headerTitle = voicePageCandidateHeaderLine(post.administrativeDongName);
+  const displayDong = formatAdministrativeAreaNameForHomeDisplay(
+    post.administrativeDongName,
+  );
 
   async function handleCopyLink() {
     try {
@@ -67,40 +100,52 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
         width: "100%",
       }}
     >
-      {/* Header */}
       <header
         style={{
           alignItems: "center",
           borderBottom: `1px solid ${uiColors.border}`,
           display: "flex",
-          justifyContent: "center",
+          flexDirection: "column",
+          gap: uiSpacing.xs,
           padding: `${uiSpacing.lg} ${uiSpacing.pageX}`,
           paddingTop: `calc(${uiSpacing.lg} + env(safe-area-inset-top, 0px))`,
         }}
       >
+        <h1
+          style={{
+            color: uiColors.textStrong,
+            fontSize: "17px",
+            fontWeight: 700,
+            lineHeight: 1.35,
+            margin: 0,
+            textAlign: "center",
+            wordBreak: "keep-all",
+          }}
+        >
+          {headerTitle}
+        </h1>
         <a
           href="/"
           style={{
-            color: uiColors.textStrong,
-            fontSize: "16px",
-            fontWeight: 700,
+            color: uiColors.textMuted,
+            fontSize: uiTypography.meta.fontSize,
+            fontWeight: 500,
             textDecoration: "none",
           }}
         >
-          여기 근데
+          여기 근데 홈
         </a>
       </header>
 
-      {/* Status Badge */}
-      <div
-        style={{
-          alignItems: "center",
-          display: "flex",
-          justifyContent: "center",
-          padding: `${uiSpacing.xxl} ${uiSpacing.pageX} 0`,
-        }}
-      >
-        {post.replyStatus === "replied" ? (
+      {post.replyStatus === "replied" ? (
+        <div
+          style={{
+            alignItems: "center",
+            display: "flex",
+            justifyContent: "center",
+            padding: `${uiSpacing.xxl} ${uiSpacing.pageX} 0`,
+          }}
+        >
           <div
             style={{
               alignItems: "center",
@@ -118,28 +163,9 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
             <CheckCircle size={16} />
             답변이 도착했습니다
           </div>
-        ) : (
-          <div
-            style={{
-              alignItems: "center",
-              background: "#eff6ff",
-              border: "1px solid #bfdbfe",
-              borderRadius: uiRadius.pill,
-              color: "#2563eb",
-              display: "flex",
-              fontSize: "13px",
-              fontWeight: 600,
-              gap: "6px",
-              padding: `${uiSpacing.xs} ${uiSpacing.lg}`,
-            }}
-          >
-            <Send size={16} />
-            전달됨
-          </div>
-        )}
-      </div>
+        </div>
+      ) : null}
 
-      {/* Post Card */}
       <div
         style={{
           display: "flex",
@@ -150,20 +176,39 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
       >
         <div
           style={{
-            background: uiColors.surfaceMuted,
-            borderRadius: uiRadius.lg,
+            background: uiColors.surface,
+            border: uiBrandYellow.postCardBorder,
+            borderRadius: "22px",
+            boxShadow: "0 2px 8px rgba(17, 24, 39, 0.04)",
+            boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
             gap: uiSpacing.md,
-            padding: uiSpacing.xxl,
+            padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
+            width: "100%",
           }}
         >
           <p
             style={{
+              color: uiColors.textMuted,
+              fontSize: "11px",
+              fontWeight: 400,
+              lineHeight: 1.35,
+              margin: 0,
+            }}
+          >
+            <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
+              {displayDong}
+            </span>
+            <span>{` · ${formatRelativeTime(post.createdAt)}`}</span>
+          </p>
+
+          <p
+            style={{
               color: uiColors.textStrong,
-              fontSize: "18px",
+              fontSize: "15px",
               fontWeight: 500,
-              lineHeight: 1.6,
+              lineHeight: 1.5,
               margin: 0,
               wordBreak: "keep-all",
             }}
@@ -171,35 +216,35 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
             {post.content}
           </p>
 
-          <div
-            style={{
-              alignItems: "center",
-              color: uiColors.textMuted,
-              display: "flex",
-              fontSize: uiTypography.meta.fontSize,
-              gap: uiSpacing.sm,
-            }}
-          >
-            <span>{post.administrativeDongName}</span>
-            <span>·</span>
-            <span>{formatRelativeTime(post.createdAt)}</span>
-          </div>
-
-          <div
-            style={{
-              alignItems: "center",
-              color: uiColors.textMuted,
-              display: "flex",
-              fontSize: uiTypography.meta.fontSize,
-              gap: "4px",
-            }}
-          >
-            <Heart size={14} />
-            <span>공감 {post.agreeCount}</span>
-          </div>
+          {post.agreeCount > 0 ? (
+            <div
+              style={{
+                alignItems: "center",
+                alignSelf: "flex-start",
+                background: "rgba(255, 255, 255, 0.96)",
+                border: `1px solid ${uiColors.border}`,
+                borderRadius: "999px",
+                boxShadow: "0 8px 18px rgba(17, 24, 39, 0.12)",
+                color: uiColors.textStrong,
+                display: "inline-flex",
+                gap: "6px",
+                padding: "6px 10px",
+              }}
+            >
+              <CheckmarkGlyph sizePx={14} />
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  lineHeight: 1,
+                }}
+              >
+                {post.agreeCount}
+              </span>
+            </div>
+          ) : null}
         </div>
 
-        {/* Reply area (Phase 2) */}
         {post.replyStatus === "replied" && post.reply ? (
           <div
             style={{
@@ -281,7 +326,6 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
         ) : null}
       </div>
 
-      {/* Actions */}
       <div
         style={{
           display: "flex",
@@ -321,10 +365,10 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
           style={{
             alignItems: "center",
             appearance: "none",
-            background: copied ? "#ecfdf5" : uiColors.surfaceMuted,
-            border: `1px solid ${copied ? "#a7f3d0" : uiColors.border}`,
+            background: copied ? uiBrandYellow.surfaceWarm : uiBrandYellow.surfaceSoft,
+            border: `1px solid ${copied ? uiBrandYellow.borderWarm : uiBrandYellow.borderSoft}`,
             borderRadius: uiRadius.md,
-            color: copied ? "#059669" : uiColors.textBody,
+            color: uiBrandYellow.textOnCta,
             cursor: "pointer",
             display: "flex",
             fontSize: "14px",
@@ -338,7 +382,7 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
         >
           {copied ? (
             <>
-              <Check size={16} />
+              <CheckmarkGlyph sizePx={16} />
               복사됨
             </>
           ) : (
@@ -354,9 +398,12 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
           style={{
             alignItems: "center",
             appearance: "none",
-            background: uiColors.buttonPrimary,
+            background: uiBrandYellow.ctaGradient,
+            border: `1px solid ${uiBrandYellow.ctaBorder}`,
             borderRadius: uiRadius.md,
-            color: "#ffffff",
+            boxShadow:
+              "0 10px 22px rgba(116, 94, 62, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
+            color: uiBrandYellow.textOnCta,
             display: "flex",
             fontSize: "15px",
             fontWeight: 700,

@@ -4,7 +4,7 @@ import { LoadingState } from "../common/loading-state";
 import { PostListItem } from "../sheet/post-list-item";
 import { homeScreenCopy } from "../../lib/content/home-copy";
 import type { PostListState } from "../../types/post";
-import { uiColors, uiRadius, uiSpacing } from "../../lib/ui/tokens";
+import { uiBrandYellow, uiRadius, uiSpacing } from "../../lib/ui/tokens";
 
 type DongPostsFeedContentProps = {
   activeMenuPostId?: string | null;
@@ -27,10 +27,10 @@ function DongPostsLoadMoreButton({
       onClick={onLoadMore}
       style={{
         appearance: "none",
-        background: "#fffdfa",
-        border: "1px solid #e7dccd",
+        background: uiBrandYellow.surfaceSoft,
+        border: `1px solid ${uiBrandYellow.borderSoft}`,
         borderRadius: uiRadius.pill,
-        color: uiColors.textStrong,
+        color: uiBrandYellow.textOnCta,
         cursor: "pointer",
         fontSize: "14px",
         fontWeight: 700,

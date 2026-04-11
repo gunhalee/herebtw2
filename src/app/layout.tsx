@@ -9,9 +9,9 @@ export const metadata = {
   title: "여기 근데",
   description: "한마디 할게요",
   icons: {
-    icon: "/icons/vote.png",
-    shortcut: "/icons/vote.png",
-    apple: "/icons/vote.png",
+    icon: [{ url: "/icons/checkmark.svg", type: "image/svg+xml" }],
+    shortcut: "/icons/checkmark.svg",
+    apple: "/icons/checkmark.svg",
   },
 };
 

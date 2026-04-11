@@ -1,6 +1,8 @@
 import { CARD_WIDTH, CARD_HEIGHT } from "../generate";
+import { checkmarkCardImgSrc } from "../checkmark-card-img";
 
 type RepliedVoterCardProps = {
+  headerLine: string;
   content: string;
   dongName: string;
   createdAt: string;
@@ -10,7 +12,27 @@ type RepliedVoterCardProps = {
   replyIsPromise: boolean;
 };
 
+const POST_CARD = {
+  background: "#ffffff",
+  border: "3px solid #fde68a",
+  borderRadius: "22px",
+  padding: "28px 32px",
+} as const;
+
+const BANNER = {
+  background: "linear-gradient(180deg, #fff89a 0%, #ffed00 100%)",
+  border: "1px solid #e7dccd",
+  borderRadius: "20px",
+  color: "#111827",
+  fontSize: "36px",
+  fontWeight: 700,
+  lineHeight: 1.35,
+  padding: "28px 36px",
+  width: "100%",
+} as const;
+
 export function RepliedVoterCard({
+  headerLine,
   content,
   dongName,
   createdAt,
@@ -25,60 +47,118 @@ export function RepliedVoterCard({
   return (
     <div
       style={{
-        background: "linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%)",
+        background: "#f9fafb",
         display: "flex",
         flexDirection: "column",
         height: CARD_HEIGHT,
         justifyContent: "space-between",
-        padding: "80px",
+        padding: "56px 64px 72px",
         width: CARD_WIDTH,
       }}
     >
-      {/* Top */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          flexDirection: "column",
+          gap: "24px",
+          minHeight: 0,
+          width: "100%",
+        }}
+      >
+        <div style={{ ...BANNER, display: "flex" }}>{headerLine}</div>
+
         <div
           style={{
             alignItems: "center",
-            background: "#059669",
-            borderRadius: "40px",
-            color: "#ffffff",
+            background: "#ecfdf5",
+            border: "1px solid #a7f3d0",
+            borderRadius: "999px",
+            color: "#059669",
             display: "flex",
-            fontSize: "28px",
-            fontWeight: 700,
-            gap: "12px",
-            padding: "12px 28px",
+            fontSize: "24px",
+            fontWeight: 600,
+            gap: "10px",
+            padding: "12px 24px",
             width: "fit-content",
           }}
         >
-          ✅ 답변 완료
-        </div>
-        <div style={{ color: "#64748b", display: "flex", fontSize: "28px" }}>
-          {dongName} · {dateStr}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
-        <div
-          style={{
-            color: "#0f172a",
-            display: "flex",
-            fontSize: "44px",
-            fontWeight: 700,
-            lineHeight: 1.5,
-            wordBreak: "keep-all",
-          }}
-        >
-          &ldquo;{content}&rdquo;
+          답변이 도착했습니다
         </div>
 
         <div
           style={{
-            borderLeft: "4px solid #059669",
+            ...POST_CARD,
+            boxShadow: "0 2px 8px rgba(17, 24, 39, 0.06)",
             display: "flex",
             flexDirection: "column",
-            gap: "12px",
-            paddingLeft: "24px",
+            gap: "18px",
+          }}
+        >
+          <div
+            style={{
+              color: "#8f96a3",
+              display: "flex",
+              fontSize: "22px",
+              fontWeight: 400,
+              lineHeight: 1.35,
+            }}
+          >
+            <span style={{ color: "#111827", fontWeight: 500 }}>{dongName}</span>
+            <span>{` · ${dateStr}`}</span>
+          </div>
+
+          <div
+            style={{
+              color: "#111827",
+              display: "flex",
+              fontSize: "32px",
+              fontWeight: 500,
+              lineHeight: 1.5,
+              wordBreak: "keep-all",
+            }}
+          >
+            {content}
+          </div>
+
+          {agreeCount > 0 ? (
+            <div
+              style={{
+                alignItems: "center",
+                alignSelf: "flex-start",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid #e5e7eb",
+                borderRadius: "999px",
+                boxShadow: "0 8px 18px rgba(17, 24, 39, 0.12)",
+                display: "flex",
+                gap: "10px",
+                padding: "10px 18px",
+              }}
+            >
+              <img alt="" height={28} src={checkmarkCardImgSrc} width={28} />
+              <span
+                style={{
+                  color: "#111827",
+                  fontSize: "24px",
+                  fontWeight: 600,
+                  lineHeight: 1,
+                }}
+              >
+                {agreeCount}
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        <div
+          style={{
+            background: "#f0fdf4",
+            borderLeft: "4px solid #059669",
+            borderRadius: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "14px",
+            padding: "24px 28px",
           }}
         >
           <div style={{ alignItems: "center", display: "flex", gap: "12px" }}>
@@ -86,7 +166,7 @@ export function RepliedVoterCard({
               style={{
                 color: "#059669",
                 display: "flex",
-                fontSize: "28px",
+                fontSize: "26px",
                 fontWeight: 700,
               }}
             >
@@ -99,7 +179,7 @@ export function RepliedVoterCard({
                   borderRadius: "8px",
                   color: "#78350f",
                   display: "flex",
-                  fontSize: "22px",
+                  fontSize: "20px",
                   fontWeight: 700,
                   padding: "4px 12px",
                 }}
@@ -112,7 +192,7 @@ export function RepliedVoterCard({
             style={{
               color: "#374151",
               display: "flex",
-              fontSize: "36px",
+              fontSize: "30px",
               lineHeight: 1.5,
               wordBreak: "keep-all",
             }}
@@ -122,32 +202,52 @@ export function RepliedVoterCard({
         </div>
       </div>
 
-      {/* Bottom */}
       <div
         style={{
           alignItems: "flex-end",
           display: "flex",
           justifyContent: "space-between",
+          marginTop: "24px",
+          width: "100%",
         }}
       >
-        <div style={{ color: "#64748b", display: "flex", fontSize: "24px" }}>
-          공감 {agreeCount}명
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+          }}
+        >
+          <div
+            style={{
+              color: "#111827",
+              display: "flex",
+              fontSize: "36px",
+              fontWeight: 700,
+            }}
+          >
+            여기 근데
+          </div>
+          <div
+            style={{
+              color: "#374151",
+              display: "flex",
+              fontSize: "28px",
+              fontWeight: 600,
+            }}
+          >
+            한마디 할게요
+          </div>
         </div>
         <div
           style={{
-            color: "#94a3b8",
+            color: "#64748b",
             display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            gap: "4px",
+            fontSize: "26px",
+            fontWeight: 500,
           }}
         >
-          <div style={{ display: "flex", fontSize: "32px", fontWeight: 700 }}>
-            여기 근데
-          </div>
-          <div style={{ display: "flex", fontSize: "20px" }}>
-            herebtw.vercel.app
-          </div>
+          herebtw.vercel.app
         </div>
       </div>
     </div>
