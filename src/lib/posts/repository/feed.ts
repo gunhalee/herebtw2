@@ -34,6 +34,7 @@ import type {
   FeedFallbackReason,
   FeedScope,
   NearbyPostRow,
+  PostDetailRow,
   PostEngagementRow,
   PostListCursor,
   PostRow,
@@ -520,7 +521,20 @@ async function loadGlobalPostsListRepository(input: {
   });
 }
 
+async function findPostByUuidRepository(uuid: string) {
+  if (!hasSupabaseServerConfig()) {
+    return null;
+  }
+
+  const rows = await supabaseRpc<PostDetailRow[]>("get_post_by_uuid", {
+    target_uuid: uuid,
+  });
+
+  return rows?.[0] ?? null;
+}
+
 export {
+  findPostByUuidRepository,
   loadGlobalPostsListRepository,
   loadPostEngagementSnapshotRepository,
   loadPostsListRepository,

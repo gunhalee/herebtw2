@@ -1,4 +1,14 @@
 export {
+  createReply,
+  findCandidateByAuthUserId,
+  findCandidateById,
+  loadCandidatePromises,
+  loadDashboardStats,
+  loadDistrictPosts,
+  loadSetting,
+} from "./repository/candidate";
+export {
+  findPostByUuidRepository,
   loadGlobalPostsListRepository,
   loadPostEngagementSnapshotRepository,
   loadPostsListRepository,

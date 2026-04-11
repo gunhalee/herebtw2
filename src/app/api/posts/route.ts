@@ -16,6 +16,7 @@ type CreatePostRequest = {
     longitude: number;
   };
   locationResolutionToken?: string | null;
+  notificationEmail?: string;
 };
 
 async function resolveAdministrativeLocationForPost(input: {
@@ -99,6 +100,7 @@ export async function POST(request: Request) {
     resolvedDongCode: resolvedAdministrativeLocation.administrativeDongCode,
     resolvedDongName:
       resolvedAdministrativeLocation.formattedAdministrativeAreaName,
+    notificationEmail: body.notificationEmail?.trim() || undefined,
   });
 
   if (!result.ok) {

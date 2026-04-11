@@ -12,12 +12,18 @@ import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
 import type { ResolvedAdministrativeLocation } from "../../lib/geo/browser-administrative-location-resolver";
 import type { PostComposeState } from "../../types/post";
 
+type ComposeSuccessResult = {
+  publicUuid: string;
+  dongName: string;
+};
+
 type UseComposeSubmitParams = {
   composeState: PostComposeState;
   dataSourceMode: "supabase" | "mock";
   locationReadyForSubmit: boolean;
+  notificationEmail: string;
   onDismiss?: () => void;
-  onSuccess?: () => void | Promise<void>;
+  onSuccess?: (result: ComposeSuccessResult) => void | Promise<void>;
   resolvedLocation: ResolvedAdministrativeLocation | null;
   setComposeState: Dispatch<SetStateAction<PostComposeState>>;
 };
@@ -26,6 +32,7 @@ export function useComposeSubmit({
   composeState,
   dataSourceMode,
   locationReadyForSubmit,
+  notificationEmail,
   onDismiss,
   onSuccess,
   resolvedLocation,
@@ -92,9 +99,12 @@ export function useComposeSubmit({
 
     try {
       const anonymousDeviceId = await ensureDeviceRegistrationStarted();
-      await fetchClientApiData<{
+      const trimmedEmail = notificationEmail.trim();
+      const response = await fetchClientApiData<{
         post: {
           id: string;
+          publicUuid: string;
+          administrativeDongName: string;
         };
       }>({
         errorMessage: "글을 등록하지 못했어요.",
@@ -106,13 +116,17 @@ export function useComposeSubmit({
             longitude: resolvedLocation.longitude,
           },
           locationResolutionToken: resolvedLocation.locationResolutionToken,
+          ...(trimmedEmail ? { notificationEmail: trimmedEmail } : {}),
         }),
         path: "/api/posts",
         timeoutErrorMessage: "글 등록이 지연되고 있어요. 다시 시도해 주세요.",
       });
 
       if (onSuccess) {
-        await onSuccess();
+        await onSuccess({
+          publicUuid: response.post.publicUuid,
+          dongName: response.post.administrativeDongName,
+        });
         return;
       }
 

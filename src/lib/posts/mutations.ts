@@ -17,6 +17,7 @@ type CreatePostInput = {
   location: PostLocation;
   resolvedDongCode: string | null;
   resolvedDongName: string;
+  notificationEmail?: string;
 };
 
 type CreatePostResult =
@@ -28,6 +29,7 @@ type CreatePostResult =
         createdAt: string;
         deleteExpiresAt: string;
         id: string;
+        publicUuid: string;
       };
     }
   | {
@@ -108,6 +110,7 @@ export async function createPost(
     ok: true,
     post: {
       id: repositoryResult.post?.id ?? "post_new",
+      publicUuid: repositoryResult.post?.public_uuid ?? repositoryResult.post?.id ?? "post_new",
       content: input.content.trim(),
       administrativeDongName: input.resolvedDongName,
       createdAt,

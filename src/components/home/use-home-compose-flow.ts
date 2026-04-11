@@ -76,7 +76,6 @@ export function useHomeComposeFlow({
   }
 
   async function handleComposeSuccess() {
-    setComposePanelOpen(false);
     setPendingFeedSnapshot(null);
 
     if (dataSourceMode !== "supabase") {

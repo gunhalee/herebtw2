@@ -5,6 +5,7 @@ export type PostLocation = {
 
 export type PostListItem = {
   id: string;
+  publicUuid?: string;
   content: string;
   administrativeDongName: string;
   distanceMeters: number;
@@ -13,6 +14,7 @@ export type PostListItem = {
   myAgree: boolean;
   canReport: boolean;
   isHighlighted: boolean;
+  replyStatus?: "delivered" | "replied";
 };
 
 export type PostListState = {

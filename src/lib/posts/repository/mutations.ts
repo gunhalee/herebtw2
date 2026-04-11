@@ -16,6 +16,7 @@ type CreatePostRepositoryInput = {
   location: PostLocation;
   resolvedDongCode: string | null;
   resolvedDongName: string;
+  notificationEmail?: string;
 };
 
 async function syncDeviceRepository(anonymousDeviceId: string) {
@@ -53,7 +54,7 @@ async function createPostRepository(input: CreatePostRepositoryInput) {
 
   const quantizedLocation = quantizeLocationTo100MeterGrid(input.location);
   const rows = await supabaseInsert<PostRow[]>(
-    "posts?select=id,content,administrative_dong_name,created_at,delete_expires_at",
+    "posts?select=id,public_uuid,content,administrative_dong_name,created_at,delete_expires_at",
     {
       author_device_id: device.id,
       content: input.content.trim(),
@@ -63,6 +64,7 @@ async function createPostRepository(input: CreatePostRepositoryInput) {
       longitude: quantizedLocation.longitude,
       latitude_bucket_100m: quantizedLocation.latitudeBucket100m,
       longitude_bucket_100m: quantizedLocation.longitudeBucket100m,
+      ...(input.notificationEmail ? { notification_email: input.notificationEmail } : {}),
     },
   );
 

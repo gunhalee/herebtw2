@@ -9,9 +9,15 @@ import {
   uiTypography,
 } from "../../lib/ui/tokens";
 import type { PostComposeState } from "../../types/post";
+import { PostComposeSuccess } from "./post-compose-success";
 import { useComposeLocation } from "./use-compose-location";
 import { useComposeSheetLayout } from "./use-compose-sheet-layout";
 import { useComposeSubmit } from "./use-compose-submit";
+
+type ComposeSuccessData = {
+  publicUuid: string;
+  dongName: string;
+};
 
 type PostComposeExperienceProps = {
   dataSourceMode: "supabase" | "mock";
@@ -38,6 +44,8 @@ export function PostComposeExperience({
   onSuccess,
 }: PostComposeExperienceProps) {
   const [composeState, setComposeState] = useState(createInitialComposeState);
+  const [notificationEmail, setNotificationEmail] = useState("");
+  const [successData, setSuccessData] = useState<ComposeSuccessData | null>(null);
   const {
     locationReadyForSubmit,
     locationStatusText,
@@ -55,8 +63,14 @@ export function PostComposeExperience({
       composeState,
       dataSourceMode,
       locationReadyForSubmit,
+      notificationEmail,
       onDismiss,
-      onSuccess,
+      onSuccess: async (result) => {
+        setSuccessData(result);
+        if (onSuccess) {
+          await onSuccess();
+        }
+      },
       resolvedLocation,
       setComposeState,
     });
@@ -107,6 +121,13 @@ export function PostComposeExperience({
           width: "100%",
         }}
       >
+        {successData ? (
+          <PostComposeSuccess
+            publicUuid={successData.publicUuid}
+            dongName={successData.dongName}
+            onDismiss={() => onDismiss?.()}
+          />
+        ) : (
         <form
           onSubmit={handleSubmit}
           style={{
@@ -231,6 +252,54 @@ export function PostComposeExperience({
             </span>
           </div>
 
+          <div
+            style={{
+              alignSelf: "stretch",
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+            }}
+          >
+            <label
+              htmlFor="sheet-notification-email"
+              style={{
+                color: uiColors.textMuted,
+                fontSize: uiTypography.meta.fontSize,
+                fontWeight: uiTypography.meta.fontWeight,
+              }}
+            >
+              답변이 달리면 알려드릴까요?
+            </label>
+            <input
+              id="sheet-notification-email"
+              type="email"
+              placeholder="이메일 주소 (선택)"
+              value={notificationEmail}
+              onChange={(e) => setNotificationEmail(e.target.value)}
+              style={{
+                appearance: "none",
+                background: uiColors.surfaceMuted,
+                border: `1px solid ${uiColors.border}`,
+                borderRadius: "10px",
+                color: uiColors.textStrong,
+                fontSize: "14px",
+                outline: "none",
+                padding: `${uiSpacing.sm} ${uiSpacing.md}`,
+                width: "100%",
+              }}
+            />
+            <p
+              style={{
+                color: uiColors.textMuted,
+                fontSize: "10px",
+                lineHeight: 1.4,
+                margin: 0,
+              }}
+            >
+              이메일은 답변 알림 용도로만 사용되며, 다른 목적으로 활용하지 않습니다.
+            </p>
+          </div>
+
           {composeState.errorMessage ? (
             <p
               style={{
@@ -270,6 +339,7 @@ export function PostComposeExperience({
             </p>
           ) : null}
         </form>
+        )}
       </section>
     </div>
   );
