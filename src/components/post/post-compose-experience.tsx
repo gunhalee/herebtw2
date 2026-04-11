@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import {
   uiColors,
   uiShadow,
@@ -65,10 +65,16 @@ export function PostComposeExperience({
       locationReadyForSubmit,
       notificationEmail,
       onDismiss,
-      onSuccess: async (result) => {
-        setSuccessData(result);
+      onSuccess: (result) => {
+        flushSync(() => {
+          setSuccessData(result);
+          setComposeState((current) => ({
+            ...current,
+            submitting: false,
+          }));
+        });
         if (onSuccess) {
-          await onSuccess();
+          void Promise.resolve(onSuccess()).catch(() => undefined);
         }
       },
       resolvedLocation,

@@ -123,13 +123,17 @@ export function useComposeSubmit({
       });
 
       if (onSuccess) {
-        await onSuccess({
+        onSuccess({
           publicUuid: response.post.publicUuid,
           dongName: response.post.administrativeDongName,
         });
         return;
       }
 
+      setComposeState((current) => ({
+        ...current,
+        submitting: false,
+      }));
       onDismiss?.();
     } catch (error) {
       setComposeState((current) => ({
