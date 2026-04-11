@@ -1,5 +1,6 @@
 import { CARD_WIDTH, CARD_HEIGHT } from "../generate";
 import { checkmarkCardImgSrc } from "../checkmark-card-img";
+import { MAIN_PAGE_FONT_FAMILY } from "../font-family";
 
 type RepliedCandidateCardProps = {
   headerLine: string;
@@ -45,6 +46,7 @@ export function RepliedCandidateCard({
         background: "#f9fafb",
         display: "flex",
         flexDirection: "column",
+        fontFamily: MAIN_PAGE_FONT_FAMILY,
         height: CARD_HEIGHT,
         justifyContent: "space-between",
         padding: "56px 64px 72px",

@@ -1,5 +1,6 @@
 import { normalizeAdministrativeDongName } from "../../geo/format-administrative-area";
 import { formatRelativeTime } from "../../utils/datetime";
+import { MAIN_PAGE_FONT_FAMILY } from "../font-family";
 import { CARD_WIDTH, CARD_HEIGHT } from "../generate";
 import { justiceLogoCardImgSrc } from "../justice-logo-img";
 
@@ -154,14 +155,14 @@ function CardFooter() {
         style={{
           alignItems: "flex-end",
           display: "flex",
-          minWidth: "200px",
+          minWidth: "236px",
         }}
       >
         <img
           alt=""
-          height={72}
+          height={147}
           src={justiceLogoCardImgSrc}
-          width={160}
+          width={236}
           style={{ display: "block" }}
         />
       </div>
@@ -170,33 +171,22 @@ function CardFooter() {
           alignItems: "flex-end",
           display: "flex",
           flexDirection: "column",
-          gap: "10px",
+          gap: "0px",
+          textAlign: "right",
         }}
       >
         <div
           style={{
-            alignItems: "baseline",
             display: "flex",
+            flexDirection: "column",
             fontSize: "54px",
             fontWeight: 700,
             letterSpacing: "-0.02em",
-            lineHeight: 1,
+            lineHeight: 1.05,
           }}
         >
-          <span style={{ color: "#111827", marginRight: "14px" }}>여기 근데</span>
+          <span style={{ color: "#111827" }}>여기 근데</span>
           <span style={{ color: "#9ca3af" }}>한마디 할게요</span>
-        </div>
-        <div
-          style={{
-            color: "#111827",
-            display: "flex",
-            fontSize: "54px",
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-            lineHeight: 1,
-          }}
-        >
-          herebtw.or.kr
         </div>
       </div>
     </div>
@@ -220,6 +210,7 @@ export function RepliedVoterCard({
         background: "#f3f4f6",
         display: "flex",
         flexDirection: "column",
+        fontFamily: MAIN_PAGE_FONT_FAMILY,
         height: CARD_HEIGHT,
         width: CARD_WIDTH,
       }}
