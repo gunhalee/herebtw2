@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import { homeScreenCopy } from "../../lib/content/home-copy";
 import { uiColors, uiRadius, uiSpacing } from "../../lib/ui/tokens";
 import {
@@ -9,12 +10,18 @@ type DongPostsHeaderProps = {
   currentDongName: string;
   animateComposeDongPlaceholder?: boolean;
   runtimeNotice?: string | null;
+  /** /v — 「여기 근데 한마디 할게요」실제 문구 너비 측정 */
+  titleLineRef?: Ref<HTMLHeadingElement>;
+  /** true면 h1을 fit-content로 두어 ref로 측정한 너비가 문구와 일치 */
+  shrinkTitleToIntrinsicWidth?: boolean;
 };
 
 export function DongPostsHeader({
   currentDongName,
   animateComposeDongPlaceholder = false,
   runtimeNotice,
+  titleLineRef,
+  shrinkTitleToIntrinsicWidth = false,
 }: DongPostsHeaderProps) {
   const composeCta = homeScreenCopy.composeCta(currentDongName);
   const shouldAnimatePlaceholderDong =
@@ -46,6 +53,7 @@ export function DongPostsHeader({
         }}
       >
         <h1
+          ref={titleLineRef}
           style={{
             alignItems: "baseline",
             color: uiColors.textStrong,
@@ -57,6 +65,14 @@ export function DongPostsHeader({
             letterSpacing: "-0.03em",
             lineHeight: 1.1,
             margin: 0,
+            ...(shrinkTitleToIntrinsicWidth
+              ? {
+                  marginLeft: "auto",
+                  marginRight: "auto",
+                  maxWidth: "100%",
+                  width: "fit-content",
+                }
+              : {}),
           }}
         >
           <span>{homeScreenCopy.title}</span>
