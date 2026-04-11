@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { CheckCircle, Copy, Download, MessageCircle } from "lucide-react";
 import checkmarkIcon from "../checkmark.svg";
-import { voicePageCandidateHeaderLine } from "../../lib/content/voice-page";
+import { DongPostsHeader } from "../home/dong-posts-header";
 import { formatAdministrativeAreaNameForHomeDisplay } from "../../lib/geo/format-administrative-area";
 import {
   uiBrandYellow,
@@ -75,7 +75,6 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
       ? `${window.location.origin}/v/${post.publicUuid}`
       : `/v/${post.publicUuid}`;
 
-  const headerTitle = voicePageCandidateHeaderLine(post.administrativeDongName);
   const displayDong = formatAdministrativeAreaNameForHomeDisplay(
     post.administrativeDongName,
   );
@@ -100,42 +99,10 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
         width: "100%",
       }}
     >
-      <header
-        style={{
-          alignItems: "center",
-          borderBottom: `1px solid ${uiColors.border}`,
-          display: "flex",
-          flexDirection: "column",
-          gap: uiSpacing.xs,
-          padding: `${uiSpacing.lg} ${uiSpacing.pageX}`,
-          paddingTop: `calc(${uiSpacing.lg} + env(safe-area-inset-top, 0px))`,
-        }}
-      >
-        <h1
-          style={{
-            color: uiColors.textStrong,
-            fontSize: "17px",
-            fontWeight: 700,
-            lineHeight: 1.35,
-            margin: 0,
-            textAlign: "center",
-            wordBreak: "keep-all",
-          }}
-        >
-          {headerTitle}
-        </h1>
-        <a
-          href="/"
-          style={{
-            color: uiColors.textMuted,
-            fontSize: uiTypography.meta.fontSize,
-            fontWeight: 500,
-            textDecoration: "none",
-          }}
-        >
-          여기 근데 홈
-        </a>
-      </header>
+      <DongPostsHeader
+        animateComposeDongPlaceholder={false}
+        currentDongName={post.administrativeDongName}
+      />
 
       {post.replyStatus === "replied" ? (
         <div
