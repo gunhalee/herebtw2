@@ -1,5 +1,7 @@
+import { normalizeAdministrativeDongName } from "../../geo/format-administrative-area";
+import { formatRelativeTime } from "../../utils/datetime";
 import { CARD_WIDTH, CARD_HEIGHT } from "../generate";
-import { checkmarkCardImgSrc } from "../checkmark-card-img";
+import { justiceLogoCardImgSrc } from "../justice-logo-img";
 
 type DeliveredVoterCardProps = {
   headerLine: string;
@@ -9,177 +11,229 @@ type DeliveredVoterCardProps = {
   agreeCount: number;
 };
 
-const POST_CARD = {
-  background: "#ffffff",
-  border: "3px solid #fde68a",
-  borderRadius: "22px",
-  padding: "28px 32px",
-} as const;
-
-const BANNER = {
-  background: "linear-gradient(180deg, #fff89a 0%, #ffed00 100%)",
-  border: "1px solid #e7dccd",
-  borderRadius: "20px",
-  color: "#111827",
-  fontSize: "36px",
-  fontWeight: 700,
-  lineHeight: 1.35,
-  padding: "28px 36px",
-  width: "100%",
-} as const;
-
-export function DeliveredVoterCard({
-  headerLine,
-  content,
-  dongName,
-  createdAt,
-  agreeCount,
-}: DeliveredVoterCardProps) {
-  const date = new Date(createdAt);
-  const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+function CardHeader({ dongName }: { dongName: string }) {
+  const shortDongName =
+    normalizeAdministrativeDongName(dongName).trim() || dongName.trim();
 
   return (
     <div
       style={{
-        background: "#f9fafb",
+        alignItems: "center",
+        background: "#ffed00",
         display: "flex",
-        flexDirection: "column",
-        height: CARD_HEIGHT,
-        justifyContent: "space-between",
-        padding: "56px 64px 72px",
-        width: CARD_WIDTH,
+        height: "206px",
+        justifyContent: "center",
+        padding: "0 26px",
+        width: "100%",
       }}
     >
       <div
         style={{
+          alignItems: "center",
           display: "flex",
-          flexDirection: "column",
-          gap: "28px",
+          gap: "24px",
+          justifyContent: "center",
           width: "100%",
         }}
       >
-        <div style={{ ...BANNER, display: "flex" }}>{headerLine}</div>
-
-        <div
+        <span
           style={{
-            ...POST_CARD,
-            boxShadow: "0 2px 8px rgba(17, 24, 39, 0.06)",
+            color: "#111827",
             display: "flex",
-            flexDirection: "column",
-            gap: "20px",
+            fontSize: "62px",
+            fontWeight: 700,
+            letterSpacing: "-0.025em",
+            lineHeight: 1,
+            whiteSpace: "nowrap",
           }}
         >
-          <div
-            style={{
-              color: "#8f96a3",
-              display: "flex",
-              fontSize: "22px",
-              fontWeight: 400,
-              lineHeight: 1.35,
-            }}
-          >
-            <span style={{ color: "#111827", fontWeight: 500 }}>{dongName}</span>
-            <span>{` · ${dateStr}`}</span>
-          </div>
+          후보님 여기
+        </span>
+        <span
+          style={{
+            alignItems: "center",
+            background: "#f3f4f6",
+            borderRadius: "999px",
+            color: "#111827",
+            display: "flex",
+            fontSize: "62px",
+            fontWeight: 700,
+            height: "108px",
+            justifyContent: "center",
+            lineHeight: 1,
+            padding: "0 56px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {shortDongName}
+        </span>
+        <span
+          style={{
+            color: "#111827",
+            display: "flex",
+            fontSize: "62px",
+            fontWeight: 700,
+            letterSpacing: "-0.025em",
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+          }}
+        >
+          인데요
+        </span>
+      </div>
+    </div>
+  );
+}
 
-          <div
-            style={{
-              color: "#111827",
-              display: "flex",
-              fontSize: "34px",
-              fontWeight: 500,
-              lineHeight: 1.5,
-              wordBreak: "keep-all",
-            }}
-          >
-            {content}
-          </div>
+type BubbleProps = {
+  content: string;
+  primaryLabel: string;
+  timeLabel: string;
+};
 
-          {agreeCount > 0 ? (
-            <div
-              style={{
-                alignItems: "center",
-                alignSelf: "flex-start",
-                background: "rgba(255,255,255,0.96)",
-                border: "1px solid #e5e7eb",
-                borderRadius: "999px",
-                boxShadow: "0 8px 18px rgba(17, 24, 39, 0.12)",
-                display: "flex",
-                gap: "10px",
-                padding: "10px 18px",
-              }}
-            >
-              <img alt="" height={28} src={checkmarkCardImgSrc} width={28} />
-              <span
-                style={{
-                  color: "#111827",
-                  fontSize: "24px",
-                  fontWeight: 600,
-                  lineHeight: 1,
-                }}
-              >
-                {agreeCount}
-              </span>
-            </div>
-          ) : null}
-        </div>
+function SpeechBubble({ content, primaryLabel, timeLabel }: BubbleProps) {
+  return (
+    <div
+      style={{
+        background: "#ffffff",
+        border: "6px solid #f4dc73",
+        borderRadius: "54px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "24px",
+        padding: "44px 54px",
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          color: "#9ca3af",
+          display: "flex",
+          fontSize: "42px",
+          fontWeight: 500,
+          letterSpacing: "-0.01em",
+          lineHeight: 1.25,
+        }}
+      >
+        <span style={{ color: "#111827", fontWeight: 700 }}>{primaryLabel}</span>
+        <span>{` · ${timeLabel}`}</span>
       </div>
 
       <div
         style={{
+          color: "#111827",
+          display: "flex",
+          fontSize: "62px",
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+          lineHeight: 1.32,
+          wordBreak: "keep-all",
+        }}
+      >
+        {content}
+      </div>
+    </div>
+  );
+}
+
+function CardFooter() {
+  return (
+    <div
+      style={{
+        alignItems: "flex-end",
+        display: "flex",
+        justifyContent: "space-between",
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
           alignItems: "flex-end",
           display: "flex",
-          justifyContent: "space-between",
-          width: "100%",
+          minWidth: "200px",
+        }}
+      >
+        <img
+          alt=""
+          height={72}
+          src={justiceLogoCardImgSrc}
+          width={160}
+          style={{ display: "block" }}
+        />
+      </div>
+      <div
+        style={{
+          alignItems: "flex-end",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
         }}
       >
         <div
           style={{
+            alignItems: "baseline",
             display: "flex",
-            flexDirection: "column",
-            gap: "10px",
+            fontSize: "54px",
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            lineHeight: 1,
           }}
         >
-          <div
-            style={{
-              color: "#111827",
-              display: "flex",
-              fontSize: "36px",
-              fontWeight: 700,
-            }}
-          >
-            여기 근데
-          </div>
-          <div
-            style={{
-              color: "#374151",
-              display: "flex",
-              fontSize: "28px",
-              fontWeight: 600,
-            }}
-          >
-            한마디 할게요
-          </div>
+          <span style={{ color: "#111827", marginRight: "14px" }}>여기 근데</span>
+          <span style={{ color: "#9ca3af" }}>한마디 할게요</span>
         </div>
         <div
           style={{
-            alignItems: "flex-end",
+            color: "#111827",
             display: "flex",
-            flexDirection: "column",
-            gap: "8px",
+            fontSize: "54px",
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            lineHeight: 1,
           }}
         >
-          <div
-            style={{
-              color: "#64748b",
-              display: "flex",
-              fontSize: "26px",
-              fontWeight: 500,
-            }}
-          >
-            herebtw.vercel.app
-          </div>
+          herebtw.or.kr
         </div>
+      </div>
+    </div>
+  );
+}
+
+export function DeliveredVoterCard({
+  headerLine: _headerLine,
+  content,
+  dongName,
+  createdAt,
+  agreeCount: _agreeCount,
+}: DeliveredVoterCardProps) {
+  return (
+    <div
+      style={{
+        background: "#f3f4f6",
+        display: "flex",
+        flexDirection: "column",
+        height: CARD_HEIGHT,
+        width: CARD_WIDTH,
+      }}
+    >
+      <CardHeader dongName={dongName} />
+
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "58px 52px 48px",
+          width: "100%",
+        }}
+      >
+        <SpeechBubble
+          content={content}
+          primaryLabel={dongName}
+          timeLabel={formatRelativeTime(createdAt)}
+        />
+        <CardFooter />
       </div>
     </div>
   );

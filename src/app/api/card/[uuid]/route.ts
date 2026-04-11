@@ -56,6 +56,7 @@ export async function GET(request: Request, context: RouteContext) {
         replyCandidateName: post.reply_candidate_name,
         replyContent: post.reply_content,
         replyIsPromise: post.reply_is_promise ?? false,
+        replyCreatedAt: post.reply_created_at ?? post.created_at,
       });
     }
   } else {

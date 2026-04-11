@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Copy, Link } from "lucide-react";
+import { Copy, Download } from "lucide-react";
 import checkmarkIcon from "../checkmark.svg";
 import {
   uiBrandYellow,
@@ -127,7 +127,7 @@ export function PostComposeSuccess({
             lineHeight: 1.5,
           }}
         >
-          {dongName}에 남긴 목소리를 아래 링크로 다시 확인할 수 있어요.
+          {dongName}에 남긴 목소리를 포토카드로 바로 저장할 수 있어요.
         </p>
       </div>
 
@@ -172,29 +172,33 @@ export function PostComposeSuccess({
         )}
       </button>
 
-      <button
-        onClick={() => {
-          window.open(voiceUrl, "_blank");
-        }}
-        type="button"
+      <a
+        href={`/api/card/${publicUuid}?type=voter`}
+        download={`voice-${publicUuid}.png`}
         style={{
           alignItems: "center",
           appearance: "none",
-          background: "transparent",
-          border: "none",
-          color: uiColors.textMuted,
+          background: uiBrandYellow.ctaGradient,
+          border: `1px solid ${uiBrandYellow.ctaBorder}`,
+          borderRadius: uiRadius.md,
+          boxShadow:
+            "0 8px 18px rgba(116, 94, 62, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
+          color: uiBrandYellow.textOnCta,
           cursor: "pointer",
           display: "flex",
-          fontSize: uiTypography.meta.fontSize,
-          gap: "4px",
-          padding: uiSpacing.xs,
-          textDecoration: "underline",
-          textUnderlineOffset: "3px",
+          fontSize: "15px",
+          fontWeight: 700,
+          gap: uiSpacing.xs,
+          justifyContent: "center",
+          padding: `14px ${uiSpacing.xl}`,
+          textDecoration: "none",
+          width: "100%",
+          maxWidth: 320,
         }}
       >
-        <Link size={12} />
-        내 목소리 페이지 보기
-      </button>
+        <Download size={16} />
+        포토카드 다운로드
+      </a>
 
       <button
         onClick={onDismiss}
