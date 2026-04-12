@@ -2,7 +2,6 @@ import { normalizeAdministrativeDongName } from "../../geo/format-administrative
 import { formatRelativeTime } from "../../utils/datetime";
 import { MAIN_PAGE_FONT_FAMILY } from "../font-family";
 import { CARD_WIDTH, CARD_HEIGHT } from "../generate";
-import { justiceLogoCardImgSrc } from "../justice-logo-img";
 
 type DeliveredVoterCardProps = {
   headerLine: string;
@@ -142,32 +141,17 @@ function CardFooter() {
     <div
       style={{
         display: "flex",
-        height: "232px",
-        position: "relative",
+        justifyContent: "flex-end",
+        paddingBottom: "32px",
         width: "100%",
       }}
     >
-      <img
-        alt=""
-        height={221}
-        src={justiceLogoCardImgSrc}
-        width={354}
-        style={{
-          bottom: "0",
-          display: "block",
-          left: "0",
-          position: "absolute",
-        }}
-      />
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-end",
           gap: "16px",
-          bottom: "32px",
-          position: "absolute",
-          right: "0",
           textAlign: "right",
         }}
       >
