@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Download } from "lucide-react";
 import { DongPostsHeader } from "../home/dong-posts-header";
 import { uiBrandYellow, uiRadius, uiSpacing } from "../../lib/ui/tokens";
@@ -28,48 +28,8 @@ type VoiceDetailScreenProps = {
 };
 
 export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
-  const titleLineRef = useRef<HTMLHeadingElement>(null);
-  const [titleTextWidthPx, setTitleTextWidthPx] = useState<number | null>(null);
   const [savingCardImage, setSavingCardImage] = useState(false);
   const cardImageUrl = `/api/card/${post.publicUuid}?type=voter`;
-
-  useLayoutEffect(() => {
-    const el = titleLineRef.current;
-    if (!el || typeof ResizeObserver === "undefined") {
-      return;
-    }
-
-    const update = () => {
-      setTitleTextWidthPx(Math.ceil(el.getBoundingClientRect().width));
-    };
-
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    window.addEventListener("resize", update);
-
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", update);
-    };
-  }, []);
-
-  const columnStyle =
-    titleTextWidthPx != null
-      ? {
-          boxSizing: "border-box" as const,
-          marginLeft: "auto",
-          marginRight: "auto",
-          maxWidth: "100%",
-          width: `${titleTextWidthPx}px`,
-        }
-      : {
-          boxSizing: "border-box" as const,
-          marginLeft: "auto",
-          marginRight: "auto",
-          maxWidth: "100%",
-          width: "100%",
-        };
 
   async function handleDownloadCardImage() {
     if (savingCardImage) {
@@ -100,8 +60,6 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
       <DongPostsHeader
         animateComposeDongPlaceholder={false}
         currentDongName={post.administrativeDongName}
-        shrinkTitleToIntrinsicWidth
-        titleLineRef={titleLineRef}
       />
 
       <div
@@ -114,13 +72,21 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
           width: "100%",
         }}
       >
-        <div style={columnStyle}>
+        <div
+          style={{
+            boxSizing: "border-box",
+            marginLeft: "auto",
+            marginRight: "auto",
+            maxWidth: "560px",
+            width: "100%",
+          }}
+        >
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               gap: uiSpacing.xl,
-              paddingTop: uiSpacing.xxl,
+              paddingTop: `clamp(${uiSpacing.lg}, 3.5vh, ${uiSpacing.xxl})`,
             }}
           >
             <div
@@ -150,7 +116,7 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
               display: "flex",
               flexDirection: "column",
               gap: uiSpacing.sm,
-              paddingBottom: uiSpacing.xxl,
+              paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${uiSpacing.xxl})`,
               paddingTop: uiSpacing.xl,
             }}
           >

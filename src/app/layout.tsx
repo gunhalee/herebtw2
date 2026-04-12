@@ -3,26 +3,42 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import {
+  SHARE_IMAGE_HEIGHT,
+  SHARE_IMAGE_PNG_PATH,
+  SHARE_IMAGE_SVG_PATH,
+  SHARE_IMAGE_WIDTH,
+  SHARE_TAGLINE,
+  SHARE_TITLE,
+  SITE_URL,
+} from "@/lib/content/share-metadata";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
-const SHARE_TITLE = "여기 근데";
-const SHARE_TAGLINE = "한마디 할게요";
-const SHARE_IMAGE_PATH = "/checkmark.svg";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://herebtw2.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: SHARE_TITLE,
   description: SHARE_TAGLINE,
   openGraph: {
     title: SHARE_TITLE,
     description: SHARE_TAGLINE,
     type: "website",
+    siteName: SHARE_TITLE,
+    locale: "ko_KR",
     images: [
       {
-        url: SHARE_IMAGE_PATH,
-        width: 500,
-        height: 500,
+        url: SHARE_IMAGE_PNG_PATH,
+        width: SHARE_IMAGE_WIDTH,
+        height: SHARE_IMAGE_HEIGHT,
         alt: SHARE_TITLE,
+        type: "image/png",
+      },
+      {
+        url: SHARE_IMAGE_SVG_PATH,
+        width: SHARE_IMAGE_WIDTH,
+        height: SHARE_IMAGE_HEIGHT,
+        alt: SHARE_TITLE,
+        type: "image/svg+xml",
       },
     ],
   },
@@ -30,7 +46,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SHARE_TITLE,
     description: SHARE_TAGLINE,
-    images: [SHARE_IMAGE_PATH],
+    images: [SHARE_IMAGE_PNG_PATH],
   },
   icons: {
     icon: [

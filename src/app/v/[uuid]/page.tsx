@@ -1,13 +1,17 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { VoiceDetailScreen } from "../../../components/voice/voice-detail-screen";
+import {
+  SHARE_IMAGE_HEIGHT,
+  SHARE_IMAGE_PNG_PATH,
+  SHARE_IMAGE_SVG_PATH,
+  SHARE_IMAGE_WIDTH,
+  SHARE_TAGLINE,
+  SHARE_TITLE,
+} from "../../../lib/content/share-metadata";
 import { findPostByUuidRepository } from "../../../lib/posts/repository";
 
 export const dynamic = "force-dynamic";
-
-const SHARE_TITLE = "여기 근데";
-const SHARE_TAGLINE = "한마디 할게요";
-const SHARE_IMAGE_URL = "https://herebtw2.vercel.app/checkmark.svg";
 
 type PageProps = {
   params: Promise<{ uuid: string }>;
@@ -21,12 +25,22 @@ export function generateMetadata(): Metadata {
       title: SHARE_TITLE,
       description: SHARE_TAGLINE,
       type: "website",
+      siteName: SHARE_TITLE,
+      locale: "ko_KR",
       images: [
         {
-          url: SHARE_IMAGE_URL,
-          width: 500,
-          height: 500,
+          url: SHARE_IMAGE_PNG_PATH,
+          width: SHARE_IMAGE_WIDTH,
+          height: SHARE_IMAGE_HEIGHT,
           alt: SHARE_TITLE,
+          type: "image/png",
+        },
+        {
+          url: SHARE_IMAGE_SVG_PATH,
+          width: SHARE_IMAGE_WIDTH,
+          height: SHARE_IMAGE_HEIGHT,
+          alt: SHARE_TITLE,
+          type: "image/svg+xml",
         },
       ],
     },
@@ -34,7 +48,7 @@ export function generateMetadata(): Metadata {
       card: "summary_large_image",
       title: SHARE_TITLE,
       description: SHARE_TAGLINE,
-      images: [SHARE_IMAGE_URL],
+      images: [SHARE_IMAGE_PNG_PATH],
     },
   };
 }
