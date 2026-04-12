@@ -10,6 +10,7 @@ import { PendingFeedUpdatesButton } from "./pending-feed-updates-button";
 
 type DongPostsScreenProps = {
   currentDongName: string;
+  dongCode?: string | null;
   animateComposeDongPlaceholder?: boolean;
   interactionLocked?: boolean;
   scrollTargetPostId?: string | null;
@@ -37,6 +38,7 @@ type DongPostsScreenProps = {
 
 export function DongPostsScreen({
   currentDongName,
+  dongCode = null,
   animateComposeDongPlaceholder = false,
   interactionLocked = false,
   scrollTargetPostId,
@@ -151,6 +153,7 @@ export function DongPostsScreen({
 
       <DongPostsFeed
         activeMenuPostId={activeMenuPostId}
+        dongCode={dongCode}
         interactionLocked={interactionLocked}
         onCloseMenu={onCloseMenu}
         onLoadMore={onLoadMore}

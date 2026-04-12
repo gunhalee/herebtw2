@@ -153,6 +153,7 @@ export function HomeScreen({
         activeReportPostId={activeReportPostId}
         animateComposeDongPlaceholder={shouldAnimateComposeDongPlaceholder}
         currentDongName={currentDongName}
+        dongCode={appShellState.selectedDongCode}
         interactionLocked={composePanelOpen || composePermissionDialogOpen}
         obscurePosts={obscureGlobalFallbackList}
         onApplyPendingUpdates={handleApplyPendingFeedSnapshot}
