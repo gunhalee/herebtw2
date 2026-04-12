@@ -75,9 +75,8 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
             display: "flex",
             flexShrink: 0,
             justifyContent: "center",
-            // width is determined by the image itself (aspect ratio × card height)
-            // or falls back to PHOTO_WIDTH when there's no photo
-            width: candidate.photoUrl ? undefined : `${PHOTO_WIDTH}px`,
+            overflow: "hidden",
+            width: `${PHOTO_WIDTH}px`,
           }}
         >
           {candidate.photoUrl ? (
@@ -87,11 +86,11 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
               src={candidate.photoUrl}
               style={{
                 display: "block",
-                // Fill card height; width follows natural aspect ratio
+                // contain: 비율 유지, 컨테이너 안에 전체 이미지 표시
                 height: "100%",
-                maxWidth: "120px", // cap very wide images
-                minWidth: "60px",  // floor for very narrow images
-                width: "auto",
+                objectFit: "contain",
+                objectPosition: "center top",
+                width: "100%",
               }}
             />
           ) : (
