@@ -166,6 +166,7 @@ export function useHomeShellState({
     ensureDeviceReady,
     feedLocation,
     feedLocationRef,
+    locationSessionCoordinates: locationSession.coordinates,
     feedSortMode,
     hasInitialGlobalFeed,
     isMountedRef,

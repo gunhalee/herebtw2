@@ -31,9 +31,6 @@ export type PostComposeState = {
   content: string;
   charCount: number;
   submitting: boolean;
-  locationResolved: boolean;
-  resolvedDongName: string | null;
-  resolvedDongCode: string | null;
   duplicateBlocked: boolean;
   errorMessage: string | null;
 };

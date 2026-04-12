@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { formatAdministrativeAreaNameForHomeDisplay } from "../../lib/geo/format-administrative-area";
 import { formatBucketedDistance } from "../../lib/geo/format-bucketed-distance";
-import { uiColors, uiSpacing } from "../../lib/ui/tokens";
+import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
 import thumbsUpImage from "../thumbs_up.png";
 
 type PostListItemCardProps = {
@@ -35,8 +35,10 @@ export function PostListItemCard({
 }: PostListItemCardProps) {
   const displayAdministrativeDongName =
     formatAdministrativeAreaNameForHomeDisplay(administrativeDongName);
-  const agreeButtonBackground = "rgba(255, 255, 255, 0.96)";
-  const agreeButtonBorder = myAgree ? "#d3d7dd" : uiColors.border;
+  const agreeButtonBackground = myAgree
+    ? uiBrandYellow.surfaceWarm
+    : "rgba(255, 255, 255, 0.96)";
+  const agreeButtonBorder = myAgree ? uiBrandYellow.borderWarm : uiColors.border;
 
   return (
     <>

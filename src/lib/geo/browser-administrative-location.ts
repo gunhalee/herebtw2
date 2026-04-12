@@ -8,6 +8,8 @@ const ADMINISTRATIVE_LOCATION_CACHE_TTL_MS = 1000 * 60 * 30;
 export type AdministrativeLocationSnapshot = {
   administrativeDongName: string;
   administrativeDongCode: string;
+  locationResolutionToken: string | null;
+  locationResolutionTokenExpiresAt: number | null;
 };
 
 type CachedAdministrativeLocation = AdministrativeLocationSnapshot & {
@@ -26,6 +28,34 @@ function getAdministrativeLocationCacheKey(location: PostLocation) {
 
 function getLegacyAdministrativeLocationCacheKey(location: PostLocation) {
   return `${location.latitude.toFixed(4)}:${location.longitude.toFixed(4)}`;
+}
+
+function normalizeCachedLocationResolutionToken(
+  cached: Partial<CachedAdministrativeLocation>,
+) {
+  const token =
+    typeof cached.locationResolutionToken === "string" &&
+    cached.locationResolutionToken.trim()
+      ? cached.locationResolutionToken
+      : null;
+  const expiresAt =
+    typeof cached.locationResolutionTokenExpiresAt === "number" &&
+    Number.isFinite(cached.locationResolutionTokenExpiresAt) &&
+    cached.locationResolutionTokenExpiresAt > Date.now()
+      ? cached.locationResolutionTokenExpiresAt
+      : null;
+
+  if (!token || !expiresAt) {
+    return {
+      locationResolutionToken: null,
+      locationResolutionTokenExpiresAt: null,
+    } as const;
+  }
+
+  return {
+    locationResolutionToken: token,
+    locationResolutionTokenExpiresAt: expiresAt,
+  } as const;
 }
 
 export function readCachedAdministrativeLocation(
@@ -60,6 +90,7 @@ export function readCachedAdministrativeLocation(
     return {
       administrativeDongName: cached.administrativeDongName,
       administrativeDongCode: cached.administrativeDongCode,
+      ...normalizeCachedLocationResolutionToken(cached),
     };
   } catch {
     return null;
@@ -79,6 +110,7 @@ export function writeCachedAdministrativeLocation(
     cachedAt: Date.now(),
     administrativeDongName: resolvedLocation.administrativeDongName,
     administrativeDongCode: resolvedLocation.administrativeDongCode,
+    ...normalizeCachedLocationResolutionToken(resolvedLocation),
   };
 
   window.localStorage.setItem(

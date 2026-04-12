@@ -1,7 +1,7 @@
 import { readJsonBody } from "../../../../lib/api/request";
 import { fail, ok } from "../../../../lib/api/response";
 import { formatAdministrativeAreaName } from "../../../../lib/geo/format-administrative-area";
-import { createLocationResolutionToken } from "../../../../lib/geo/location-resolution-token";
+import { createLocationResolutionTokenWithExpiry } from "../../../../lib/geo/location-resolution-token";
 import {
   isValidCoordinateInput,
   resolveLocationFromCoordinates,
@@ -40,16 +40,18 @@ export async function POST(request: Request) {
       sigunguName: resolvedLocation.sigunguName,
       administrativeDongName: resolvedLocation.administrativeDongName,
     });
+    const locationResolutionToken = createLocationResolutionTokenWithExpiry({
+      administrativeDongCode: resolvedLocation.administrativeDongCode,
+      formattedAdministrativeAreaName,
+      location,
+    });
 
     return ok({
       location: {
         ...resolvedLocation,
         formattedAdministrativeAreaName,
-        locationResolutionToken: createLocationResolutionToken({
-          administrativeDongCode: resolvedLocation.administrativeDongCode,
-          formattedAdministrativeAreaName,
-          location,
-        }),
+        locationResolutionToken: locationResolutionToken.token,
+        locationResolutionTokenExpiresAt: locationResolutionToken.expiresAt,
       },
     });
   } catch (error) {

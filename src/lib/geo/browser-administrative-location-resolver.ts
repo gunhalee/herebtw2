@@ -7,6 +7,7 @@ export type ResolvedAdministrativeLocation = PostLocation &
     countryCode: string | null;
     formattedAdministrativeAreaName: string;
     locationResolutionToken: string | null;
+    locationResolutionTokenExpiresAt: number | null;
   };
 
 type ResolveLocationResponse = {

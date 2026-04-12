@@ -32,7 +32,13 @@ export type BrowserLocationSessionState = {
   error: unknown | null;
 };
 
+type EnsureBrowserLocationResolutionTokenOptions = {
+  maxWaitMs?: number;
+  triggerRefresh?: boolean;
+};
+
 const BROWSER_LOCATION_SESSION_FRESHNESS_TTL_MS = 1000 * 60 * 3;
+const LOCATION_RESOLUTION_TOKEN_MIN_REMAINING_MS = 1000 * 20;
 
 const INITIAL_BROWSER_LOCATION_SESSION_STATE: BrowserLocationSessionState = {
   coordinates: null,
@@ -55,6 +61,29 @@ function emitBrowserLocationSessionChange() {
   for (const listener of browserLocationSessionListeners) {
     listener();
   }
+}
+
+function hasUsableLocationResolutionToken(
+  resolvedLocation: ResolvedAdministrativeLocation | null,
+) {
+  return Boolean(
+    resolvedLocation?.locationResolutionToken &&
+      resolvedLocation.locationResolutionTokenExpiresAt &&
+      resolvedLocation.locationResolutionTokenExpiresAt - Date.now() >
+        LOCATION_RESOLUTION_TOKEN_MIN_REMAINING_MS,
+  );
+}
+
+function getLocationResolutionTokenFromSession(
+  locationSession: BrowserLocationSessionState,
+) {
+  const { resolvedLocation } = locationSession;
+
+  if (!resolvedLocation || !hasUsableLocationResolutionToken(resolvedLocation)) {
+    return null;
+  }
+
+  return resolvedLocation.locationResolutionToken ?? null;
 }
 
 function setBrowserLocationSessionState(
@@ -89,7 +118,6 @@ function createCachedResolvedLocation(
     countryCode: null,
     formattedAdministrativeAreaName:
       administrativeLocation.administrativeDongName,
-    locationResolutionToken: null,
   };
 }
 
@@ -140,6 +168,40 @@ function getBrowserLocationSessionSnapshot() {
   return browserLocationSessionState;
 }
 
+async function waitForSessionWithTimeout(
+  promise: Promise<BrowserLocationSessionState>,
+  maxWaitMs: number | undefined,
+) {
+  if (typeof maxWaitMs !== "number" || !Number.isFinite(maxWaitMs)) {
+    try {
+      return await promise;
+    } catch {
+      return getBrowserLocationSessionSnapshot();
+    }
+  }
+
+  if (maxWaitMs <= 0) {
+    return getBrowserLocationSessionSnapshot();
+  }
+
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    return await Promise.race([
+      promise.catch(() => getBrowserLocationSessionSnapshot()),
+      new Promise<BrowserLocationSessionState>((resolve) => {
+        timeoutHandle = setTimeout(() => {
+          resolve(getBrowserLocationSessionSnapshot());
+        }, maxWaitMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutHandle !== null) {
+      clearTimeout(timeoutHandle);
+    }
+  }
+}
+
 export function useBrowserLocationSession() {
   return useSyncExternalStore(
     subscribeBrowserLocationSession,
@@ -162,6 +224,18 @@ export function primeBrowserLocationSession(location: PostLocation) {
   });
 
   return getBrowserLocationSessionSnapshot();
+}
+
+export function hasBrowserLocationResolutionToken(
+  locationSession: BrowserLocationSessionState,
+) {
+  return Boolean(getLocationResolutionTokenFromSession(locationSession));
+}
+
+export function getBrowserLocationResolutionToken(
+  locationSession: BrowserLocationSessionState,
+) {
+  return getLocationResolutionTokenFromSession(locationSession);
 }
 
 export function isBrowserLocationSessionFresh(
@@ -274,6 +348,9 @@ function beginBrowserLocationSessionRefresh() {
       writeCachedAdministrativeLocation(coordinates, {
         administrativeDongName: resolvedLocation.administrativeDongName,
         administrativeDongCode: resolvedLocation.administrativeDongCode,
+        locationResolutionToken: resolvedLocation.locationResolutionToken,
+        locationResolutionTokenExpiresAt:
+          resolvedLocation.locationResolutionTokenExpiresAt,
       });
 
       setBrowserLocationSessionState({
@@ -364,4 +441,45 @@ export async function ensureBrowserLocationSession() {
   }
 
   return refreshBrowserLocationSession();
+}
+
+export async function ensureBrowserLocationResolutionToken(
+  options?: EnsureBrowserLocationResolutionTokenOptions,
+) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const currentSession = getBrowserLocationSessionSnapshot();
+  const existingToken = getLocationResolutionTokenFromSession(currentSession);
+
+  if (existingToken) {
+    return existingToken;
+  }
+
+  if (currentSession.permissionMode === "denied") {
+    return null;
+  }
+
+  const pendingRefresh = refreshPromise;
+
+  if (pendingRefresh) {
+    const session = await waitForSessionWithTimeout(
+      pendingRefresh,
+      options?.maxWaitMs,
+    );
+
+    return getLocationResolutionTokenFromSession(session);
+  }
+
+  if (options?.triggerRefresh === false) {
+    return null;
+  }
+
+  const refreshedSession = await waitForSessionWithTimeout(
+    refreshBrowserLocationSession(),
+    options?.maxWaitMs,
+  );
+
+  return getLocationResolutionTokenFromSession(refreshedSession);
 }

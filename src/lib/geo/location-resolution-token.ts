@@ -3,7 +3,7 @@ import type { PostLocation } from "../../types/post";
 import { getSupabaseConfig } from "../supabase/config";
 import { quantizeLocationTo100MeterGrid } from "./location-buckets";
 
-const LOCATION_RESOLUTION_TOKEN_TTL_MS = 1000 * 60 * 10;
+export const LOCATION_RESOLUTION_TOKEN_TTL_MS = 1000 * 60 * 10;
 
 type LocationResolutionTokenPayload = {
   administrativeDongCode: string | null;
@@ -16,6 +16,11 @@ type LocationResolutionTokenPayload = {
 type VerifiedLocationResolution = {
   administrativeDongCode: string | null;
   formattedAdministrativeAreaName: string;
+};
+
+type CreatedLocationResolutionToken = {
+  token: string | null;
+  expiresAt: number | null;
 };
 
 function getLocationResolutionTokenSecret() {
@@ -69,23 +74,38 @@ export function createLocationResolutionToken(input: {
   formattedAdministrativeAreaName: string;
   location: PostLocation;
 }) {
+  return createLocationResolutionTokenWithExpiry(input).token;
+}
+
+export function createLocationResolutionTokenWithExpiry(input: {
+  administrativeDongCode: string | null;
+  formattedAdministrativeAreaName: string;
+  location: PostLocation;
+}): CreatedLocationResolutionToken {
   const secret = getLocationResolutionTokenSecret();
 
   if (!secret || !input.formattedAdministrativeAreaName.trim()) {
-    return null;
+    return {
+      token: null,
+      expiresAt: null,
+    };
   }
 
   const quantizedLocation = quantizeLocationTo100MeterGrid(input.location);
+  const expiresAt = Date.now() + LOCATION_RESOLUTION_TOKEN_TTL_MS;
   const tokenPayload = encodeTokenPayload({
     administrativeDongCode: input.administrativeDongCode,
     formattedAdministrativeAreaName:
       input.formattedAdministrativeAreaName.trim(),
-    expiresAt: Date.now() + LOCATION_RESOLUTION_TOKEN_TTL_MS,
+    expiresAt,
     latitudeBucket100m: quantizedLocation.latitudeBucket100m,
     longitudeBucket100m: quantizedLocation.longitudeBucket100m,
   });
 
-  return `${tokenPayload}.${signTokenPayload(tokenPayload, secret)}`;
+  return {
+    token: `${tokenPayload}.${signTokenPayload(tokenPayload, secret)}`,
+    expiresAt,
+  };
 }
 
 export function verifyLocationResolutionToken(

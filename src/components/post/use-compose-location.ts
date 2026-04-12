@@ -2,114 +2,82 @@
 
 import { useEffect, type Dispatch, type SetStateAction } from "react";
 import {
-  getBrowserLocationErrorMessage,
-  type ResolvedAdministrativeLocation,
-} from "../../lib/geo/browser-administrative-location-resolver";
-import {
-  ensureBrowserLocationSession,
-  isBrowserLocationSessionFresh,
+  ensureBrowserLocationResolutionToken,
+  ensureBrowserLocationCoordinates,
+  getBrowserLocationResolutionToken,
   useBrowserLocationSession,
 } from "../../lib/geo/browser-location-session";
-import type { PostComposeState } from "../../types/post";
+import type { PostComposeState, PostLocation } from "../../types/post";
 
 type UseComposeLocationParams = {
   setComposeState: Dispatch<SetStateAction<PostComposeState>>;
 };
 
-function getComposeLocationStatus(
-  resolvedLocation: ResolvedAdministrativeLocation | null,
+function toSubmitLocation(
   locationSession: ReturnType<typeof useBrowserLocationSession>,
-) {
-  const locationSessionFresh = isBrowserLocationSessionFresh(locationSession);
+): PostLocation | null {
+  if (locationSession.coordinates) {
+    return locationSession.coordinates;
+  }
 
-  if (locationSession.permissionMode === "denied") {
+  if (locationSession.resolvedLocation) {
     return {
-      locationReadyForSubmit: false,
-      locationStatusText: getBrowserLocationErrorMessage(locationSession.error),
-      locationStatusTone: "danger" as const,
+      latitude: locationSession.resolvedLocation.latitude,
+      longitude: locationSession.resolvedLocation.longitude,
     };
   }
 
-  if (resolvedLocation) {
-    if (locationSession.phase === "administrative_verified" && locationSessionFresh) {
-      return {
-        locationReadyForSubmit: true,
-        locationStatusText: null,
-        locationStatusTone: "neutral" as const,
-      };
-    }
-
-    if (locationSession.permissionMode === "granted" && locationSessionFresh) {
-      return {
-        locationReadyForSubmit: true,
-        locationStatusText: "가장 최근에 확인한 동네를 사용하고 있어요.",
-        locationStatusTone: "neutral" as const,
-      };
-    }
-
-    if (locationSession.error) {
-      return {
-        locationReadyForSubmit: false,
-        locationStatusText: getBrowserLocationErrorMessage(locationSession.error),
-        locationStatusTone: "danger" as const,
-      };
-    }
-
-    return {
-      locationReadyForSubmit: false,
-      locationStatusText: "현재 위치를 다시 확인하는 중이에요.",
-      locationStatusTone: "neutral" as const,
-    };
-  }
-
-  if (locationSession.error) {
-    return {
-      locationReadyForSubmit: false,
-      locationStatusText: getBrowserLocationErrorMessage(locationSession.error),
-      locationStatusTone: "danger" as const,
-    };
-  }
-
-  return {
-    locationReadyForSubmit: false,
-    locationStatusText: "현재 위치를 확인하는 중이에요.",
-    locationStatusTone: "neutral" as const,
-  };
+  return null;
 }
 
 export function useComposeLocation({
   setComposeState,
 }: UseComposeLocationParams) {
   const locationSession = useBrowserLocationSession();
-  const resolvedLocation = locationSession.resolvedLocation;
-  const {
-    locationReadyForSubmit,
-    locationStatusText,
-    locationStatusTone,
-  } = getComposeLocationStatus(resolvedLocation, locationSession);
+  const submitLocation = toSubmitLocation(locationSession);
+  const locationResolutionToken = getBrowserLocationResolutionToken(locationSession);
+  const locationResolutionTokenPending = Boolean(
+    submitLocation &&
+      !locationResolutionToken &&
+      locationSession.permissionMode !== "denied",
+  );
+  const locationReadyForSubmit =
+    locationSession.permissionMode !== "denied" && submitLocation !== null;
 
   useEffect(() => {
-    void ensureBrowserLocationSession().catch(() => undefined);
-  }, []);
+    if (submitLocation) {
+      return;
+    }
+
+    void ensureBrowserLocationCoordinates().catch(() => undefined);
+  }, [submitLocation]);
+
+  useEffect(() => {
+    if (!locationResolutionTokenPending) {
+      return;
+    }
+
+    void ensureBrowserLocationResolutionToken({
+      maxWaitMs: 0,
+      triggerRefresh: true,
+    }).catch(() => undefined);
+  }, [locationResolutionTokenPending]);
 
   useEffect(() => {
     setComposeState((current) => ({
       ...current,
-      locationResolved: locationReadyForSubmit,
-      resolvedDongName: resolvedLocation?.administrativeDongName ?? null,
-      resolvedDongCode: resolvedLocation?.administrativeDongCode ?? null,
       errorMessage: locationReadyForSubmit
         ? null
         : current.submitting
           ? "현재 위치 확인이 끝난 뒤에 글을 등록할 수 있어요."
           : current.errorMessage,
     }));
-  }, [locationReadyForSubmit, resolvedLocation, setComposeState]);
+  }, [locationReadyForSubmit, setComposeState]);
 
   return {
     locationReadyForSubmit,
-    locationStatusText,
-    locationStatusTone,
-    resolvedLocation,
+    locationResolutionTokenPending,
+    locationResolutionToken,
+    submitLocation,
   };
 }

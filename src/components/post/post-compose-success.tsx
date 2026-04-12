@@ -99,7 +99,14 @@ export function PostComposeSuccess({
         height: "100%",
       }}
     >
-      <CheckmarkIcon sizePx={56} />
+      <div
+        style={{
+          paddingBottom: uiSpacing.xs,
+          paddingTop: uiSpacing.md,
+        }}
+      >
+        <CheckmarkIcon sizePx={56} />
+      </div>
 
       <div
         style={{
@@ -131,7 +138,7 @@ export function PostComposeSuccess({
         >
           {`${displayDongName}에 남긴 목소리를 포토카드로 저장해보세요.`}
           <br />
-          링크를 통해서 후보자의 답글을 확인할 수 있어요.
+          링크를 통해서 후보자의 답글을 확인할 수도 있어요.
         </p>
       </div>
 

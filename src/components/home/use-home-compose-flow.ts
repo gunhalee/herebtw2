@@ -12,7 +12,10 @@ import {
   buildReadyPostListState,
   type PendingFeedSnapshot,
 } from "./home-feed-state";
-import { ensureBrowserLocationCoordinates } from "../../lib/geo/browser-location-session";
+import {
+  ensureBrowserLocationCoordinates,
+  ensureBrowserLocationResolutionToken,
+} from "../../lib/geo/browser-location-session";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 
@@ -21,6 +24,7 @@ type UseHomeComposeFlowParams = {
   isMountedRef: MutableRefObject<boolean>;
   appShellStateRef: MutableRefObject<AppShellState>;
   feedLocationRef: MutableRefObject<PostLocation | null>;
+  locationSessionCoordinates: PostLocation | null;
   setFeedSortMode: Dispatch<SetStateAction<"nearby" | "global">>;
   setPostListState: Dispatch<SetStateAction<PostListState>>;
   setPendingFeedSnapshot: Dispatch<SetStateAction<PendingFeedSnapshot | null>>;
@@ -32,6 +36,7 @@ export function useHomeComposeFlow({
   isMountedRef,
   appShellStateRef,
   feedLocationRef,
+  locationSessionCoordinates,
   setFeedSortMode,
   setPostListState,
   setPendingFeedSnapshot,
@@ -44,8 +49,9 @@ export function useHomeComposeFlow({
   async function handleCompose() {
     closeMenu();
     setComposePermissionDialogOpen(false);
+    const composeLocation = feedLocationRef.current ?? locationSessionCoordinates;
 
-    if (!feedLocationRef.current) {
+    if (!composeLocation) {
       const locationSession = await ensureBrowserLocationCoordinates();
 
       if (!locationSession.coordinates) {
@@ -55,6 +61,13 @@ export function useHomeComposeFlow({
 
         return;
       }
+    }
+
+    if (dataSourceMode === "supabase") {
+      void ensureBrowserLocationResolutionToken({
+        maxWaitMs: 0,
+        triggerRefresh: true,
+      }).catch(() => undefined);
     }
 
     if (isMountedRef.current) {

@@ -30,9 +30,6 @@ function createInitialComposeState(): PostComposeState {
     content: "",
     charCount: 0,
     submitting: false,
-    locationResolved: false,
-    resolvedDongName: null,
-    resolvedDongCode: null,
     duplicateBlocked: false,
     errorMessage: null,
   };
@@ -48,9 +45,9 @@ export function PostComposeExperience({
   const [successData, setSuccessData] = useState<ComposeSuccessData | null>(null);
   const {
     locationReadyForSubmit,
-    locationStatusText,
-    locationStatusTone,
-    resolvedLocation,
+    locationResolutionTokenPending,
+    locationResolutionToken,
+    submitLocation,
   } =
     useComposeLocation({
       setComposeState,
@@ -63,6 +60,7 @@ export function PostComposeExperience({
       composeState,
       dataSourceMode,
       locationReadyForSubmit,
+      locationResolutionTokenPending,
       notificationEmail,
       onDismiss,
       onSuccess: (result) => {
@@ -77,8 +75,9 @@ export function PostComposeExperience({
           void Promise.resolve(onSuccess()).catch(() => undefined);
         }
       },
-      resolvedLocation,
+      locationResolutionToken,
       setComposeState,
+      submitLocation,
     });
 
   const sheetViewportAvailableHeight = Math.max(
@@ -274,7 +273,7 @@ export function PostComposeExperience({
                 fontWeight: uiTypography.meta.fontWeight,
               }}
             >
-              답변이 달리면 알려드릴까요?
+              후보자가 답변을 달면 알려드릴까요?
             </label>
             <input
               id="sheet-notification-email"
@@ -330,20 +329,6 @@ export function PostComposeExperience({
             </p>
           ) : null}
 
-          {locationStatusText ? (
-            <p
-              style={{
-                color:
-                  locationStatusTone === "danger"
-                    ? uiColors.danger
-                    : uiColors.textMuted,
-                fontSize: uiTypography.meta.fontSize,
-                margin: 0,
-              }}
-            >
-              {locationStatusText}
-            </p>
-          ) : null}
         </form>
         )}
       </section>

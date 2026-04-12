@@ -78,7 +78,7 @@ export function DongPostsFeed({
               cursor: "default",
               inset: 0,
               padding: 0,
-              pointerEvents: "none",
+              pointerEvents: "auto",
               position: "absolute",
               zIndex: 1,
             }}

@@ -9,8 +9,8 @@ import {
 } from "react";
 import { createJsonPostRequestInit, fetchClientApiData } from "../../lib/api/client";
 import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
-import type { ResolvedAdministrativeLocation } from "../../lib/geo/browser-administrative-location-resolver";
-import type { PostComposeState } from "../../types/post";
+import { ensureBrowserLocationResolutionToken } from "../../lib/geo/browser-location-session";
+import type { PostComposeState, PostLocation } from "../../types/post";
 
 type ComposeSuccessResult = {
   publicUuid: string;
@@ -21,22 +21,26 @@ type UseComposeSubmitParams = {
   composeState: PostComposeState;
   dataSourceMode: "supabase" | "mock";
   locationReadyForSubmit: boolean;
+  locationResolutionTokenPending: boolean;
+  locationResolutionToken: string | null;
   notificationEmail: string;
   onDismiss?: () => void;
   onSuccess?: (result: ComposeSuccessResult) => void | Promise<void>;
-  resolvedLocation: ResolvedAdministrativeLocation | null;
   setComposeState: Dispatch<SetStateAction<PostComposeState>>;
+  submitLocation: PostLocation | null;
 };
 
 export function useComposeSubmit({
   composeState,
   dataSourceMode,
   locationReadyForSubmit,
+  locationResolutionTokenPending,
+  locationResolutionToken,
   notificationEmail,
   onDismiss,
   onSuccess,
-  resolvedLocation,
   setComposeState,
+  submitLocation,
 }: UseComposeSubmitParams) {
   const deviceRegistrationPromiseRef = useRef<Promise<string> | null>(null);
 
@@ -77,13 +81,12 @@ export function useComposeSubmit({
     if (dataSourceMode !== "supabase") {
       setComposeState((current) => ({
         ...current,
-        errorMessage:
-          "실시간으로 글을 등록하려면 Supabase 연결이 필요해요.",
+        errorMessage: "실시간으로 글을 등록하려면 Supabase 연결이 필요해요.",
       }));
       return;
     }
 
-    if (!resolvedLocation || !locationReadyForSubmit) {
+    if (!submitLocation || !locationReadyForSubmit) {
       setComposeState((current) => ({
         ...current,
         errorMessage: "현재 위치 확인이 끝난 뒤에 글을 등록할 수 있어요.",
@@ -100,6 +103,12 @@ export function useComposeSubmit({
     try {
       const anonymousDeviceId = await ensureDeviceRegistrationStarted();
       const trimmedEmail = notificationEmail.trim();
+      const resolvedLocationToken = locationResolutionTokenPending
+        ? await ensureBrowserLocationResolutionToken({
+            maxWaitMs: 450,
+            triggerRefresh: true,
+          })
+        : locationResolutionToken;
       const response = await fetchClientApiData<{
         post: {
           id: string;
@@ -112,10 +121,10 @@ export function useComposeSubmit({
           anonymousDeviceId,
           content: composeState.content,
           location: {
-            latitude: resolvedLocation.latitude,
-            longitude: resolvedLocation.longitude,
+            latitude: submitLocation.latitude,
+            longitude: submitLocation.longitude,
           },
-          locationResolutionToken: resolvedLocation.locationResolutionToken,
+          locationResolutionToken: resolvedLocationToken ?? locationResolutionToken,
           ...(trimmedEmail ? { notificationEmail: trimmedEmail } : {}),
         }),
         path: "/api/posts",

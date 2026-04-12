@@ -196,7 +196,7 @@ export function DeliveredVoterCard({
   return (
     <div
       style={{
-        background: "#f3f4f6",
+        background: "#ffffff",
         display: "flex",
         flexDirection: "column",
         fontFamily: MAIN_PAGE_FONT_FAMILY,
