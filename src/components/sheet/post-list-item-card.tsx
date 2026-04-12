@@ -295,7 +295,7 @@ export function PostListItemCard({
                   <span
                     style={{
                       background: "#fbbf24",
-                      borderRadius: "6px",
+                      borderRadius: "999px",
                       color: "#78350f",
                       fontSize: "10px",
                       fontWeight: 700,
