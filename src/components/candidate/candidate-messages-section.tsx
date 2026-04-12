@@ -22,6 +22,31 @@ type Props = {
   dongCode: string | null;
 };
 
+// ─── Cache (sessionStorage) ──────────────────────────────────────────────────
+
+const CACHE_KEY = "herebtw.candidateMessages";
+
+function readCachedCandidates(): CandidateMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as CandidateMessage[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedCandidates(list: CandidateMessage[]) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(list));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
 function CandidateCard({ candidate }: { candidate: CandidateMessage }) {
   return (
     <a
@@ -66,12 +91,7 @@ function CandidateCard({ candidate }: { candidate: CandidateMessage }) {
         >
           {candidate.name}
         </span>
-        <span
-          style={{
-            color: uiColors.textMuted,
-            fontSize: "11px",
-          }}
-        >
+        <span style={{ color: uiColors.textMuted, fontSize: "11px" }}>
           {candidate.district}
         </span>
       </div>
@@ -87,7 +107,7 @@ function CandidateCard({ candidate }: { candidate: CandidateMessage }) {
           WebkitLineClamp: 2,
         }}
       >
-        "{candidate.firstMessageContent}"
+        &ldquo;{candidate.firstMessageContent}&rdquo;
       </p>
     </a>
   );
@@ -134,55 +154,65 @@ function CandidateRow({
   );
 }
 
-const CACHE_KEY = "herebtw.candidateMessages";
-
-function readCachedCandidates(): CandidateMessage[] {
-  try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
-    return raw ? (JSON.parse(raw) as CandidateMessage[]) : [];
-  } catch {
-    return [];
-  }
+function SectionHeader() {
+  return (
+    <p
+      style={{
+        color: uiColors.textStrong,
+        fontSize: uiTypography.title.fontSize,
+        fontWeight: uiTypography.title.fontWeight,
+        margin: `0 0 2px ${uiSpacing.pageX}`,
+      }}
+    >
+      후보자 한마디
+    </p>
+  );
 }
 
-function writeCachedCandidates(candidates: CandidateMessage[]) {
-  try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(candidates));
-  } catch {
-    // ignore
-  }
-}
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function CandidateMessagesSection({ dongCode }: Props) {
-  const [candidates, setCandidates] = useState<CandidateMessage[]>(() =>
-    readCachedCandidates(),
-  );
+  // Start with [] to avoid SSR/hydration mismatch.
+  // sessionStorage is read in the first useEffect (client-only).
+  const [candidates, setCandidates] = useState<CandidateMessage[]>([]);
   const [othersOpen, setOthersOpen] = useState(false);
 
   useEffect(() => {
+    // 1) Immediately show cached candidates from previous session
+    const cached = readCachedCandidates();
+    if (cached.length > 0) {
+      setCandidates(cached);
+    }
+
+    // 2) Fetch fresh data
     let cancelled = false;
     fetch("/api/candidates/messages")
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) {
-          const fetched: CandidateMessage[] = data?.data?.candidates ?? [];
-          if (fetched.length > 0) {
-            setCandidates(fetched);
-            writeCachedCandidates(fetched);
-          }
-        }
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
       })
-      .catch(() => {
-        // silently ignore — cached data stays visible
+      .then((data) => {
+        if (cancelled) return;
+        const fetched: CandidateMessage[] = data?.data?.candidates ?? [];
+        if (fetched.length > 0) {
+          setCandidates(fetched);
+          writeCachedCandidates(fetched);
+        }
+        // If fetched is empty, keep whatever we already have (cache or previous fetch)
+      })
+      .catch((err) => {
+        console.warn("[CandidateMessagesSection] fetch failed:", err);
+        // Don't clear existing candidates on fetch failure
       });
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, []); // run once on mount
 
   if (candidates.length === 0) return null;
 
-  // Categorise by tier
+  // ── Tier classification ──────────────────────────────────────────────────
   const tiered = candidates.map((c) => ({
     candidate: c,
     tier: matchCandidateTier(c.district, dongCode) as CandidateTier,
@@ -193,10 +223,9 @@ export function CandidateMessagesSection({ dongCode }: Props) {
   const tier3 = tiered.filter((t) => t.tier === 3).map((t) => t.candidate);
 
   const primaryCandidates = [...tier1, ...tier2];
-  const hasOthers = tier3.length > 0;
   const hasNearby = primaryCandidates.length > 0;
+  const hasOthers = tier3.length > 0;
 
-  // Build label for tier 1 section
   const sigunguName = getSigunguName(dongCode);
   const sidoName = getSidoName(dongCode);
   const nearbyLabel = sigunguName
@@ -205,8 +234,10 @@ export function CandidateMessagesSection({ dongCode }: Props) {
       ? `${sidoName} 후보`
       : "내 지역 후보";
 
-  // If no location, lump all into "others"
-  if (!dongCode) {
+  // ── No location or location could not be matched → show all ─────────────
+  // Also covers the case where dongCode is set but ALL candidates fall into
+  // tier 3 (lookup mismatch). In that case we show everyone directly.
+  if (!dongCode || (!hasNearby && !hasOthers)) {
     return (
       <section
         style={{
@@ -221,6 +252,27 @@ export function CandidateMessagesSection({ dongCode }: Props) {
     );
   }
 
+  // ── dongCode set but no tier1/2 match → show all (tier3) directly ───────
+  // This prevents candidates from being completely hidden behind a collapse.
+  if (!hasNearby && hasOthers) {
+    return (
+      <section
+        style={{
+          borderBottom: `1px solid ${uiColors.border}`,
+          display: "flex",
+          flexDirection: "column",
+          gap: uiSpacing.md,
+          paddingBottom: uiSpacing.lg,
+          paddingTop: uiSpacing.lg,
+        }}
+      >
+        <SectionHeader />
+        <CandidateRow label="전체 후보" candidates={tier3} />
+      </section>
+    );
+  }
+
+  // ── Normal case: tier1/2 shown prominently, tier3 collapsible ───────────
   return (
     <section
       style={{
@@ -234,9 +286,7 @@ export function CandidateMessagesSection({ dongCode }: Props) {
     >
       <SectionHeader />
 
-      {hasNearby ? (
-        <CandidateRow label={nearbyLabel} candidates={primaryCandidates} />
-      ) : null}
+      <CandidateRow label={nearbyLabel} candidates={primaryCandidates} />
 
       {hasOthers ? (
         <div>
@@ -269,23 +319,6 @@ export function CandidateMessagesSection({ dongCode }: Props) {
           ) : null}
         </div>
       ) : null}
-
-      {!hasNearby && !hasOthers ? null : null}
     </section>
-  );
-}
-
-function SectionHeader() {
-  return (
-    <p
-      style={{
-        color: uiColors.textStrong,
-        fontSize: uiTypography.title.fontSize,
-        fontWeight: uiTypography.title.fontWeight,
-        margin: `0 0 2px ${uiSpacing.pageX}`,
-      }}
-    >
-      후보자 한마디
-    </p>
   );
 }
