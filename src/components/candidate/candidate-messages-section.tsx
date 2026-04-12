@@ -44,10 +44,10 @@ function writeCachedCandidates(list: CandidateMessage[]) {
 
 // ─── Single candidate card (mimics PostListItemCard, no actions) ──────────────
 
-const PHOTO_WIDTH = 88; // px
+const PHOTO_FALLBACK_WIDTH = 72; // px – used only when there's no photo
 
 function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
-  const initials = candidate.name.slice(-1); // last char of Korean name
+  const initials = candidate.name.slice(-1);
 
   return (
     <a
@@ -62,49 +62,50 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
           boxShadow: "0 2px 8px rgba(17, 24, 39, 0.04)",
           boxSizing: "border-box",
           display: "flex",
-          overflow: "hidden", // clips photo corners to match borderRadius
+          overflow: "hidden",
           width: "100%",
         }}
       >
         {/* ── Left: profile photo ──────────────────────────────────── */}
-        <div
-          style={{
-            alignItems: "center",
-            alignSelf: "stretch",
-            background: "#e5e7eb",
-            display: "flex",
-            flexShrink: 0,
-            justifyContent: "center",
-            overflow: "hidden",
-            width: `${PHOTO_WIDTH}px`,
-          }}
-        >
-          {candidate.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+        {candidate.photoUrl ? (
+          // Wrapper stretches to card height via default align-items:stretch.
+          // img height:100% fills that height; width:auto preserves aspect ratio.
+          <div
+            style={{
+              alignSelf: "stretch",
+              background: "#e5e7eb",
+              flexShrink: 0,
+              overflow: "hidden",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt={`${candidate.name} 후보`}
               src={candidate.photoUrl}
               style={{
                 display: "block",
-                // contain: 비율 유지, 컨테이너 안에 전체 이미지 표시
                 height: "100%",
-                objectFit: "contain",
-                objectPosition: "center top",
-                width: "100%",
+                width: "auto",
               }}
             />
-          ) : (
-            <span
-              style={{
-                color: "#6b7280",
-                fontSize: "22px",
-                fontWeight: 700,
-              }}
-            >
+          </div>
+        ) : (
+          <div
+            style={{
+              alignItems: "center",
+              alignSelf: "stretch",
+              background: "#e5e7eb",
+              display: "flex",
+              flexShrink: 0,
+              justifyContent: "center",
+              width: `${PHOTO_FALLBACK_WIDTH}px`,
+            }}
+          >
+            <span style={{ color: "#6b7280", fontSize: "22px", fontWeight: 700 }}>
               {initials}
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* ── Right: meta + content ────────────────────────────────── */}
         <div
