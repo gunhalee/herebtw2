@@ -17,7 +17,7 @@ async function findCandidateByAuthUserId(authUserId: string) {
 
 async function findCandidateById(candidateId: string) {
   const rows = await supabaseSelect<CandidateRow[]>(
-    `candidates?select=id,auth_user_id,name,district,email,first_message_id,is_active,created_at,activated_at&id=eq.${candidateId}&limit=1`,
+    `candidates?select=id,auth_user_id,name,district,email,photo_url,first_message_id,metro_council_district,local_council_district,council_type,is_active,created_at,activated_at&id=eq.${candidateId}&limit=1`,
   );
 
   return rows?.[0] ?? null;
@@ -73,8 +73,10 @@ async function loadCandidatePromises(candidateId: string) {
 }
 
 async function loadFirstMessage(postId: string) {
-  const rows = await supabaseSelect<Array<{ id: string; content: string }>>(
-    `posts?select=id,content&id=eq.${postId}&limit=1`,
+  const rows = await supabaseSelect<
+    Array<{ id: string; content: string; public_uuid: string }>
+  >(
+    `posts?select=id,content,public_uuid&id=eq.${postId}&limit=1`,
   );
 
   return rows?.[0] ?? null;

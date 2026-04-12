@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import type { CandidateMessage } from "../../lib/candidates/messages";
 import { DongPostsFeedContent } from "../home/dong-posts-feed-content";
 import { fetchCandidateRepliesPage } from "./candidate-replies-api";
 import {
@@ -12,9 +13,11 @@ import {
 } from "../home/home-feed-state";
 import type { PostListState } from "../../types/post";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
+import { CandidateMessageCard } from "./candidate-messages-view";
 
 type CandidateRepliesScreenProps = {
   candidateId: string;
+  candidateMessageCard?: CandidateMessage | null;
   candidateName: string;
   initialState: PostListState;
   layout?: "standalone" | "embedded";
@@ -23,6 +26,7 @@ type CandidateRepliesScreenProps = {
 
 export function CandidateRepliesScreen({
   candidateId,
+  candidateMessageCard = null,
   candidateName,
   initialState,
   layout = "standalone",
@@ -85,7 +89,7 @@ export function CandidateRepliesScreen({
       }}
       type="button"
     >
-      {"\u2190 \uBA54\uC778 \uD53C\uB4DC\uB85C"}
+      {"< \uB4A4\uB85C \uAC00\uAE30"}
     </button>
   ) : (
     <Link
@@ -98,7 +102,7 @@ export function CandidateRepliesScreen({
         width: "fit-content",
       }}
     >
-      {"\u2190 \uBA54\uC778 \uD53C\uB4DC\uB85C"}
+      {"< \uB4A4\uB85C \uAC00\uAE30"}
     </Link>
   );
 
@@ -118,24 +122,18 @@ export function CandidateRepliesScreen({
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: uiSpacing.md,
-          ...(embedded
-            ? {
-                borderBottom: `1px solid ${uiColors.border}`,
-                marginBottom: uiSpacing.sm,
-                paddingBottom: uiSpacing.md,
-              }
-            : {}),
+          gap: uiSpacing.lg,
         }}
       >
-        {backControl}
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: uiSpacing.xs,
+            alignItems: "center",
+            display: "grid",
+            gap: uiSpacing.sm,
+            gridTemplateColumns: "1fr auto 1fr",
           }}
         >
+          <div style={{ justifySelf: "start" }}>{backControl}</div>
           <h1
             style={{
               color: uiColors.textStrong,
@@ -143,21 +141,27 @@ export function CandidateRepliesScreen({
               fontWeight: 700,
               lineHeight: 1.3,
               margin: 0,
+              textAlign: "center",
             }}
           >
-            {`${candidateName} \uD6C4\uBCF4 \uB2F5\uBCC0 \uCE74\uB4DC`}
+            {`${candidateName} \uD6C4\uBCF4 \uB2F5\uBCC0 \uBAA8\uC544\uBCF4\uAE30`}
           </h1>
-          <p
-            style={{
-              color: uiColors.textMuted,
-              fontSize: "13px",
-              margin: 0,
-            }}
-          >
-            {"\uCD5C\uC2E0 \uB2F5\uBCC0\uC21C"}
-          </p>
+          <div aria-hidden="true" />
         </div>
+
+        {candidateMessageCard ? (
+          <CandidateMessageCard candidate={candidateMessageCard} />
+        ) : null}
       </header>
+
+      <div
+        aria-hidden="true"
+        style={{
+          borderBottom: `1px solid ${uiColors.border}`,
+          marginLeft: `-${uiSpacing.pageX}`,
+          marginRight: `-${uiSpacing.pageX}`,
+        }}
+      />
 
       {postListState.errorMessage && postListState.items.length > 0 ? (
         <p

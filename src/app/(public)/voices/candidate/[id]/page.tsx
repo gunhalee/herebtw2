@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { CandidateRepliesScreen } from "../../../../../components/candidate/candidate-replies-screen";
+import { loadCandidateReplyHeaderCard } from "../../../../../lib/candidates/reply-header-card";
 import {
   findCandidateById,
   loadCandidateRepliesFeedRepository,
@@ -20,14 +21,18 @@ export default async function CandidateRepliesPage({ params }: PageProps) {
     notFound();
   }
 
-  const postListState = await loadCandidateRepliesFeedRepository({
-    candidateId: id,
-    limit: 10,
-  });
+  const [postListState, candidateMessageCard] = await Promise.all([
+    loadCandidateRepliesFeedRepository({
+      candidateId: id,
+      limit: 10,
+    }),
+    loadCandidateReplyHeaderCard(id),
+  ]);
 
   return (
     <CandidateRepliesScreen
       candidateId={candidate.id}
+      candidateMessageCard={candidateMessageCard}
       candidateName={candidate.name}
       initialState={postListState}
     />

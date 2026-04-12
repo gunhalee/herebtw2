@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { cookies } from "next/headers";
 import type { CandidateMessagesPayload } from "../candidates/messages";
 import { loadCandidateMessages } from "../candidates/messages";
+import { loadCandidateReplyHeaderCard } from "../candidates/reply-header-card";
 import type { SelectedCandidateRepliesPayload } from "../../components/candidate/candidate-replies-types";
 import {
   SELECTED_DONG_CODE_COOKIE_KEY,
@@ -132,10 +133,12 @@ async function loadSelectedCandidateReplies(
     candidateId: candidate.id,
     limit: 10,
   });
+  const candidateMessageCard = await loadCandidateReplyHeaderCard(candidate.id);
 
   return {
     candidateId: candidate.id,
     candidateName: candidate.name,
+    candidateMessageCard,
     initialState,
   };
 }

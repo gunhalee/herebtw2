@@ -54,7 +54,11 @@ type CandidateRow = {
   name: string;
   district: string;
   email: string;
+  photo_url?: string | null;
   first_message_id?: string | null;
+  metro_council_district?: string | null;
+  local_council_district?: string | null;
+  council_type?: string | null;
   is_active: boolean;
   created_at: string;
   activated_at?: string | null;

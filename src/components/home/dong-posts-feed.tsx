@@ -126,6 +126,7 @@ export function DongPostsFeed({
           <CandidateRepliesScreen
             key={selectedCandidateReplies.candidateId}
             candidateId={selectedCandidateReplies.candidateId}
+            candidateMessageCard={selectedCandidateReplies.candidateMessageCard}
             candidateName={selectedCandidateReplies.candidateName}
             initialState={selectedCandidateReplies.initialState}
             layout="embedded"
