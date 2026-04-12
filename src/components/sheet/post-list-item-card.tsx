@@ -106,9 +106,23 @@ export function PostListItemCard({
           boxSizing: "border-box",
           color: uiColors.textStrong,
           overflow: "hidden",
+          position: "relative",
           width: "100%",
         }}
       >
+        {/* 답변 있는 카드: 왼쪽 노란 띠 */}
+        {hasReply ? (
+          <div
+            style={{
+              background: uiBrandYellow.borderWarm,
+              bottom: 0,
+              left: 0,
+              position: "absolute",
+              top: 0,
+              width: "4px",
+            }}
+          />
+        ) : null}
         {/* 원글 영역 */}
         <div style={{ padding: `${uiSpacing.lg} ${uiSpacing.xl}` }}>
           <div
@@ -189,8 +203,8 @@ export function PostListItemCard({
         {hasReply ? (
           <div
             style={{
-              background: uiBrandYellow.surfaceWarm,
-              borderTop: `1px solid ${uiBrandYellow.borderWarm}`,
+              background: uiColors.surface,
+              borderTop: `1px solid ${uiColors.border}`,
               display: "flex",
               overflow: "hidden",
             }}
