@@ -39,6 +39,7 @@ export function HomeScreen({
     appShellStateRef,
     applyCachedNearbyPostListState,
     currentDongName,
+    selectedDongCode,
     ensureDeviceReady,
     feedLocation,
     feedLocationRef,
@@ -153,7 +154,7 @@ export function HomeScreen({
         activeReportPostId={activeReportPostId}
         animateComposeDongPlaceholder={shouldAnimateComposeDongPlaceholder}
         currentDongName={currentDongName}
-        dongCode={appShellState.selectedDongCode}
+        dongCode={selectedDongCode}
         interactionLocked={composePanelOpen || composePermissionDialogOpen}
         obscurePosts={obscureGlobalFallbackList}
         onApplyPendingUpdates={handleApplyPendingFeedSnapshot}

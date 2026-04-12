@@ -163,6 +163,7 @@ export function useHomeShellState({
     applyCachedNearbyPostListState,
     currentDongName:
       appShellState.selectedDongName ?? COMPOSE_PLACEHOLDER_DONG_NAME,
+    selectedDongCode: appShellState.selectedDongCode,
     ensureDeviceReady,
     feedLocation,
     feedLocationRef,
