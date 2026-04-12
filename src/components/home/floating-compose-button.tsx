@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { uiColors, uiRadius, uiSpacing } from "../../lib/ui/tokens";
-import checkmarkIcon from "../checkmark.svg";
+import checkmarkIcon from "../checkmark-floating.svg";
 
 type FloatingComposeButtonProps = {
   elevated?: boolean;
