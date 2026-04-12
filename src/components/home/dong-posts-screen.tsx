@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import type { PostListState } from "../../types/post";
 import { DongPostsFeed } from "./dong-posts-feed";
 import { FloatingComposeButton } from "./floating-compose-button";
@@ -12,6 +13,8 @@ type DongPostsScreenProps = {
   currentDongName: string;
   dongCode?: string | null;
   animateComposeDongPlaceholder?: boolean;
+  initialCandidateMessages?: CandidateMessagesPayload | null;
+  initialCandidateMessagesDongCode?: string | null;
   interactionLocked?: boolean;
   scrollTargetPostId?: string | null;
   state: PostListState;
@@ -39,6 +42,8 @@ export function DongPostsScreen({
   currentDongName,
   dongCode = null,
   animateComposeDongPlaceholder = false,
+  initialCandidateMessages = null,
+  initialCandidateMessagesDongCode = null,
   interactionLocked = false,
   scrollTargetPostId,
   state,
@@ -152,6 +157,8 @@ export function DongPostsScreen({
         activeMenuPostId={activeMenuPostId}
         dongCode={dongCode}
         interactionLocked={interactionLocked}
+        initialCandidateMessages={initialCandidateMessages}
+        initialCandidateMessagesDongCode={initialCandidateMessagesDongCode}
         onCloseMenu={onCloseMenu}
         onLoadMore={onLoadMore}
         onOpenMenu={onOpenMenu}

@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useRef, useState } from "react";
+import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import { DongPostsScreen } from "./dong-posts-screen";
 import { ComposePermissionDialog } from "./compose-permission-dialog";
 import { type PendingFeedSnapshot } from "./home-feed-state";
@@ -27,11 +28,13 @@ const DeferredPostComposeExperience = dynamic(
 
 type HomeScreenProps = {
   initialAppShellState: AppShellState;
+  initialCandidateMessages: CandidateMessagesPayload | null;
   initialPostListState: PostListState;
 };
 
 export function HomeScreen({
   initialAppShellState,
+  initialCandidateMessages,
   initialPostListState,
 }: HomeScreenProps) {
   const [postListState, setPostListState] = useState(initialPostListState);
@@ -159,6 +162,8 @@ export function HomeScreen({
         animateComposeDongPlaceholder={shouldAnimateComposeDongPlaceholder}
         currentDongName={currentDongName}
         dongCode={selectedDongCode}
+        initialCandidateMessages={initialCandidateMessages}
+        initialCandidateMessagesDongCode={initialAppShellState.selectedDongCode}
         interactionLocked={composePanelOpen || composePermissionDialogOpen}
         obscurePosts={obscureGlobalFallbackList}
         onApplyPendingUpdates={handleApplyPendingFeedSnapshot}

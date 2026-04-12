@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
-import type { CandidateMessage } from "../../lib/candidates/messages";
+import type {
+  CandidateMessage,
+  CandidateMessagesPayload,
+} from "../../lib/candidates/messages";
 
 const PHOTO_FALLBACK_WIDTH = 72;
 
@@ -170,3 +173,5 @@ export function CandidateMessageCard({
     </Link>
   );
 }
+
+export type { CandidateMessagesPayload };

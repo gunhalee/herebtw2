@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import {
+  type CandidateMessagesPayload,
   CandidateDistrictBadge,
   CandidateMessageCard,
 } from "./candidate-messages-view";
@@ -10,10 +11,14 @@ import { useCandidateMessagesSection } from "./use-candidate-messages-section";
 
 type CandidateMessagesSectionProps = {
   dongCode: string | null;
+  initialData?: CandidateMessagesPayload | null;
+  initialDongCode?: string | null;
 };
 
 export function CandidateMessagesSection({
   dongCode,
+  initialData = null,
+  initialDongCode = null,
 }: CandidateMessagesSectionProps) {
   const {
     candidates,
@@ -23,7 +28,7 @@ export function CandidateMessagesSection({
     setOthersOpen,
     userDistricts,
     visibleCandidates,
-  } = useCandidateMessagesSection(dongCode);
+  } = useCandidateMessagesSection(dongCode, initialData, initialDongCode);
 
   if (candidates.length === 0) {
     return null;

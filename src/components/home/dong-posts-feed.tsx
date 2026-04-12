@@ -1,7 +1,8 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import type { RefObject } from "react";
+import { CandidateMessagesSection } from "../candidate/candidate-messages-section";
+import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import { ErrorState } from "../common/error-state";
 import { LoadingState } from "../common/loading-state";
 import type { PostListState } from "../../types/post";
@@ -9,21 +10,12 @@ import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import { DongPostsFeedContent } from "./dong-posts-feed-content";
 import { DongPostsFeedVeil } from "./dong-posts-feed-veil";
 
-const DeferredCandidateMessagesSection = dynamic(
-  () =>
-    import("../candidate/candidate-messages-section").then(
-      (module) => module.CandidateMessagesSection,
-    ),
-  {
-    loading: () => null,
-    ssr: false,
-  },
-);
-
 type DongPostsFeedProps = {
   activeMenuPostId?: string | null;
   dongCode?: string | null;
   interactionLocked?: boolean;
+  initialCandidateMessages?: CandidateMessagesPayload | null;
+  initialCandidateMessagesDongCode?: string | null;
   scrollContainerRef: RefObject<HTMLDivElement | null>;
   shouldObscurePosts: boolean;
   shouldShowPendingUpdatesButton: boolean;
@@ -39,6 +31,8 @@ export function DongPostsFeed({
   activeMenuPostId,
   dongCode = null,
   interactionLocked = false,
+  initialCandidateMessages = null,
+  initialCandidateMessagesDongCode = null,
   scrollContainerRef,
   shouldObscurePosts,
   shouldShowPendingUpdatesButton,
@@ -85,7 +79,7 @@ export function DongPostsFeed({
       >
         {activeMenuPostId ? (
           <button
-            aria-label="메뉴 닫기"
+            aria-label="Close menu"
             onClick={onCloseMenu}
             style={{
               appearance: "none",
@@ -102,10 +96,16 @@ export function DongPostsFeed({
           />
         ) : null}
 
-        {state.loading ? <LoadingState label="목록을 불러오는 중" /> : null}
+        {state.loading ? <LoadingState label="Loading posts" /> : null}
         {state.errorMessage ? <ErrorState message={state.errorMessage} /> : null}
 
-        {dongCode ? <DeferredCandidateMessagesSection dongCode={dongCode} /> : null}
+        {dongCode ? (
+          <CandidateMessagesSection
+            dongCode={dongCode}
+            initialData={initialCandidateMessages}
+            initialDongCode={initialCandidateMessagesDongCode}
+          />
+        ) : null}
 
         <div
           className="global-feed-preview"
@@ -115,7 +115,9 @@ export function DongPostsFeed({
           }}
         >
           <div
-            className={shouldObscurePosts ? "global-feed-preview__content" : undefined}
+            className={
+              shouldObscurePosts ? "global-feed-preview__content" : undefined
+            }
           >
             <DongPostsFeedContent
               activeMenuPostId={activeMenuPostId}

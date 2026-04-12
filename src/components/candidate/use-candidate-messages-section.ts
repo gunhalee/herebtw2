@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import type {
   CandidateMessage,
+  CandidateMessagesPayload,
   UserDistricts,
 } from "../../lib/candidates/messages";
 import { fetchCandidateMessages } from "./candidate-messages-api";
@@ -45,12 +46,33 @@ function writeCache(payload: CachedPayload) {
   }
 }
 
-export function useCandidateMessagesSection(dongCode: string | null) {
-  const [candidates, setCandidates] = useState<CandidateMessage[]>([]);
-  const [userDistricts, setUserDistricts] = useState<UserDistricts>(null);
+function applyCandidateMessageState(
+  nextState: CandidateMessagesPayload | null,
+  options: {
+    setCandidates: (next: CandidateMessage[]) => void;
+    setUserDistricts: (next: UserDistricts) => void;
+  },
+) {
+  options.setCandidates(nextState?.candidates ?? []);
+  options.setUserDistricts(nextState?.userDistricts ?? null);
+}
+
+export function useCandidateMessagesSection(
+  dongCode: string | null,
+  initialData?: CandidateMessagesPayload | null,
+  initialDongCode?: string | null,
+) {
+  const matchedInitialData =
+    dongCode && initialDongCode === dongCode ? initialData ?? null : null;
+  const [candidates, setCandidates] = useState<CandidateMessage[]>(
+    matchedInitialData?.candidates ?? [],
+  );
+  const [userDistricts, setUserDistricts] = useState<UserDistricts>(
+    matchedInitialData?.userDistricts ?? null,
+  );
   const [othersOpen, setOthersOpen] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!dongCode) {
       setCandidates([]);
       setUserDistricts(null);
@@ -59,9 +81,16 @@ export function useCandidateMessagesSection(dongCode: string | null) {
     }
 
     const cached = readCache(dongCode);
-    if (cached) {
-      setCandidates(cached.candidates);
-      setUserDistricts(cached.userDistricts);
+    applyCandidateMessageState(cached ?? matchedInitialData ?? null, {
+      setCandidates,
+      setUserDistricts,
+    });
+    setOthersOpen(false);
+  }, [dongCode, matchedInitialData]);
+
+  useEffect(() => {
+    if (!dongCode) {
+      return;
     }
 
     let cancelled = false;

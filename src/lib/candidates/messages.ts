@@ -22,6 +22,11 @@ export type UserDistricts = {
   localCouncilDistrict: string | null;
 } | null;
 
+export type CandidateMessagesPayload = {
+  candidates: CandidateMessage[];
+  userDistricts: UserDistricts;
+};
+
 type CandidateRow = {
   id: string;
   name: string;
@@ -50,10 +55,7 @@ const ORDER: Record<CandidateMatchType, number> = {
 
 async function loadCandidateMessagesUncached(
   dongCode: string | null,
-): Promise<{
-  candidates: CandidateMessage[];
-  userDistricts: UserDistricts;
-}> {
+): Promise<CandidateMessagesPayload> {
   const resolved = dongCode
     ? resolveLocalElection9DistrictsByAdministrativeCode(dongCode)
     : null;
@@ -168,9 +170,8 @@ const loadCachedCandidateMessages = unstable_cache(
   },
 );
 
-export async function loadCandidateMessages(dongCode: string | null): Promise<{
-  candidates: CandidateMessage[];
-  userDistricts: UserDistricts;
-}> {
+export async function loadCandidateMessages(
+  dongCode: string | null,
+): Promise<CandidateMessagesPayload> {
   return loadCachedCandidateMessages(dongCode ?? ALL_DISTRICTS_CACHE_KEY);
 }
