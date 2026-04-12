@@ -12,6 +12,7 @@ import {
   uiTypography,
 } from "../../lib/ui/tokens";
 import { normalizeAdministrativeDongName } from "../../lib/geo/format-administrative-area";
+import { saveCardImageFromBrowser } from "../../lib/card/browser-image-download";
 
 const copyButtonSurface = {
   idle: {
@@ -70,11 +71,13 @@ export function PostComposeSuccess({
   onDismiss,
 }: PostComposeSuccessProps) {
   const [copied, setCopied] = useState(false);
+  const [savingCardImage, setSavingCardImage] = useState(false);
 
   const voiceUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/v/${publicUuid}`
       : `/v/${publicUuid}`;
+  const cardImageUrl = `/api/card/${publicUuid}?type=voter`;
   const displayDongName = normalizeAdministrativeDongName(dongName);
 
   async function handleCopyLink() {
@@ -84,6 +87,22 @@ export function PostComposeSuccess({
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // fallback: select text
+    }
+  }
+
+  async function handleDownloadCardImage() {
+    if (savingCardImage) {
+      return;
+    }
+
+    setSavingCardImage(true);
+    try {
+      await saveCardImageFromBrowser({
+        fileName: `voice-${publicUuid}.png`,
+        imageUrl: cardImageUrl,
+      });
+    } finally {
+      setSavingCardImage(false);
     }
   }
 
@@ -183,9 +202,10 @@ export function PostComposeSuccess({
         )}
       </button>
 
-      <a
-        href={`/api/card/${publicUuid}?type=voter`}
-        download={`voice-${publicUuid}.png`}
+      <button
+        onClick={handleDownloadCardImage}
+        type="button"
+        disabled={savingCardImage}
         style={{
           alignItems: "center",
           appearance: "none",
@@ -193,22 +213,22 @@ export function PostComposeSuccess({
           border: `1px solid ${copyButtonSurface.idle.border}`,
           borderRadius: uiRadius.md,
           color: copyButtonSurface.idle.color,
-          cursor: "pointer",
+          cursor: savingCardImage ? "wait" : "pointer",
           display: "flex",
           fontSize: uiTypography.body.fontSize,
           fontWeight: 600,
           gap: uiSpacing.xs,
           justifyContent: "center",
           padding: `${uiSpacing.md} ${uiSpacing.xl}`,
-          textDecoration: "none",
+          opacity: savingCardImage ? 0.8 : 1,
           transition: "all 150ms ease",
           width: "100%",
           maxWidth: 320,
         }}
       >
         <Download size={16} />
-        포토카드 다운로드
-      </a>
+        {savingCardImage ? "이미지 준비 중..." : "포토카드 다운로드"}
+      </button>
 
       <button
         onClick={onDismiss}

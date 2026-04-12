@@ -93,9 +93,17 @@ type BubbleProps = {
   content: string;
   primaryLabel: string;
   timeLabel: string;
+  cornerLabel: string;
+  stackLevel?: number;
 };
 
-function SpeechBubble({ content, primaryLabel, timeLabel }: BubbleProps) {
+function SpeechBubble({
+  content,
+  primaryLabel,
+  timeLabel,
+  cornerLabel,
+  stackLevel,
+}: BubbleProps) {
   return (
     <div
       style={{
@@ -105,10 +113,31 @@ function SpeechBubble({ content, primaryLabel, timeLabel }: BubbleProps) {
         display: "flex",
         flexDirection: "column",
         gap: "24px",
+        position: "relative",
         padding: "42px 54px",
         width: "100%",
+        zIndex: stackLevel ?? 0,
       }}
     >
+      <span
+        style={{
+          background: "#ffffff",
+          color: "#9ca3af",
+          fontSize: "34px",
+          fontWeight: 700,
+          letterSpacing: "-0.01em",
+          lineHeight: 1,
+          padding: "0 12px",
+          position: "absolute",
+          right: "44px",
+          top: "0",
+          transform: "translateY(-50%)",
+          zIndex: 1,
+        }}
+      >
+        {cornerLabel}
+      </span>
+
       <div
         style={{
           color: "#9ca3af",
@@ -228,18 +257,22 @@ export function RepliedVoterCard({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "30px",
+            gap: "38px",
           }}
         >
           <SpeechBubble
             content={content}
+            cornerLabel="주민의 한마디"
             primaryLabel={dongName}
+            stackLevel={2}
             timeLabel={formatRelativeTime(createdAt)}
           />
 
           <SpeechBubble
             content={replyContent}
+            cornerLabel="후보의 한마디"
             primaryLabel={replyTagline}
+            stackLevel={1}
             timeLabel={formatRelativeTime(replyCreatedAt ?? createdAt)}
           />
         </div>

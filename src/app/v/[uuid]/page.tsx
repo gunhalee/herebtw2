@@ -1,50 +1,40 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { VoiceDetailScreen } from "../../../components/voice/voice-detail-screen";
-import { voicePageCandidateHeaderLine } from "../../../lib/content/voice-page";
 import { findPostByUuidRepository } from "../../../lib/posts/repository";
 
 export const dynamic = "force-dynamic";
+
+const SHARE_TITLE = "여기 근데";
+const SHARE_TAGLINE = "한마디 할게요";
+const SHARE_IMAGE_URL = "https://herebtw2.vercel.app/checkmark.svg";
 
 type PageProps = {
   params: Promise<{ uuid: string }>;
 };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { uuid } = await params;
-  const post = await findPostByUuidRepository(uuid);
-
-  if (!post) {
-    return { title: "글을 찾을 수 없습니다" };
-  }
-
-  const title = voicePageCandidateHeaderLine(post.administrative_dong_name);
-  const description = post.content.length > 50
-    ? post.content.slice(0, 50) + "..."
-    : post.content;
-  const ogImageUrl = `https://herebtw.vercel.app/api/card/${uuid}?type=voter`;
-
+export function generateMetadata(): Metadata {
   return {
-    title,
-    description,
+    title: SHARE_TITLE,
+    description: SHARE_TAGLINE,
     openGraph: {
-      title,
-      description,
-      type: "article",
+      title: SHARE_TITLE,
+      description: SHARE_TAGLINE,
+      type: "website",
       images: [
         {
-          url: ogImageUrl,
-          width: 1080,
-          height: 1350,
-          alt: title,
+          url: SHARE_IMAGE_URL,
+          width: 500,
+          height: 500,
+          alt: SHARE_TITLE,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
-      images: [ogImageUrl],
+      title: SHARE_TITLE,
+      description: SHARE_TAGLINE,
+      images: [SHARE_IMAGE_URL],
     },
   };
 }

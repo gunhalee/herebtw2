@@ -1,19 +1,10 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { CheckCircle, Download, MessageCircle } from "lucide-react";
-import checkmarkIcon from "../checkmark.svg";
+import { Download } from "lucide-react";
 import { DongPostsHeader } from "../home/dong-posts-header";
-import { formatAdministrativeAreaNameForHomeDisplay } from "../../lib/geo/format-administrative-area";
-import {
-  uiBrandYellow,
-  uiColors,
-  uiRadius,
-  uiSpacing,
-  uiTypography,
-} from "../../lib/ui/tokens";
-import { formatRelativeTime } from "../../lib/utils/datetime";
+import { uiBrandYellow, uiRadius, uiSpacing } from "../../lib/ui/tokens";
+import { saveCardImageFromBrowser } from "../../lib/card/browser-image-download";
 
 type VoicePost = {
   id: string;
@@ -36,44 +27,11 @@ type VoiceDetailScreenProps = {
   post: VoicePost;
 };
 
-function CheckmarkGlyph({ sizePx }: { sizePx: number }) {
-  return (
-    <span
-      style={{
-        alignItems: "center",
-        display: "inline-flex",
-        flexShrink: 0,
-        height: sizePx,
-        justifyContent: "center",
-        lineHeight: 0,
-        width: sizePx,
-      }}
-    >
-      <Image
-        alt=""
-        height={sizePx}
-        src={checkmarkIcon}
-        width={sizePx}
-        style={{
-          display: "block",
-          height: sizePx,
-          maxHeight: sizePx,
-          maxWidth: sizePx,
-          objectFit: "contain",
-          width: sizePx,
-        }}
-      />
-    </span>
-  );
-}
-
 export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
   const titleLineRef = useRef<HTMLHeadingElement>(null);
   const [titleTextWidthPx, setTitleTextWidthPx] = useState<number | null>(null);
-
-  const displayDong = formatAdministrativeAreaNameForHomeDisplay(
-    post.administrativeDongName,
-  );
+  const [savingCardImage, setSavingCardImage] = useState(false);
+  const cardImageUrl = `/api/card/${post.publicUuid}?type=voter`;
 
   useLayoutEffect(() => {
     const el = titleLineRef.current;
@@ -113,6 +71,22 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
           width: "100%",
         };
 
+  async function handleDownloadCardImage() {
+    if (savingCardImage) {
+      return;
+    }
+
+    setSavingCardImage(true);
+    try {
+      await saveCardImageFromBrowser({
+        fileName: `voice-${post.publicUuid}.png`,
+        imageUrl: cardImageUrl,
+      });
+    } finally {
+      setSavingCardImage(false);
+    }
+  }
+
   return (
     <div
       style={{
@@ -141,194 +115,34 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
         }}
       >
         <div style={columnStyle}>
-          {post.replyStatus === "replied" ? (
-            <div
-              style={{
-                alignItems: "center",
-                display: "flex",
-                justifyContent: "center",
-                paddingTop: uiSpacing.xxl,
-              }}
-            >
-              <div
-                style={{
-                  alignItems: "center",
-                  background: "#ecfdf5",
-                  border: "1px solid #a7f3d0",
-                  borderRadius: uiRadius.pill,
-                  color: "#059669",
-                  display: "flex",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  gap: "6px",
-                  padding: `${uiSpacing.xs} ${uiSpacing.lg}`,
-                }}
-              >
-                <CheckCircle size={16} />
-                답변이 도착했습니다
-              </div>
-            </div>
-          ) : null}
-
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               gap: uiSpacing.xl,
-              paddingTop:
-                post.replyStatus === "replied" ? uiSpacing.lg : uiSpacing.xxl,
+              paddingTop: uiSpacing.xxl,
             }}
           >
             <div
               style={{
-                background: uiColors.surface,
-                border: uiBrandYellow.postCardBorder,
-                borderRadius: "22px",
-                boxShadow: "0 2px 8px rgba(17, 24, 39, 0.04)",
-                boxSizing: "border-box",
-                display: "flex",
-                flexDirection: "column",
-                gap: uiSpacing.md,
-                padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
+                background: "#ffffff",
+                border: `1px solid ${uiBrandYellow.borderSoft}`,
+                borderRadius: uiRadius.lg,
+                boxShadow: "0 10px 24px rgba(17, 24, 39, 0.08)",
+                overflow: "hidden",
                 width: "100%",
               }}
             >
-              <p
+              <img
+                alt="포토카드"
+                src={cardImageUrl}
                 style={{
-                  color: uiColors.textMuted,
-                  fontSize: "11px",
-                  fontWeight: 400,
-                  lineHeight: 1.35,
-                  margin: 0,
+                  display: "block",
+                  height: "auto",
+                  width: "100%",
                 }}
-              >
-                <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
-                  {displayDong}
-                </span>
-                <span>{` · ${formatRelativeTime(post.createdAt)}`}</span>
-              </p>
-
-              <p
-                style={{
-                  color: uiColors.textStrong,
-                  fontSize: "15px",
-                  fontWeight: 500,
-                  lineHeight: 1.5,
-                  margin: 0,
-                  wordBreak: "keep-all",
-                }}
-              >
-                {post.content}
-              </p>
-
-              {post.agreeCount > 0 ? (
-                <div
-                  style={{
-                    alignItems: "center",
-                    alignSelf: "flex-start",
-                    background: "rgba(255, 255, 255, 0.96)",
-                    border: `1px solid ${uiColors.border}`,
-                    borderRadius: "999px",
-                    boxShadow: "0 8px 18px rgba(17, 24, 39, 0.12)",
-                    color: uiColors.textStrong,
-                    display: "inline-flex",
-                    gap: "6px",
-                    padding: "6px 10px",
-                  }}
-                >
-                  <CheckmarkGlyph sizePx={14} />
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {post.agreeCount}
-                  </span>
-                </div>
-              ) : null}
+              />
             </div>
-
-            {post.replyStatus === "replied" && post.reply ? (
-              <div
-                style={{
-                  background: "#f0fdf4",
-                  borderLeft: "3px solid #059669",
-                  borderRadius: uiRadius.md,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: uiSpacing.sm,
-                  padding: uiSpacing.xl,
-                }}
-              >
-                <div
-                  style={{
-                    alignItems: "center",
-                    display: "flex",
-                    gap: "6px",
-                  }}
-                >
-                  <MessageCircle size={16} color="#059669" />
-                  <span
-                    style={{
-                      color: "#059669",
-                      fontSize: "14px",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {post.reply.candidateName} 후보
-                  </span>
-                  <span
-                    style={{
-                      background: "#059669",
-                      borderRadius: "4px",
-                      color: "#ffffff",
-                      fontSize: "10px",
-                      fontWeight: 600,
-                      padding: "1px 5px",
-                    }}
-                  >
-                    인증됨
-                  </span>
-                  {post.reply.isPromise ? (
-                    <span
-                      style={{
-                        background: "#fbbf24",
-                        borderRadius: "4px",
-                        color: "#78350f",
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        padding: "1px 5px",
-                      }}
-                    >
-                      약속합니다
-                    </span>
-                  ) : null}
-                </div>
-                <p
-                  style={{
-                    color: uiColors.textBody,
-                    fontSize: "15px",
-                    lineHeight: 1.6,
-                    margin: 0,
-                  }}
-                >
-                  {post.reply.content}
-                </p>
-                <span
-                  style={{
-                    color: uiColors.textMuted,
-                    fontSize: uiTypography.meta.fontSize,
-                  }}
-                >
-                  {formatRelativeTime(post.reply.createdAt)}
-                  {post.reply.isPromise && post.reply.promiseDeadline
-                    ? ` · 기한: ${post.reply.promiseDeadline}`
-                    : ""}
-                </span>
-              </div>
-            ) : null}
           </div>
 
           <div
@@ -340,9 +154,10 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
               paddingTop: uiSpacing.xl,
             }}
           >
-            <a
-              href={`/api/card/${post.publicUuid}?type=voter`}
-              download={`voice-${post.publicUuid}.png`}
+            <button
+              onClick={handleDownloadCardImage}
+              type="button"
+              disabled={savingCardImage}
               style={{
                 alignItems: "center",
                 appearance: "none",
@@ -352,20 +167,20 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
                 boxShadow:
                   "0 8px 18px rgba(116, 94, 62, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
                 color: "#000000",
-                cursor: "pointer",
+                cursor: savingCardImage ? "wait" : "pointer",
                 display: "flex",
                 fontSize: "14px",
                 fontWeight: 600,
                 gap: uiSpacing.xs,
                 justifyContent: "center",
+                opacity: savingCardImage ? 0.8 : 1,
                 padding: `14px ${uiSpacing.xl}`,
-                textDecoration: "none",
                 width: "100%",
               }}
             >
               <Download color="#000000" size={16} strokeWidth={2.25} />
-              포토카드 다운로드
-            </a>
+              {savingCardImage ? "이미지 준비 중..." : "포토카드 다운로드"}
+            </button>
           </div>
         </div>
       </div>
