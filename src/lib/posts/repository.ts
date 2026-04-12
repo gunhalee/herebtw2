@@ -2,6 +2,7 @@ export {
   createReply,
   findCandidateByAuthUserId,
   findCandidateById,
+  loadCandidateRepliesFeedRepository,
   loadCandidatePromises,
   loadDashboardStats,
   loadDistrictPosts,

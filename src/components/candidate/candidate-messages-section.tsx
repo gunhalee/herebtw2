@@ -63,7 +63,7 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
 
   return (
     <a
-      href={`/v/${candidate.firstMessagePublicUuid}`}
+      href={`/voices/candidate/${candidate.id}`}
       style={{ display: "block", textDecoration: "none" }}
     >
       <div
