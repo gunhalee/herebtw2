@@ -6,10 +6,12 @@ import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import { DongPostsFeedContent } from "./dong-posts-feed-content";
 import { DongPostsFeedVeil } from "./dong-posts-feed-veil";
 import { CandidateMessagesSection } from "../candidate/candidate-messages-section";
+import type { CandidateMessage } from "../../lib/candidates/messages";
 
 type DongPostsFeedProps = {
   activeMenuPostId?: string | null;
   dongCode?: string | null;
+  initialCandidates?: CandidateMessage[];
   interactionLocked?: boolean;
   scrollContainerRef: RefObject<HTMLDivElement | null>;
   shouldObscurePosts: boolean;
@@ -25,6 +27,7 @@ type DongPostsFeedProps = {
 export function DongPostsFeed({
   activeMenuPostId,
   dongCode = null,
+  initialCandidates,
   interactionLocked = false,
   scrollContainerRef,
   shouldObscurePosts,
@@ -92,7 +95,7 @@ export function DongPostsFeed({
         {state.loading ? <LoadingState label="목록을 불러오는 중" /> : null}
         {state.errorMessage ? <ErrorState message={state.errorMessage} /> : null}
 
-        <CandidateMessagesSection dongCode={dongCode} />
+        <CandidateMessagesSection dongCode={dongCode} initialCandidates={initialCandidates} />
 
         <div
           className="global-feed-preview"

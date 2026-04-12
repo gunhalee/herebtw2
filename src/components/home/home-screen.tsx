@@ -13,17 +13,20 @@ import { PostComposeExperience } from "../post/post-compose-experience";
 import { useLatestRef } from "../../lib/hooks/use-latest-ref";
 import type { AppShellState } from "../../types/device";
 import type { PostListState } from "../../types/post";
+import type { CandidateMessage } from "../../lib/candidates/messages";
 
 type HomeScreenProps = {
   dataSourceMode: "supabase" | "mock";
   initialAppShellState: AppShellState;
   initialPostListState: PostListState;
+  initialCandidates?: CandidateMessage[];
 };
 
 export function HomeScreen({
   dataSourceMode,
   initialAppShellState,
   initialPostListState,
+  initialCandidates,
 }: HomeScreenProps) {
   const [postListState, setPostListState] = useState(initialPostListState);
   const [pendingFeedSnapshot, setPendingFeedSnapshot] =
@@ -155,6 +158,7 @@ export function HomeScreen({
         animateComposeDongPlaceholder={shouldAnimateComposeDongPlaceholder}
         currentDongName={currentDongName}
         dongCode={selectedDongCode}
+        initialCandidates={initialCandidates}
         interactionLocked={composePanelOpen || composePermissionDialogOpen}
         obscurePosts={obscureGlobalFallbackList}
         onApplyPendingUpdates={handleApplyPendingFeedSnapshot}

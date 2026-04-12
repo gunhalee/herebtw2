@@ -3,29 +3,11 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
-
-type CandidateMatchType = "local" | "metro" | "other";
-
-type CandidateMessage = {
-  id: string;
-  name: string;
-  district: string;
-  photoUrl: string | null;
-  firstMessageContent: string;
-  firstMessagePublicUuid: string;
-  metroCouncilDistrict: string | null;
-  localCouncilDistrict: string | null;
-  councilType: string | null;
-  matchType: CandidateMatchType;
-};
-
-type UserDistricts = {
-  metroCouncilDistrict: string | null;
-  localCouncilDistrict: string | null;
-} | null;
+import type { CandidateMessage, UserDistricts } from "../../lib/candidates/messages";
 
 type Props = {
   dongCode: string | null;
+  initialCandidates?: CandidateMessage[];
 };
 
 // ─── Cache ────────────────────────────────────────────────────────────────────
@@ -212,8 +194,8 @@ function DistrictBadge({ label, tier }: { label: string; tier: "local" | "metro"
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 
-export function CandidateMessagesSection({ dongCode }: Props) {
-  const [candidates, setCandidates] = useState<CandidateMessage[]>([]);
+export function CandidateMessagesSection({ dongCode, initialCandidates }: Props) {
+  const [candidates, setCandidates] = useState<CandidateMessage[]>(initialCandidates ?? []);
   const [userDistricts, setUserDistricts] = useState<UserDistricts>(null);
   const [othersOpen, setOthersOpen] = useState(false);
 
@@ -223,6 +205,11 @@ export function CandidateMessagesSection({ dongCode }: Props) {
     if (cached) {
       setCandidates(cached.candidates);
       setUserDistricts(cached.userDistricts);
+    }
+
+    // dongCode가 없고 SSR 초기 데이터가 있으면 재패치 생략
+    if (!dongCode && !cached && (initialCandidates?.length ?? 0) > 0) {
+      return;
     }
 
     // 최신 데이터 패치
@@ -253,7 +240,7 @@ export function CandidateMessagesSection({ dongCode }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [dongCode]);
+  }, [dongCode, initialCandidates]);
 
   if (candidates.length === 0) return null;
 

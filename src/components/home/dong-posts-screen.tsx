@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { PostListState } from "../../types/post";
+import type { CandidateMessage } from "../../lib/candidates/messages";
 import { DongPostsFeed } from "./dong-posts-feed";
 import { FloatingComposeButton } from "./floating-compose-button";
 import { DongPostsHeader } from "./dong-posts-header";
@@ -11,6 +12,7 @@ import { PendingFeedUpdatesButton } from "./pending-feed-updates-button";
 type DongPostsScreenProps = {
   currentDongName: string;
   dongCode?: string | null;
+  initialCandidates?: CandidateMessage[];
   animateComposeDongPlaceholder?: boolean;
   interactionLocked?: boolean;
   scrollTargetPostId?: string | null;
@@ -39,6 +41,7 @@ type DongPostsScreenProps = {
 export function DongPostsScreen({
   currentDongName,
   dongCode = null,
+  initialCandidates,
   animateComposeDongPlaceholder = false,
   interactionLocked = false,
   scrollTargetPostId,
@@ -154,6 +157,7 @@ export function DongPostsScreen({
       <DongPostsFeed
         activeMenuPostId={activeMenuPostId}
         dongCode={dongCode}
+        initialCandidates={initialCandidates}
         interactionLocked={interactionLocked}
         onCloseMenu={onCloseMenu}
         onLoadMore={onLoadMore}
