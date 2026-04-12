@@ -68,27 +68,23 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
       >
         {/* ── Left: profile photo ──────────────────────────────────── */}
         {candidate.photoUrl ? (
-          // Wrapper stretches to card height via default align-items:stretch.
-          // img height:100% fills that height; width:auto preserves aspect ratio.
-          <div
+          // img is a direct flex child. align-self:stretch sets its height to
+          // the row height (determined by the text column). width:auto then
+          // follows the image's natural aspect ratio.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt={`${candidate.name} 후보`}
+            src={candidate.photoUrl}
             style={{
               alignSelf: "stretch",
-              background: "#e5e7eb",
+              display: "block",
               flexShrink: 0,
-              overflow: "hidden",
+              maxWidth: "120px",
+              objectFit: "cover",
+              objectPosition: "center top",
+              width: "auto",
             }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt={`${candidate.name} 후보`}
-              src={candidate.photoUrl}
-              style={{
-                display: "block",
-                height: "100%",
-                width: "auto",
-              }}
-            />
-          </div>
+          />
         ) : (
           <div
             style={{
