@@ -6,6 +6,7 @@ type CandidateRow = {
   id: string;
   name: string;
   district: string;
+  photo_url: string | null;
   first_message_id: string;
 };
 
@@ -23,7 +24,7 @@ export async function GET() {
   try {
     // Fetch candidates that have a first message (no is_active filter)
     const candidateRows = await supabaseSelect<CandidateRow[]>(
-      "candidates?select=id,name,district,first_message_id&first_message_id=not.is.null",
+      "candidates?select=id,name,district,photo_url,first_message_id&first_message_id=not.is.null",
     );
 
     if (!candidateRows || candidateRows.length === 0) {
@@ -46,6 +47,7 @@ export async function GET() {
           id: c.id,
           name: c.name,
           district: c.district,
+          photoUrl: c.photo_url ?? null,
           firstMessageContent: post.content,
           firstMessagePublicUuid: post.public_uuid,
         };

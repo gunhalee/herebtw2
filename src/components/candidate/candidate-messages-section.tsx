@@ -12,6 +12,7 @@ type CandidateMessage = {
   id: string;
   name: string;
   district: string;
+  photoUrl: string | null;
   firstMessageContent: string;
   firstMessagePublicUuid: string;
 };
@@ -43,14 +44,16 @@ function writeCachedCandidates(list: CandidateMessage[]) {
 
 // ─── Single candidate card (mimics PostListItemCard, no actions) ──────────────
 
+const PHOTO_WIDTH = 88; // px
+
 function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
+  const initials = candidate.name.slice(-1); // last char of Korean name
+
   return (
     <a
       href={`/v/${candidate.firstMessagePublicUuid}`}
       style={{ display: "block", textDecoration: "none" }}
     >
-      {/* Outer wrapper mirrors the paddingBottom that makes room for the agree button
-          in PostListItem – here we keep same vertical rhythm without the button. */}
       <div
         style={{
           background: uiColors.surface,
@@ -58,55 +61,103 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
           borderRadius: "22px",
           boxShadow: "0 2px 8px rgba(17, 24, 39, 0.04)",
           boxSizing: "border-box",
-          color: uiColors.textStrong,
-          padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
+          display: "flex",
+          overflow: "hidden", // clips photo corners to match borderRadius
           width: "100%",
         }}
       >
-        {/* Meta row: [후보] badge · name · district */}
-        <p
+        {/* ── Left: profile photo ──────────────────────────────────── */}
+        <div
           style={{
             alignItems: "center",
+            background: "#e5e7eb",
             display: "flex",
-            fontSize: "11px",
-            gap: "6px",
-            lineHeight: 1.35,
-            margin: `0 0 ${uiSpacing.sm}`,
+            flexShrink: 0,
+            justifyContent: "center",
+            minHeight: "100%",
+            width: `${PHOTO_WIDTH}px`,
           }}
         >
-          <span
-            style={{
-              background: uiBrandYellow.surfaceWarm,
-              border: `1px solid ${uiBrandYellow.borderWarm}`,
-              borderRadius: "999px",
-              color: uiColors.textStrong,
-              fontSize: "10px",
-              fontWeight: 700,
-              padding: "2px 8px",
-            }}
-          >
-            후보
-          </span>
-          <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
-            {candidate.name}
-          </span>
-          <span style={{ color: uiColors.textMuted, fontWeight: 400 }}>
-            · {candidate.district}
-          </span>
-        </p>
+          {candidate.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt={`${candidate.name} 후보`}
+              src={candidate.photoUrl}
+              style={{
+                display: "block",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center top",
+                width: "100%",
+              }}
+            />
+          ) : (
+            <span
+              style={{
+                color: "#6b7280",
+                fontSize: "22px",
+                fontWeight: 700,
+              }}
+            >
+              {initials}
+            </span>
+          )}
+        </div>
 
-        {/* Content */}
-        <p
+        {/* ── Right: meta + content ────────────────────────────────── */}
+        <div
           style={{
             color: uiColors.textStrong,
-            fontSize: "15px",
-            fontWeight: 500,
-            lineHeight: 1.5,
-            margin: 0,
+            flex: 1,
+            minWidth: 0,
+            padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
           }}
         >
-          {candidate.firstMessageContent}
-        </p>
+          {/* Meta row */}
+          <p
+            style={{
+              alignItems: "center",
+              display: "flex",
+              fontSize: "11px",
+              gap: "6px",
+              lineHeight: 1.35,
+              margin: `0 0 ${uiSpacing.sm}`,
+            }}
+          >
+            <span
+              style={{
+                background: uiBrandYellow.surfaceWarm,
+                border: `1px solid ${uiBrandYellow.borderWarm}`,
+                borderRadius: "999px",
+                color: uiColors.textStrong,
+                fontSize: "10px",
+                fontWeight: 700,
+                padding: "2px 8px",
+              }}
+            >
+              후보
+            </span>
+            <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
+              {candidate.name}
+            </span>
+            <span style={{ color: uiColors.textMuted, fontWeight: 400 }}>
+              · {candidate.district}
+            </span>
+          </p>
+
+          {/* Content */}
+          <p
+            style={{
+              color: uiColors.textStrong,
+              fontSize: "15px",
+              fontWeight: 500,
+              lineHeight: 1.5,
+              margin: 0,
+            }}
+          >
+            {candidate.firstMessageContent}
+          </p>
+        </div>
       </div>
     </a>
   );
