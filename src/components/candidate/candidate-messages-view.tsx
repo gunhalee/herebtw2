@@ -174,7 +174,7 @@ export function CandidateMessageCard({
           aria-hidden="true"
           style={{
             alignItems: "center",
-            color: uiColors.textMuted,
+            color: uiColors.textStrong,
             display: "flex",
             flexShrink: 0,
             justifyContent: "center",
