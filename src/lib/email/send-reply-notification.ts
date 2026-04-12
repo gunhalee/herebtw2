@@ -83,7 +83,7 @@ export async function sendReplyNotification(
             당신의 목소리에 ${input.candidateName} 후보가 답했습니다!
           </h1>
           <p style="font-size: 14px; color: #6b7280; margin: 0 0 24px; line-height: 1.5;">
-            ${input.candidateName} 후보가 당신의 글에 답변했습니다.
+            소중한 의견 감사합니다. 항상 민의를 중심 삼는 정치인이 되겠습니다.
           </p>
 
           <div style="background: #f7f4ec; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
@@ -104,13 +104,8 @@ export async function sendReplyNotification(
             </a>
           </div>
 
-          <a href="${voiceUrl}" style="display: block; background: #2563eb; color: #ffffff; text-align: center; padding: 14px 24px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 700; margin-bottom: 32px;">
-            답변 확인하기
-          </a>
-
           <p style="text-align: center; font-size: 11px; color: #9ca3af; margin-top: 0; line-height: 1.5;">
-            이 이메일은 '여기 근데 한마디 할게요' 서비스에서 글 작성 시 입력하신 이메일로 발송되었습니다.
-            이메일은 답변 알림 용도로만 사용되며, 다른 목적으로 활용하지 않습니다.
+            수집된 이메일 주소는 답변 알림 용도로만 사용되며, 다른 목적으로 활용하지 않습니다.
           </p>
         </div>
       `,
