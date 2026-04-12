@@ -163,16 +163,17 @@ export default function CandidateLoginPage() {
             disabled={loading}
             style={{
               appearance: "none",
-              background: uiColors.buttonPrimary,
+              background: loading ? "#9ca3af" : uiColors.buttonPrimary,
               border: "none",
               borderRadius: uiRadius.md,
               color: "#ffffff",
-              cursor: loading ? "default" : "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
               fontSize: "15px",
               fontWeight: 700,
               marginTop: uiSpacing.sm,
-              opacity: loading ? 0.7 : 1,
               padding: "14px",
+              pointerEvents: loading ? "none" : "auto",
+              transition: "background 0.15s",
               width: "100%",
             }}
           >
