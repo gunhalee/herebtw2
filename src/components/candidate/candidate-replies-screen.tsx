@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import type { CandidateMessage } from "../../lib/candidates/messages";
@@ -76,33 +77,41 @@ export function CandidateRepliesScreen({
     <button
       onClick={onBack}
       style={{
+        alignItems: "center",
         appearance: "none",
         background: "transparent",
         border: "none",
         color: uiColors.textStrong,
         cursor: "pointer",
+        display: "inline-flex",
         fontSize: "13px",
         fontWeight: 600,
+        gap: "2px",
         padding: 0,
         textDecoration: "none",
         width: "fit-content",
       }}
       type="button"
     >
-      {"< \uB4A4\uB85C \uAC00\uAE30"}
+      <ChevronLeft size={20} strokeWidth={2.25} />
+      <span>{"\uB4A4\uB85C \uAC00\uAE30"}</span>
     </button>
   ) : (
     <Link
       href="/"
       style={{
+        alignItems: "center",
         color: uiColors.textStrong,
+        display: "inline-flex",
         fontSize: "13px",
         fontWeight: 600,
+        gap: "2px",
         textDecoration: "none",
         width: "fit-content",
       }}
     >
-      {"< \uB4A4\uB85C \uAC00\uAE30"}
+      <ChevronLeft size={20} strokeWidth={2.25} />
+      <span>{"\uB4A4\uB85C \uAC00\uAE30"}</span>
     </Link>
   );
 
