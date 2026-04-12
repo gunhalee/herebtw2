@@ -146,7 +146,58 @@ latitudeBucket100m=<값>&longitudeBucket100m=<값>&dongCode=<동코드10자리>"
 
 ---
 
-## 3. 선거 종료 후 처리 (미결정)
+## 3. 이메일 알림 설정
+
+후보자가 답변을 등록하면 글 작성자의 이메일로 알림이 발송된다.
+현재 발신 도메인(`herebtw.vercel.app`)이 Resend에서 인증되지 않아 **전송이 거부되고 있다**.
+
+### 해결 절차
+
+#### 3-1. 커스텀 도메인 Resend 인증
+
+1. [Resend 대시보드 → Domains](https://resend.com/domains) → **Add Domain**
+2. 커스텀 도메인 입력 (예: `herebtw.com`)
+3. Resend가 안내하는 DNS 레코드(SPF, DKIM, DMARC)를 도메인 등록처에 추가
+4. 인증 완료(Verified) 상태 확인
+
+#### 3-2. 코드 수정
+
+`src/lib/email/send-reply-notification.ts`의 두 곳을 도메인에 맞게 수정:
+
+```typescript
+// 발신 주소 — 인증된 커스텀 도메인으로 변경
+const FROM_EMAIL = "여기 근데 <noreply@yourdomain.com>";
+
+// 이메일 본문 링크 — 실제 서비스 도메인으로 변경
+const voiceUrl = `https://yourdomain.com/v/${input.publicUuid}`;
+```
+
+#### 3-3. 환경변수 입력 위치
+
+Resend API 키와 관련 값을 **모든 위치**에 입력해야 한다.
+
+| 위치 | 방법 | 용도 |
+|------|------|------|
+| `.env.local` | 직접 편집 | 로컬 개발 |
+| Vercel 대시보드 → Settings → Environment Variables | `RESEND_API_KEY` 추가 | 프로덕션·프리뷰 배포 |
+
+> `RESEND_API_KEY`는 현재 Vercel에 이미 설정되어 있다.  
+> 도메인 변경 후 코드만 수정·배포하면 된다.
+
+#### 3-4. 발송 테스트
+
+```bash
+# 로컬에서 직접 API 호출 (후보자 세션 쿠키 필요)
+curl -X POST http://localhost:3000/api/candidate/replies \
+  -H "Content-Type: application/json" \
+  -d '{"postId":"<uuid>","candidateId":"<id>","content":"테스트 답변","isPromise":false,"promiseDeadline":null}'
+```
+
+Vercel 함수 로그(`vercel logs`)에서 `[email]` 접두사 로그로 발송 성공·실패를 확인할 수 있다.
+
+---
+
+## 4. 선거 종료 후 처리 (미결정)
 
 2026-06-03 선거 종료 후 아래 사항을 결정해야 한다.
 
