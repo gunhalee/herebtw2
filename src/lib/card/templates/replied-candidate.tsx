@@ -79,7 +79,7 @@ export function RepliedCandidateCard({
               color: "#8f96a3",
               display: "flex",
               fontSize: "22px",
-              fontWeight: 500,
+              fontWeight: 400,
             }}
           >
             {dongName}
@@ -89,7 +89,7 @@ export function RepliedCandidateCard({
               color: "#111827",
               display: "flex",
               fontSize: "32px",
-              fontWeight: 500,
+              fontWeight: 400,
               lineHeight: 1.5,
               wordBreak: "keep-all",
             }}
@@ -138,7 +138,7 @@ export function RepliedCandidateCard({
                 color: "#2563eb",
                 display: "flex",
                 fontSize: "28px",
-                fontWeight: 700,
+                fontWeight: 600,
               }}
             >
               {replyCandidateName} 후보
@@ -164,7 +164,7 @@ export function RepliedCandidateCard({
               color: "#0f172a",
               display: "flex",
               fontSize: "34px",
-              fontWeight: 700,
+              fontWeight: 600,
               lineHeight: 1.5,
               wordBreak: "keep-all",
             }}

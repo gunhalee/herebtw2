@@ -162,7 +162,7 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
                 padding: "2px 8px",
               }}
             >
-              {councilBadge ? `${councilBadge} 후보` : "후보"}
+              {councilBadge ? `${councilBadge.replace(/의회$/, "의원")} 후보` : "후보"}
             </span>
           </p>
 

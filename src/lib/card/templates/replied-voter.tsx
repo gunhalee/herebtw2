@@ -114,12 +114,12 @@ function SpeechBubble({ content, primaryLabel, timeLabel }: BubbleProps) {
           color: "#9ca3af",
           display: "flex",
           fontSize: "40px",
-          fontWeight: 500,
+          fontWeight: 400,
           letterSpacing: "-0.01em",
           lineHeight: 1.25,
         }}
       >
-        <span style={{ color: "#111827", fontWeight: 700 }}>{primaryLabel}</span>
+        <span style={{ color: "#111827", fontWeight: 600 }}>{primaryLabel}</span>
         <span>{` · ${timeLabel}`}</span>
       </div>
 
@@ -128,7 +128,7 @@ function SpeechBubble({ content, primaryLabel, timeLabel }: BubbleProps) {
           color: "#111827",
           display: "flex",
           fontSize: "58px",
-          fontWeight: 600,
+          fontWeight: 500,
           letterSpacing: "-0.02em",
           lineHeight: 1.32,
           wordBreak: "keep-all",

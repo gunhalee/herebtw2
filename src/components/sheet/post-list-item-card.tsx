@@ -56,6 +56,25 @@ export function PostListItemCard({
     : "rgba(255, 255, 255, 0.96)";
   const agreeButtonBorder = myAgree ? uiBrandYellow.borderWarm : uiColors.border;
   const hasReply = replyStatus === "replied" && Boolean(replyContent);
+  const replyNameLabel = replyCandidateName?.trim() ?? "";
+  const replyDistrictLabel = replyCandidateLocalCouncilDistrict?.trim() ?? "";
+  const replyCouncilLabel = replyCandidateCouncilType
+    ? `${replyCandidateCouncilType} 후보`
+    : "후보";
+  const replyTaglineParts: string[] = [];
+
+  if (replyNameLabel) {
+    replyTaglineParts.push(replyNameLabel);
+  }
+
+  if (replyDistrictLabel) {
+    replyTaglineParts.push(
+      replyTaglineParts.length > 0 ? `· ${replyDistrictLabel}` : replyDistrictLabel,
+    );
+  }
+
+  replyTaglineParts.push(replyCouncilLabel);
+  const replyTagline = replyTaglineParts.join(" ");
 
   return (
     <>
@@ -265,42 +284,8 @@ export function PostListItemCard({
                 }}
               >
                 <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
-                  {replyCandidateName}
+                  {replyTagline}
                 </span>
-                {replyCandidateLocalCouncilDistrict ? (
-                  <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
-                    · {replyCandidateLocalCouncilDistrict}
-                  </span>
-                ) : null}
-                <span
-                  style={{
-                    background: uiBrandYellow.surfaceWarm,
-                    border: `1px solid ${uiBrandYellow.borderWarm}`,
-                    borderRadius: "999px",
-                    color: uiColors.textStrong,
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    padding: "2px 8px",
-                  }}
-                >
-                  {replyCandidateCouncilType
-                    ? `${replyCandidateCouncilType} 후보`
-                    : "후보"}
-                </span>
-                {replyIsPromise ? (
-                  <span
-                    style={{
-                      background: "#fbbf24",
-                      borderRadius: "4px",
-                      color: "#78350f",
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      padding: "1px 5px",
-                    }}
-                  >
-                    약속
-                  </span>
-                ) : null}
               </p>
               {/* 답변 본문 */}
               <p
