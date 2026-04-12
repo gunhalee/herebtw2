@@ -104,7 +104,7 @@ export async function sendReplyNotification(
             </a>
           </div>
 
-          <p style="font-size: 11px; color: #9ca3af; margin-top: 32px; line-height: 1.5;">
+          <p style="text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; line-height: 1.5;">
             이메일은 답변 알림 용도로만 사용되며, 다른 목적으로 활용하지 않습니다.
           </p>
         </div>
