@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   matchCandidateTier,
-  getSigunguName,
-  getSidoName,
   type CandidateTier,
 } from "../../lib/geo/administrative-code-lookup";
-import { uiColors, uiRadius, uiSpacing, uiTypography } from "../../lib/ui/tokens";
+import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
 
 type CandidateMessage = {
   id: string;
@@ -22,7 +20,7 @@ type Props = {
   dongCode: string | null;
 };
 
-// ─── Cache (sessionStorage) ──────────────────────────────────────────────────
+// ─── Cache ────────────────────────────────────────────────────────────────────
 
 const CACHE_KEY = "herebtw.candidateMessages";
 
@@ -40,149 +38,90 @@ function writeCachedCandidates(list: CandidateMessage[]) {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.setItem(CACHE_KEY, JSON.stringify(list));
-  } catch {
-    // ignore quota errors
-  }
+  } catch {}
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
+// ─── Single candidate card (mimics PostListItemCard, no actions) ──────────────
 
-function CandidateCard({ candidate }: { candidate: CandidateMessage }) {
+function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
   return (
     <a
       href={`/v/${candidate.firstMessagePublicUuid}`}
-      style={{
-        background: "#ffffff",
-        border: `1px solid ${uiColors.border}`,
-        borderRadius: uiRadius.md,
-        display: "block",
-        flexShrink: 0,
-        padding: `${uiSpacing.md} ${uiSpacing.lg}`,
-        textDecoration: "none",
-        width: "220px",
-      }}
+      style={{ display: "block", textDecoration: "none" }}
     >
+      {/* Outer wrapper mirrors the paddingBottom that makes room for the agree button
+          in PostListItem – here we keep same vertical rhythm without the button. */}
       <div
         style={{
-          alignItems: "center",
-          display: "flex",
-          gap: "6px",
-          marginBottom: "6px",
+          background: uiColors.surface,
+          border: "1px solid rgba(17, 24, 39, 0.08)",
+          borderRadius: "22px",
+          boxShadow: "0 2px 8px rgba(17, 24, 39, 0.04)",
+          boxSizing: "border-box",
+          color: uiColors.textStrong,
+          padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
+          width: "100%",
         }}
       >
-        <span
+        {/* Meta row: [후보] badge · name · district */}
+        <p
           style={{
-            background: "#ebe8ff",
-            borderRadius: "6px",
-            color: "#5b57d6",
-            fontSize: "10px",
-            fontWeight: 700,
-            padding: "2px 6px",
+            alignItems: "center",
+            display: "flex",
+            fontSize: "11px",
+            gap: "6px",
+            lineHeight: 1.35,
+            margin: `0 0 ${uiSpacing.sm}`,
           }}
         >
-          후보
-        </span>
-        <span
+          <span
+            style={{
+              background: uiBrandYellow.surfaceWarm,
+              border: `1px solid ${uiBrandYellow.borderWarm}`,
+              borderRadius: "999px",
+              color: uiColors.textStrong,
+              fontSize: "10px",
+              fontWeight: 700,
+              padding: "2px 8px",
+            }}
+          >
+            후보
+          </span>
+          <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
+            {candidate.name}
+          </span>
+          <span style={{ color: uiColors.textMuted, fontWeight: 400 }}>
+            · {candidate.district}
+          </span>
+        </p>
+
+        {/* Content */}
+        <p
           style={{
             color: uiColors.textStrong,
-            fontSize: "13px",
-            fontWeight: 700,
+            fontSize: "15px",
+            fontWeight: 500,
+            lineHeight: 1.5,
+            margin: 0,
           }}
         >
-          {candidate.name}
-        </span>
-        <span style={{ color: uiColors.textMuted, fontSize: "11px" }}>
-          {candidate.district}
-        </span>
+          {candidate.firstMessageContent}
+        </p>
       </div>
-      <p
-        style={{
-          color: uiColors.textBody,
-          fontSize: "13px",
-          lineHeight: 1.5,
-          margin: 0,
-          overflow: "hidden",
-          display: "-webkit-box",
-          WebkitBoxOrient: "vertical",
-          WebkitLineClamp: 2,
-        }}
-      >
-        &ldquo;{candidate.firstMessageContent}&rdquo;
-      </p>
     </a>
   );
 }
 
-function CandidateRow({
-  label,
-  candidates,
-}: {
-  label: string;
-  candidates: CandidateMessage[];
-}) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  return (
-    <div>
-      <p
-        style={{
-          color: uiColors.textMuted,
-          fontSize: "11px",
-          fontWeight: 700,
-          letterSpacing: "0.04em",
-          margin: `0 0 6px ${uiSpacing.pageX}`,
-        }}
-      >
-        {label}
-      </p>
-      <div
-        ref={scrollRef}
-        style={{
-          display: "flex",
-          gap: uiSpacing.md,
-          overflowX: "auto",
-          padding: `0 ${uiSpacing.pageX}`,
-          scrollbarWidth: "none",
-          WebkitOverflowScrolling: "touch",
-        }}
-      >
-        {candidates.map((c) => (
-          <CandidateCard key={c.id} candidate={c} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SectionHeader() {
-  return (
-    <p
-      style={{
-        color: uiColors.textStrong,
-        fontSize: uiTypography.title.fontSize,
-        fontWeight: uiTypography.title.fontWeight,
-        margin: `0 0 2px ${uiSpacing.pageX}`,
-      }}
-    >
-      후보자 한마디
-    </p>
-  );
-}
-
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Main section ─────────────────────────────────────────────────────────────
 
 export function CandidateMessagesSection({ dongCode }: Props) {
-  // Start with [] to avoid SSR/hydration mismatch.
-  // sessionStorage is read in the first useEffect (client-only).
   const [candidates, setCandidates] = useState<CandidateMessage[]>([]);
   const [othersOpen, setOthersOpen] = useState(false);
 
   useEffect(() => {
-    // 1) Immediately show cached candidates from previous session
+    // 1) Show cached candidates immediately
     const cached = readCachedCandidates();
-    if (cached.length > 0) {
-      setCandidates(cached);
-    }
+    if (cached.length > 0) setCandidates(cached);
 
     // 2) Fetch fresh data
     let cancelled = false;
@@ -198,98 +137,60 @@ export function CandidateMessagesSection({ dongCode }: Props) {
           setCandidates(fetched);
           writeCachedCandidates(fetched);
         }
-        // If fetched is empty, keep whatever we already have (cache or previous fetch)
       })
       .catch((err) => {
         console.warn("[CandidateMessagesSection] fetch failed:", err);
-        // Don't clear existing candidates on fetch failure
       });
 
     return () => {
       cancelled = true;
     };
-  }, []); // run once on mount
+  }, []);
 
   if (candidates.length === 0) return null;
 
-  // ── Tier classification ──────────────────────────────────────────────────
+  // ── Tier classification ────────────────────────────────────────────────────
   const tiered = candidates.map((c) => ({
     candidate: c,
     tier: matchCandidateTier(c.district, dongCode) as CandidateTier,
   }));
 
-  const tier1 = tiered.filter((t) => t.tier === 1).map((t) => t.candidate);
-  const tier2 = tiered.filter((t) => t.tier === 2).map((t) => t.candidate);
-  const tier3 = tiered.filter((t) => t.tier === 3).map((t) => t.candidate);
+  const primaryCandidates = tiered
+    .filter((t) => t.tier === 1 || t.tier === 2)
+    .map((t) => t.candidate);
+  const otherCandidates = tiered
+    .filter((t) => t.tier === 3)
+    .map((t) => t.candidate);
 
-  const primaryCandidates = [...tier1, ...tier2];
-  const hasNearby = primaryCandidates.length > 0;
-  const hasOthers = tier3.length > 0;
+  // If no tier1/2 match, show everyone directly (no collapse)
+  const visibleCandidates =
+    primaryCandidates.length > 0 ? primaryCandidates : candidates;
+  const collapsedCandidates =
+    primaryCandidates.length > 0 ? otherCandidates : [];
 
-  const sigunguName = getSigunguName(dongCode);
-  const sidoName = getSidoName(dongCode);
-  const nearbyLabel = sigunguName
-    ? `${sigunguName} · ${sidoName ?? ""} 후보`
-    : sidoName
-      ? `${sidoName} 후보`
-      : "내 지역 후보";
-
-  // ── No location or location could not be matched → show all ─────────────
-  // Also covers the case where dongCode is set but ALL candidates fall into
-  // tier 3 (lookup mismatch). In that case we show everyone directly.
-  if (!dongCode || (!hasNearby && !hasOthers)) {
-    return (
-      <section
-        style={{
-          borderBottom: `1px solid ${uiColors.border}`,
-          paddingBottom: uiSpacing.lg,
-          paddingTop: uiSpacing.lg,
-        }}
-      >
-        <SectionHeader />
-        <CandidateRow label="전체 후보" candidates={candidates} />
-      </section>
-    );
-  }
-
-  // ── dongCode set but no tier1/2 match → show all (tier3) directly ───────
-  // This prevents candidates from being completely hidden behind a collapse.
-  if (!hasNearby && hasOthers) {
-    return (
-      <section
-        style={{
-          borderBottom: `1px solid ${uiColors.border}`,
-          display: "flex",
-          flexDirection: "column",
-          gap: uiSpacing.md,
-          paddingBottom: uiSpacing.lg,
-          paddingTop: uiSpacing.lg,
-        }}
-      >
-        <SectionHeader />
-        <CandidateRow label="전체 후보" candidates={tier3} />
-      </section>
-    );
-  }
-
-  // ── Normal case: tier1/2 shown prominently, tier3 collapsible ───────────
   return (
-    <section
+    <div
       style={{
-        borderBottom: `1px solid ${uiColors.border}`,
         display: "flex",
         flexDirection: "column",
         gap: uiSpacing.md,
-        paddingBottom: uiSpacing.lg,
-        paddingTop: uiSpacing.lg,
+        marginBottom: uiSpacing.sm,
+        paddingBottom: uiSpacing.md,
+        // full-bleed bottom border (outside the parent's horizontal padding)
+        borderBottom: `1px solid ${uiColors.border}`,
+        marginLeft: `-${uiSpacing.pageX}`,
+        marginRight: `-${uiSpacing.pageX}`,
+        paddingLeft: uiSpacing.pageX,
+        paddingRight: uiSpacing.pageX,
       }}
     >
-      <SectionHeader />
+      {visibleCandidates.map((c) => (
+        <CandidateMessageCard key={c.id} candidate={c} />
+      ))}
 
-      <CandidateRow label={nearbyLabel} candidates={primaryCandidates} />
-
-      {hasOthers ? (
-        <div>
+      {/* Collapsible for other-region candidates */}
+      {collapsedCandidates.length > 0 ? (
+        <>
           <button
             type="button"
             onClick={() => setOthersOpen((v) => !v)}
@@ -304,21 +205,20 @@ export function CandidateMessagesSection({ dongCode }: Props) {
               fontSize: "12px",
               fontWeight: 600,
               gap: "4px",
-              marginLeft: uiSpacing.pageX,
-              padding: "4px 0",
+              padding: "2px 0",
             }}
           >
             {othersOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            다른 지역 후보 {tier3.length}명
+            다른 지역 후보 {collapsedCandidates.length}명
           </button>
 
-          {othersOpen ? (
-            <div style={{ marginTop: "6px" }}>
-              <CandidateRow label="다른 지역" candidates={tier3} />
-            </div>
-          ) : null}
-        </div>
+          {othersOpen
+            ? collapsedCandidates.map((c) => (
+                <CandidateMessageCard key={c.id} candidate={c} />
+              ))
+            : null}
+        </>
       ) : null}
-    </section>
+    </div>
   );
 }
