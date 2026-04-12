@@ -165,7 +165,7 @@ function CardFooter() {
           flexDirection: "column",
           alignItems: "flex-end",
           gap: "16px",
-          bottom: "0",
+          bottom: "32px",
           position: "absolute",
           right: "0",
           textAlign: "right",
