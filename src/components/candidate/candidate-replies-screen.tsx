@@ -79,7 +79,7 @@ export function CandidateRepliesScreen({
         appearance: "none",
         background: "transparent",
         border: "none",
-        color: uiColors.textMuted,
+        color: uiColors.textStrong,
         cursor: "pointer",
         fontSize: "13px",
         fontWeight: 600,
@@ -95,7 +95,7 @@ export function CandidateRepliesScreen({
     <Link
       href="/"
       style={{
-        color: uiColors.textMuted,
+        color: uiColors.textStrong,
         fontSize: "13px",
         fontWeight: 600,
         textDecoration: "none",
