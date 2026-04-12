@@ -165,29 +165,42 @@ function CardFooter() {
       />
       <div
         style={{
-          alignItems: "flex-end",
           display: "flex",
           flexDirection: "column",
-          gap: "0px",
+          alignItems: "flex-end",
+          gap: "16px",
           bottom: "0",
           position: "absolute",
           right: "0",
           textAlign: "right",
         }}
       >
-        <div
+        <span
           style={{
-            display: "flex",
-            flexDirection: "column",
+            color: "#111827",
+            display: "block",
             fontSize: "62px",
             fontWeight: 700,
             letterSpacing: "-0.03em",
-            lineHeight: 1.3,
+            lineHeight: 1,
+            width: "fit-content",
           }}
         >
-          <span style={{ color: "#111827" }}>여기 근데</span>
-          <span style={{ color: "#9ca3af" }}>한마디 할게요</span>
-        </div>
+          여기 근데
+        </span>
+        <span
+          style={{
+            color: "#9ca3af",
+            display: "block",
+            fontSize: "62px",
+            fontWeight: 700,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            width: "fit-content",
+          }}
+        >
+          한마디 할게요
+        </span>
       </div>
     </div>
   );
@@ -223,7 +236,7 @@ export function RepliedVoterCard({
           flex: 1,
           flexDirection: "column",
           justifyContent: "space-between",
-          padding: "48px 52px 48px",
+          padding: "48px 52px 20px",
           width: "100%",
         }}
       >
