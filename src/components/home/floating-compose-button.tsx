@@ -62,8 +62,8 @@ export function FloatingComposeButton({
         alt=""
         aria-hidden="true"
         src={checkmarkIcon}
-        width={24}
-        height={24}
+        width={22}
+        height={22}
         style={{
           filter: disabled
             ? "grayscale(0.18) opacity(0.72)"
