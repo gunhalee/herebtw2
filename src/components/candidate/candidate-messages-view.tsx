@@ -1,4 +1,5 @@
 "use client";
+import { ChevronRight } from "lucide-react";
 import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
 import type {
   CandidateMessage,
@@ -40,6 +41,8 @@ export function CandidateMessageCard({
   candidate: CandidateMessage;
   onSelect?: (candidateId: string) => void;
 }) {
+  const interactive = Boolean(onSelect);
+  const handleSelect = () => onSelect?.(candidate.id);
   const initials = candidate.name.slice(-1);
   const districtLabel =
     candidate.localCouncilDistrict ??
@@ -53,14 +56,149 @@ export function CandidateMessageCard({
         ? "광역의회"
         : null);
 
+  const cardContent = (
+    <div
+      style={{
+        background: uiColors.surface,
+        border: "1px solid rgba(17, 24, 39, 0.08)",
+        borderRadius: "22px",
+        boxShadow: "0 2px 8px rgba(17, 24, 39, 0.04)",
+        boxSizing: "border-box",
+        display: "flex",
+        overflow: "hidden",
+        position: "relative",
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          background: uiBrandYellow.borderWarm,
+          bottom: 0,
+          left: 0,
+          position: "absolute",
+          top: 0,
+          width: "4px",
+        }}
+      />
+      {candidate.photoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          alt={`${candidate.name} 후보`}
+          decoding="async"
+          loading="lazy"
+          src={candidate.photoUrl}
+          style={{
+            alignSelf: "flex-end",
+            display: "block",
+            flexShrink: 0,
+            height: "76px",
+            width: "auto",
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            alignItems: "center",
+            alignSelf: "flex-end",
+            background: "#e5e7eb",
+            borderRadius: "50%",
+            display: "flex",
+            flexShrink: 0,
+            height: `${PHOTO_FALLBACK_WIDTH}px`,
+            justifyContent: "center",
+            margin: "0 8px 0",
+            width: `${PHOTO_FALLBACK_WIDTH}px`,
+          }}
+        >
+          <span style={{ color: "#6b7280", fontSize: "22px", fontWeight: 700 }}>
+            {initials}
+          </span>
+        </div>
+      )}
+
+      <div
+        style={{
+          color: uiColors.textStrong,
+          flex: 1,
+          minWidth: 0,
+          padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
+        }}
+      >
+        <p
+          style={{
+            alignItems: "center",
+            display: "flex",
+            flexWrap: "wrap",
+            fontSize: "11px",
+            gap: "6px",
+            lineHeight: 1.35,
+            margin: `0 0 ${uiSpacing.sm}`,
+          }}
+        >
+          <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
+            {candidate.name}
+          </span>
+          <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
+            · {districtLabel}
+          </span>
+          <span
+            style={{
+              background: uiBrandYellow.surfaceWarm,
+              border: `1px solid ${uiBrandYellow.borderWarm}`,
+              borderRadius: "999px",
+              color: uiColors.textStrong,
+              fontSize: "10px",
+              fontWeight: 700,
+              padding: "2px 8px",
+            }}
+          >
+            {councilBadge ? `${councilBadge} 후보` : "후보"}
+          </span>
+        </p>
+
+        <p
+          style={{
+            color: uiColors.textStrong,
+            fontSize: "15px",
+            fontWeight: 500,
+            lineHeight: 1.5,
+            margin: 0,
+          }}
+        >
+          {candidate.firstMessageContent}
+        </p>
+      </div>
+
+      {interactive ? (
+        <div
+          aria-hidden="true"
+          style={{
+            alignItems: "center",
+            color: uiColors.textMuted,
+            display: "flex",
+            flexShrink: 0,
+            justifyContent: "center",
+            padding: `0 ${uiSpacing.lg} 0 0`,
+          }}
+        >
+          <ChevronRight size={26} strokeWidth={2.25} />
+        </div>
+      ) : null}
+    </div>
+  );
+
+  if (!interactive) {
+    return cardContent;
+  }
+
   return (
     <button
-      onClick={() => onSelect?.(candidate.id)}
+      onClick={handleSelect}
       style={{
         appearance: "none",
         background: "transparent",
         border: "none",
-        cursor: onSelect ? "pointer" : "default",
+        cursor: "pointer",
         display: "block",
         padding: 0,
         textAlign: "left",
@@ -68,118 +206,7 @@ export function CandidateMessageCard({
       }}
       type="button"
     >
-      <div
-        style={{
-          background: uiColors.surface,
-          border: "1px solid rgba(17, 24, 39, 0.08)",
-          borderRadius: "22px",
-          boxShadow: "0 2px 8px rgba(17, 24, 39, 0.04)",
-          boxSizing: "border-box",
-          display: "flex",
-          overflow: "hidden",
-          position: "relative",
-          width: "100%",
-        }}
-      >
-        <div
-          style={{
-            background: uiBrandYellow.borderWarm,
-            bottom: 0,
-            left: 0,
-            position: "absolute",
-            top: 0,
-            width: "4px",
-          }}
-        />
-        {candidate.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            alt={`${candidate.name} 후보`}
-            decoding="async"
-            loading="lazy"
-            src={candidate.photoUrl}
-            style={{
-              alignSelf: "flex-end",
-              display: "block",
-              flexShrink: 0,
-              height: "76px",
-              width: "auto",
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              alignItems: "center",
-              alignSelf: "flex-end",
-              background: "#e5e7eb",
-              borderRadius: "50%",
-              display: "flex",
-              flexShrink: 0,
-              height: `${PHOTO_FALLBACK_WIDTH}px`,
-              justifyContent: "center",
-              margin: "0 8px 0",
-              width: `${PHOTO_FALLBACK_WIDTH}px`,
-            }}
-          >
-            <span style={{ color: "#6b7280", fontSize: "22px", fontWeight: 700 }}>
-              {initials}
-            </span>
-          </div>
-        )}
-
-        <div
-          style={{
-            color: uiColors.textStrong,
-            flex: 1,
-            minWidth: 0,
-            padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
-          }}
-        >
-          <p
-            style={{
-              alignItems: "center",
-              display: "flex",
-              flexWrap: "wrap",
-              fontSize: "11px",
-              gap: "6px",
-              lineHeight: 1.35,
-              margin: `0 0 ${uiSpacing.sm}`,
-            }}
-          >
-            <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
-              {candidate.name}
-            </span>
-            <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
-              · {districtLabel}
-            </span>
-            <span
-              style={{
-                background: uiBrandYellow.surfaceWarm,
-                border: `1px solid ${uiBrandYellow.borderWarm}`,
-                borderRadius: "999px",
-                color: uiColors.textStrong,
-                fontSize: "10px",
-                fontWeight: 700,
-                padding: "2px 8px",
-              }}
-            >
-              {councilBadge ? `${councilBadge} 후보` : "후보"}
-            </span>
-          </p>
-
-          <p
-            style={{
-              color: uiColors.textStrong,
-              fontSize: "15px",
-              fontWeight: 500,
-              lineHeight: 1.5,
-              margin: 0,
-            }}
-          >
-            {candidate.firstMessageContent}
-          </p>
-        </div>
-      </div>
+      {cardContent}
     </button>
   );
 }
