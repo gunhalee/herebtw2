@@ -291,6 +291,20 @@ export function PostListItemCard({
                     ? `${replyCouncilBadge.replace(/의회$/, "의원")} 후보`
                     : "후보"}
                 </span>
+                {replyIsPromise ? (
+                  <span
+                    style={{
+                      background: "#fbbf24",
+                      borderRadius: "6px",
+                      color: "#78350f",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      padding: "2px 6px",
+                    }}
+                  >
+                    약속
+                  </span>
+                ) : null}
               </p>
               {/* 답변 본문 */}
               <p
