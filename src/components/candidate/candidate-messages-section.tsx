@@ -134,9 +134,29 @@ function CandidateRow({
   );
 }
 
+const CACHE_KEY = "herebtw.candidateMessages";
+
+function readCachedCandidates(): CandidateMessage[] {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as CandidateMessage[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedCandidates(candidates: CandidateMessage[]) {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(candidates));
+  } catch {
+    // ignore
+  }
+}
+
 export function CandidateMessagesSection({ dongCode }: Props) {
-  const [candidates, setCandidates] = useState<CandidateMessage[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [candidates, setCandidates] = useState<CandidateMessage[]>(() =>
+    readCachedCandidates(),
+  );
   const [othersOpen, setOthersOpen] = useState(false);
 
   useEffect(() => {
@@ -145,21 +165,22 @@ export function CandidateMessagesSection({ dongCode }: Props) {
       .then((r) => r.json())
       .then((data) => {
         if (!cancelled) {
-          setCandidates(data?.data?.candidates ?? []);
+          const fetched: CandidateMessage[] = data?.data?.candidates ?? [];
+          if (fetched.length > 0) {
+            setCandidates(fetched);
+            writeCachedCandidates(fetched);
+          }
         }
       })
       .catch(() => {
-        // silently ignore errors – section is supplementary
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        // silently ignore — cached data stays visible
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  if (loading || candidates.length === 0) return null;
+  if (candidates.length === 0) return null;
 
   // Categorise by tier
   const tiered = candidates.map((c) => ({
