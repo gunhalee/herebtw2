@@ -130,6 +130,8 @@ export function PostComposeSuccess({
           }}
         >
           {`${displayDongName}에 남긴 목소리를 포토카드로 저장해보세요.`}
+          <br />
+          링크를 통해서 후보자의 답글을 확인할 수 있어요.
         </p>
       </div>
 
