@@ -75,9 +75,21 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
           boxSizing: "border-box",
           display: "flex",
           overflow: "hidden",
+          position: "relative",
           width: "100%",
         }}
       >
+        {/* 답변 있는 포스트 카드와 동일: 왼쪽 노란 띠 */}
+        <div
+          style={{
+            background: uiBrandYellow.borderWarm,
+            bottom: 0,
+            left: 0,
+            position: "absolute",
+            top: 0,
+            width: "4px",
+          }}
+        />
         {/* ── 프로필 사진 ──────────────────────────────────── */}
         {candidate.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
