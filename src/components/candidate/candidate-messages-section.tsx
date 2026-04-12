@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import {
-  matchCandidateTier,
-  type CandidateTier,
-} from "../../lib/geo/administrative-code-lookup";
 import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
+import type { CandidateMatchType } from "../../app/api/candidates/messages/route";
 
 type CandidateMessage = {
   id: string;
@@ -15,7 +12,15 @@ type CandidateMessage = {
   photoUrl: string | null;
   firstMessageContent: string;
   firstMessagePublicUuid: string;
+  metroCouncilDistrict: string | null;
+  localCouncilDistrict: string | null;
+  matchType: CandidateMatchType;
 };
+
+type UserDistricts = {
+  metroCouncilDistrict: string | null;
+  localCouncilDistrict: string | null;
+} | null;
 
 type Props = {
   dongCode: string | null;
@@ -23,31 +28,49 @@ type Props = {
 
 // ─── Cache ────────────────────────────────────────────────────────────────────
 
-const CACHE_KEY = "herebtw.candidateMessages";
+const CACHE_KEY = "herebtw.candidateMessages.v2";
 
-function readCachedCandidates(): CandidateMessage[] {
-  if (typeof window === "undefined") return [];
+type CachedPayload = {
+  candidates: CandidateMessage[];
+  userDistricts: UserDistricts;
+  dongCode: string | null;
+};
+
+function readCache(dongCode: string | null): CachedPayload | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
-    return raw ? (JSON.parse(raw) as CandidateMessage[]) : [];
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedPayload;
+    // 동코드가 바뀌면 캐시 무효
+    if (parsed.dongCode !== dongCode) return null;
+    return parsed;
   } catch {
-    return [];
+    return null;
   }
 }
 
-function writeCachedCandidates(list: CandidateMessage[]) {
+function writeCache(payload: CachedPayload) {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(list));
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(payload));
   } catch {}
 }
 
-// ─── Single candidate card (mimics PostListItemCard, no actions) ──────────────
+// ─── Single candidate card ────────────────────────────────────────────────────
 
-const PHOTO_FALLBACK_WIDTH = 72; // px – used only when there's no photo
+const PHOTO_FALLBACK_WIDTH = 72;
 
 function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
   const initials = candidate.name.slice(-1);
+
+  // 선거구 레이블 표시 (local → 구시군의회, metro → 시도의회)
+  const electionDistrictLabel =
+    candidate.matchType === "local"
+      ? candidate.localCouncilDistrict
+      : candidate.matchType === "metro"
+        ? candidate.metroCouncilDistrict
+        : null;
 
   return (
     <a
@@ -66,7 +89,7 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
           width: "100%",
         }}
       >
-        {/* ── Left: profile photo ──────────────────────────────────── */}
+        {/* ── 프로필 사진 ──────────────────────────────────── */}
         {candidate.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -97,7 +120,7 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
           </div>
         )}
 
-        {/* ── Right: meta + content ────────────────────────────────── */}
+        {/* ── 이름 + 선거구 + 한마디 ────────────────────────── */}
         <div
           style={{
             color: uiColors.textStrong,
@@ -106,11 +129,11 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
             padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
           }}
         >
-          {/* Meta row */}
           <p
             style={{
               alignItems: "center",
               display: "flex",
+              flexWrap: "wrap",
               fontSize: "11px",
               gap: "6px",
               lineHeight: 1.35,
@@ -136,9 +159,23 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
             <span style={{ color: uiColors.textMuted, fontWeight: 400 }}>
               · {candidate.district}
             </span>
+            {electionDistrictLabel ? (
+              <span
+                style={{
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  borderRadius: "999px",
+                  color: "#1d4ed8",
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  padding: "2px 7px",
+                }}
+              >
+                {electionDistrictLabel}
+              </span>
+            ) : null}
           </p>
 
-          {/* Content */}
           <p
             style={{
               color: uiColors.textStrong,
@@ -156,20 +193,49 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
   );
 }
 
+// ─── 선거구 레이블 헤더 ──────────────────────────────────────────────────────
+
+function DistrictBadge({ label, tier }: { label: string; tier: "local" | "metro" }) {
+  const isLocal = tier === "local";
+  return (
+    <span
+      style={{
+        background: isLocal ? "#f0fdf4" : "#eff6ff",
+        border: `1px solid ${isLocal ? "#bbf7d0" : "#bfdbfe"}`,
+        borderRadius: "999px",
+        color: isLocal ? "#15803d" : "#1d4ed8",
+        fontSize: "11px",
+        fontWeight: 700,
+        padding: "3px 10px",
+      }}
+    >
+      {isLocal ? "구·시·군의회" : "시·도의회"} {label}
+    </span>
+  );
+}
+
 // ─── Main section ─────────────────────────────────────────────────────────────
 
 export function CandidateMessagesSection({ dongCode }: Props) {
   const [candidates, setCandidates] = useState<CandidateMessage[]>([]);
+  const [userDistricts, setUserDistricts] = useState<UserDistricts>(null);
   const [othersOpen, setOthersOpen] = useState(false);
 
   useEffect(() => {
-    // 1) Show cached candidates immediately
-    const cached = readCachedCandidates();
-    if (cached.length > 0) setCandidates(cached);
+    // 캐시 즉시 표시
+    const cached = readCache(dongCode);
+    if (cached) {
+      setCandidates(cached.candidates);
+      setUserDistricts(cached.userDistricts);
+    }
 
-    // 2) Fetch fresh data
+    // 최신 데이터 패치
     let cancelled = false;
-    fetch("/api/candidates/messages")
+    const url = dongCode
+      ? `/api/candidates/messages?dongCode=${encodeURIComponent(dongCode)}`
+      : "/api/candidates/messages";
+
+    fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -177,9 +243,11 @@ export function CandidateMessagesSection({ dongCode }: Props) {
       .then((data) => {
         if (cancelled) return;
         const fetched: CandidateMessage[] = data?.data?.candidates ?? [];
+        const districts: UserDistricts = data?.data?.userDistricts ?? null;
         if (fetched.length > 0) {
           setCandidates(fetched);
-          writeCachedCandidates(fetched);
+          setUserDistricts(districts);
+          writeCache({ candidates: fetched, userDistricts: districts, dongCode });
         }
       })
       .catch((err) => {
@@ -189,28 +257,18 @@ export function CandidateMessagesSection({ dongCode }: Props) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [dongCode]);
 
   if (candidates.length === 0) return null;
 
-  // ── Tier classification ────────────────────────────────────────────────────
-  const tiered = candidates.map((c) => ({
-    candidate: c,
-    tier: matchCandidateTier(c.district, dongCode) as CandidateTier,
-  }));
+  // 선거구 매칭 후보 / 기타 분리
+  const primaryCandidates = candidates.filter(
+    (c) => c.matchType === "local" || c.matchType === "metro",
+  );
+  const otherCandidates = candidates.filter((c) => c.matchType === "other");
 
-  const primaryCandidates = tiered
-    .filter((t) => t.tier === 1 || t.tier === 2)
-    .map((t) => t.candidate);
-  const otherCandidates = tiered
-    .filter((t) => t.tier === 3)
-    .map((t) => t.candidate);
-
-  // If no tier1/2 match, show everyone directly (no collapse)
-  const visibleCandidates =
-    primaryCandidates.length > 0 ? primaryCandidates : candidates;
-  const collapsedCandidates =
-    primaryCandidates.length > 0 ? otherCandidates : [];
+  const visibleCandidates = primaryCandidates.length > 0 ? primaryCandidates : candidates;
+  const collapsedCandidates = primaryCandidates.length > 0 ? otherCandidates : [];
 
   return (
     <div
@@ -220,7 +278,6 @@ export function CandidateMessagesSection({ dongCode }: Props) {
         gap: uiSpacing.md,
         marginBottom: uiSpacing.sm,
         paddingBottom: uiSpacing.md,
-        // full-bleed bottom border (outside the parent's horizontal padding)
         borderBottom: `1px solid ${uiColors.border}`,
         marginLeft: `-${uiSpacing.pageX}`,
         marginRight: `-${uiSpacing.pageX}`,
@@ -228,11 +285,42 @@ export function CandidateMessagesSection({ dongCode }: Props) {
         paddingRight: uiSpacing.pageX,
       }}
     >
+      {/* 선거구 정보 헤더 */}
+      {userDistricts &&
+      (userDistricts.localCouncilDistrict || userDistricts.metroCouncilDistrict) &&
+      primaryCandidates.length > 0 ? (
+        <div
+          style={{
+            alignItems: "center",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "6px",
+          }}
+        >
+          <span
+            style={{
+              color: uiColors.textMuted,
+              fontSize: "11px",
+              fontWeight: 600,
+              marginRight: "2px",
+            }}
+          >
+            내 선거구 후보
+          </span>
+          {userDistricts.localCouncilDistrict ? (
+            <DistrictBadge label={userDistricts.localCouncilDistrict} tier="local" />
+          ) : null}
+          {userDistricts.metroCouncilDistrict ? (
+            <DistrictBadge label={userDistricts.metroCouncilDistrict} tier="metro" />
+          ) : null}
+        </div>
+      ) : null}
+
       {visibleCandidates.map((c) => (
         <CandidateMessageCard key={c.id} candidate={c} />
       ))}
 
-      {/* Collapsible for other-region candidates */}
+      {/* 다른 지역 후보 접기/펼치기 */}
       {collapsedCandidates.length > 0 ? (
         <>
           <button

@@ -15,6 +15,9 @@ export type PostListItem = {
   canReport: boolean;
   isHighlighted: boolean;
   replyStatus?: "delivered" | "replied";
+  replyCandidateName?: string | null;
+  replyContent?: string | null;
+  replyIsPromise?: boolean | null;
 };
 
 export type PostListState = {

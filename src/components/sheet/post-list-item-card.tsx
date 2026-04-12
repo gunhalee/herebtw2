@@ -16,6 +16,10 @@ type PostListItemCardProps = {
   isMenuOpen?: boolean;
   myAgree: boolean;
   relativeTime: string;
+  replyStatus?: "delivered" | "replied";
+  replyCandidateName?: string | null;
+  replyContent?: string | null;
+  replyIsPromise?: boolean | null;
   onCloseMenu?: () => void;
   onOpenMenu?: () => void;
   onToggleAgree?: () => void;
@@ -31,6 +35,10 @@ export function PostListItemCard({
   isMenuOpen = false,
   myAgree,
   relativeTime,
+  replyStatus,
+  replyCandidateName,
+  replyContent,
+  replyIsPromise,
   onCloseMenu,
   onOpenMenu,
   onToggleAgree,
@@ -41,6 +49,7 @@ export function PostListItemCard({
     ? uiBrandYellow.surfaceWarm
     : "rgba(255, 255, 255, 0.96)";
   const agreeButtonBorder = myAgree ? uiBrandYellow.borderWarm : uiColors.border;
+  const hasReply = replyStatus === "replied" && Boolean(replyContent);
 
   return (
     <>
@@ -90,81 +99,137 @@ export function PostListItemCard({
             : "0 2px 8px rgba(17, 24, 39, 0.04)",
           boxSizing: "border-box",
           color: uiColors.textStrong,
-          padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
+          overflow: "hidden",
           width: "100%",
         }}
       >
-        <div
-          style={{
-            alignItems: "flex-start",
-            display: "flex",
-            gap: uiSpacing.sm,
-            justifyContent: "space-between",
-            marginBottom: uiSpacing.sm,
-          }}
-        >
+        {/* 원글 영역 */}
+        <div style={{ padding: `${uiSpacing.lg} ${uiSpacing.xl}` }}>
+          <div
+            style={{
+              alignItems: "flex-start",
+              display: "flex",
+              gap: uiSpacing.sm,
+              justifyContent: "space-between",
+              marginBottom: uiSpacing.sm,
+            }}
+          >
+            <p
+              style={{
+                flex: 1,
+                fontSize: "11px",
+                lineHeight: 1.35,
+                margin: 0,
+              }}
+            >
+              <span
+                style={{
+                  color: uiColors.textStrong,
+                  fontWeight: 500,
+                }}
+              >
+                {displayAdministrativeDongName}
+              </span>
+              <span
+                style={{
+                  color: uiColors.textMuted,
+                  fontWeight: 400,
+                }}
+              >
+                {` · ${formatBucketedDistance(distanceMeters)} · ${relativeTime}`}
+              </span>
+            </p>
+
+            <button
+              aria-label="신고 메뉴 열기"
+              data-post-menu-trigger-for={menuPostId}
+              onClick={isMenuOpen ? onCloseMenu : onOpenMenu}
+              style={{
+                appearance: "none",
+                background: "transparent",
+                border: "none",
+                color: uiColors.textStrong,
+                cursor: "pointer",
+                flexShrink: 0,
+                fontSize: "16px",
+                fontWeight: 500,
+                lineHeight: 1,
+                margin: 0,
+                padding: 0,
+                textAlign: "right",
+                transform: "translateY(-1px)",
+              }}
+              type="button"
+            >
+              ⋯
+            </button>
+          </div>
+
           <p
             style={{
-              flex: 1,
-              fontSize: "11px",
-              lineHeight: 1.35,
-              margin: 0,
-            }}
-          >
-            <span
-              style={{
-                color: uiColors.textStrong,
-                fontWeight: 500,
-              }}
-            >
-              {displayAdministrativeDongName}
-            </span>
-            <span
-              style={{
-                color: uiColors.textMuted,
-                fontWeight: 400,
-              }}
-            >
-              {` · ${formatBucketedDistance(distanceMeters)} · ${relativeTime}`}
-            </span>
-          </p>
-
-          <button
-            aria-label="신고 메뉴 열기"
-            data-post-menu-trigger-for={menuPostId}
-            onClick={isMenuOpen ? onCloseMenu : onOpenMenu}
-            style={{
-              appearance: "none",
-              background: "transparent",
-              border: "none",
               color: uiColors.textStrong,
-              cursor: "pointer",
-              flexShrink: 0,
-              fontSize: "16px",
+              fontSize: "15px",
               fontWeight: 500,
-              lineHeight: 1,
+              lineHeight: 1.5,
               margin: 0,
-              padding: 0,
-              textAlign: "right",
-              transform: "translateY(-1px)",
+              paddingBottom: hasReply ? "0" : uiSpacing.xs,
             }}
-            type="button"
           >
-            ⋯
-          </button>
+            {content}
+          </p>
         </div>
 
-        <p
-          style={{
-            color: uiColors.textStrong,
-            fontSize: "15px",
-            fontWeight: 500,
-            lineHeight: 1.5,
-            margin: 0,
-          }}
-        >
-          {content}
-        </p>
+        {/* 답변 영역 (C안: 하단 황색 섹션) */}
+        {hasReply ? (
+          <div
+            style={{
+              background: uiBrandYellow.surfaceWarm,
+              borderTop: `1px solid ${uiBrandYellow.borderWarm}`,
+              padding: `${uiSpacing.md} ${uiSpacing.xl}`,
+              paddingBottom: `calc(${uiSpacing.lg} + 18px)`,
+            }}
+          >
+            <p
+              style={{
+                alignItems: "center",
+                color: "#92400e",
+                display: "flex",
+                fontSize: "11px",
+                fontWeight: 700,
+                gap: "5px",
+                lineHeight: 1.35,
+                margin: `0 0 5px`,
+              }}
+            >
+              {replyCandidateName} 후보 답변
+              {replyIsPromise ? (
+                <span
+                  style={{
+                    background: "#fbbf24",
+                    borderRadius: "4px",
+                    color: "#78350f",
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    padding: "1px 5px",
+                  }}
+                >
+                  약속
+                </span>
+              ) : null}
+            </p>
+            <p
+              style={{
+                color: "#78350f",
+                fontSize: "14px",
+                fontWeight: 400,
+                lineHeight: 1.55,
+                margin: 0,
+              }}
+            >
+              {replyContent}
+            </p>
+          </div>
+        ) : null}
       </div>
     </>
   );

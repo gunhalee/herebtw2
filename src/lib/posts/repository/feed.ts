@@ -324,7 +324,7 @@ async function loadLegacyGlobalPostListState(input: {
     : "";
   const posts =
     (await supabaseSelect<PostRow[]>(
-      `posts?select=id,content,administrative_dong_name,created_at,delete_expires_at,latitude,longitude&status=eq.active&order=created_at.desc&order=id.asc&limit=${input.preparedLoad.limit + 1}${cursorFilter}`,
+      `posts?select=id,content,administrative_dong_name,created_at,delete_expires_at,latitude,longitude&status=eq.active&latitude=not.is.null&longitude=not.is.null&order=created_at.desc&order=id.asc&limit=${input.preparedLoad.limit + 1}${cursorFilter}`,
     )) ?? [];
   const { hasMore, selectedRows } = sliceFeedRows(
     posts,

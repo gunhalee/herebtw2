@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "generate:administrative-dong-map": "node scripts/generate-administrative-dong-map.js",
+    "generate:local-election-9-dong-mapping": "node scripts/generate-local-election-9-dong-mapping.js",
     "generate:copy-review": "node scripts/generate-copy-review.js"
   },
   "dependencies": {
@@ -35,6 +36,7 @@
     "@types/node": "^22.15.17",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "pg": "^8.20.0",
     "typescript": "^5.8.3"
   }
 }

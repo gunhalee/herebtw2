@@ -16,6 +16,10 @@ export function PostListItem({
   agreeCount,
   myAgree,
   isHighlighted,
+  replyStatus,
+  replyCandidateName,
+  replyContent,
+  replyIsPromise,
   isMenuOpen,
   onToggleAgree,
   onOpenMenu,
@@ -58,6 +62,10 @@ export function PostListItem({
           isMenuOpen={isMenuOpen}
           myAgree={myAgree}
           relativeTime={relativeTime}
+          replyStatus={replyStatus}
+          replyCandidateName={replyCandidateName}
+          replyContent={replyContent}
+          replyIsPromise={replyIsPromise}
           onCloseMenu={onCloseMenu}
           onOpenMenu={() => onOpenMenu?.(id)}
           onToggleAgree={() => onToggleAgree?.(id)}

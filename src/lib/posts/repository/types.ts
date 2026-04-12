@@ -19,6 +19,9 @@ type NearbyPostRow = PostRow & {
   agree_count?: number;
   my_agree?: boolean;
   can_report?: boolean;
+  reply_candidate_name?: string | null;
+  reply_content?: string | null;
+  reply_is_promise?: boolean | null;
 };
 
 type PostDetailRow = {
