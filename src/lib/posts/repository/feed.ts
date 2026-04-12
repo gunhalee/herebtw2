@@ -48,7 +48,8 @@ async function loadPostsFeedRpc(input: {
   limit: number;
   cursor: PostListCursor | null;
   location?: PostLocation;
-  viewerDongCode?: string | null;
+  viewerLocalCouncilDistrict?: string | null;
+  viewerMetroCouncilDistrict?: string | null;
 }) {
   const startedAtMs = getMonotonicTimeMs();
 
@@ -62,7 +63,8 @@ async function loadPostsFeedRpc(input: {
         cursor_created_at: input.cursor?.createdAt ?? null,
         cursor_post_id: input.cursor?.postId ?? null,
         result_limit: input.limit + 1,
-        viewer_dong_code: input.viewerDongCode ?? null,
+        viewer_local_council_district: input.viewerLocalCouncilDistrict ?? null,
+        viewer_metro_council_district: input.viewerMetroCouncilDistrict ?? null,
       })) ?? [];
 
     return {
@@ -95,7 +97,8 @@ type PrepareFeedLoadParams = {
   limit?: number;
   cursor?: string;
   location?: PostLocation;
-  viewerDongCode?: string | null;
+  viewerLocalCouncilDistrict?: string | null;
+  viewerMetroCouncilDistrict?: string | null;
   decodeCursor?: (cursor: string | undefined) => PostListCursor | null;
 };
 
@@ -105,7 +108,8 @@ async function prepareFeedLoad({
   limit: rawLimit,
   cursor: rawCursor,
   location,
-  viewerDongCode,
+  viewerLocalCouncilDistrict,
+  viewerMetroCouncilDistrict,
   decodeCursor = decodePostListCursor,
 }: PrepareFeedLoadParams) {
   const startedAtMs = getMonotonicTimeMs();
@@ -124,7 +128,8 @@ async function prepareFeedLoad({
     limit,
     cursor,
     location,
-    viewerDongCode,
+    viewerLocalCouncilDistrict,
+    viewerMetroCouncilDistrict,
   });
 
   return {
@@ -360,7 +365,8 @@ async function loadPostsListRepository(input: {
   limit?: number;
   cursor?: string;
   location?: PostLocation;
-  viewerDongCode?: string | null;
+  viewerLocalCouncilDistrict?: string | null;
+  viewerMetroCouncilDistrict?: string | null;
 }) {
   if (!hasSupabaseServerConfig()) {
     return getMockPostListState();
@@ -372,7 +378,8 @@ async function loadPostsListRepository(input: {
     limit: input.limit,
     cursor: input.cursor,
     location: input.location,
-    viewerDongCode: input.viewerDongCode,
+    viewerLocalCouncilDistrict: input.viewerLocalCouncilDistrict,
+    viewerMetroCouncilDistrict: input.viewerMetroCouncilDistrict,
   });
   const sort: PostListState["sort"] = input.location ? "distance" : "latest";
   const rpcState = buildNearbyRpcPostListState({

@@ -1,5 +1,6 @@
 import { fail, ok } from "../../../../lib/api/response";
 import { dequantizeLocationFrom100MeterGridBuckets } from "../../../../lib/geo/location-buckets";
+import { resolveLocalElection9DistrictsByAdministrativeCode } from "../../../../lib/geo/local-election-9-districts";
 import { loadPostsListRepository } from "../../../../lib/posts/repository";
 
 function parseBucket(value: string | null) {
@@ -19,7 +20,10 @@ export async function GET(request: Request) {
   const limit = Number(searchParams.get("limit") ?? "10");
   const cursor = searchParams.get("cursor") ?? undefined;
   const anonymousDeviceId = searchParams.get("anonymousDeviceId")?.trim() || undefined;
-  const viewerDongCode = searchParams.get("dongCode")?.trim() || null;
+  const dongCode = searchParams.get("dongCode")?.trim() || null;
+  const resolvedDistricts = resolveLocalElection9DistrictsByAdministrativeCode(dongCode);
+  const viewerLocalCouncilDistrict = resolvedDistricts?.localCouncilDistrict ?? null;
+  const viewerMetroCouncilDistrict = resolvedDistricts?.metroCouncilDistrict ?? null;
 
   if (latitudeBucket100m === null || longitudeBucket100m === null) {
     return fail({
@@ -37,7 +41,8 @@ export async function GET(request: Request) {
     limit: Number.isFinite(limit) ? limit : 10,
     cursor,
     location: quantizedLocation,
-    viewerDongCode,
+    viewerLocalCouncilDistrict,
+    viewerMetroCouncilDistrict,
   });
 
   return ok(
