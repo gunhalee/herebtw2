@@ -158,7 +158,7 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
                 padding: "2px 8px",
               }}
             >
-              후보
+              {councilBadge ? `${councilBadge} 후보` : "후보"}
             </span>
             <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
               {candidate.name}
@@ -166,21 +166,6 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
             <span style={{ color: uiColors.textMuted, fontWeight: 400 }}>
               · {districtLabel}
             </span>
-            {councilBadge ? (
-              <span
-                style={{
-                  background: "#eff6ff",
-                  border: "1px solid #bfdbfe",
-                  borderRadius: "999px",
-                  color: "#1d4ed8",
-                  fontSize: "10px",
-                  fontWeight: 600,
-                  padding: "2px 7px",
-                }}
-              >
-                {councilBadge}
-              </span>
-            ) : null}
           </p>
 
           <p
