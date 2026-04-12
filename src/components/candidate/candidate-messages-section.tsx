@@ -103,6 +103,7 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
             alt={`${candidate.name} 후보`}
             src={candidate.photoUrl}
             style={{
+              alignSelf: "flex-end",
               display: "block",
               flexShrink: 0,
               height: "76px",
@@ -113,11 +114,14 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
           <div
             style={{
               alignItems: "center",
-              alignSelf: "stretch",
+              alignSelf: "flex-end",
               background: "#e5e7eb",
+              borderRadius: "50%",
               display: "flex",
               flexShrink: 0,
+              height: `${PHOTO_FALLBACK_WIDTH}px`,
               justifyContent: "center",
+              margin: `0 8px 0`,
               width: `${PHOTO_FALLBACK_WIDTH}px`,
             }}
           >
@@ -147,6 +151,12 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
               margin: `0 0 ${uiSpacing.sm}`,
             }}
           >
+            <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
+              {candidate.name}
+            </span>
+            <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
+              · {districtLabel}
+            </span>
             <span
               style={{
                 background: uiBrandYellow.surfaceWarm,
@@ -159,12 +169,6 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
               }}
             >
               {councilBadge ? `${councilBadge} 후보` : "후보"}
-            </span>
-            <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
-              {candidate.name}
-            </span>
-            <span style={{ color: uiColors.textMuted, fontWeight: 400 }}>
-              · {districtLabel}
             </span>
           </p>
 

@@ -198,6 +198,7 @@ export function PostListItemCard({
                 alt={`${replyCandidateName ?? ""} 후보`}
                 src={replyCandidatePhotoUrl}
                 style={{
+                  alignSelf: "flex-end",
                   display: "block",
                   flexShrink: 0,
                   height: "76px",
@@ -208,11 +209,14 @@ export function PostListItemCard({
               <div
                 style={{
                   alignItems: "center",
-                  alignSelf: "stretch",
+                  alignSelf: "flex-end",
                   background: "#e5e7eb",
+                  borderRadius: "50%",
                   display: "flex",
                   flexShrink: 0,
+                  height: "72px",
                   justifyContent: "center",
+                  margin: "0 8px 0",
                   width: "72px",
                 }}
               >
@@ -228,8 +232,6 @@ export function PostListItemCard({
                 flex: 1,
                 minWidth: 0,
                 padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
-                paddingBottom: `calc(${uiSpacing.lg} + 18px)`,
-                paddingRight: `calc(${uiSpacing.xl} + 54px)`,
               }}
             >
               {/* 메타 행: 후보 태그 + 이름 */}
