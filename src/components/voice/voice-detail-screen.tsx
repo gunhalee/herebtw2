@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { CheckCircle, Copy, Download, MessageCircle } from "lucide-react";
+import { CheckCircle, Download, MessageCircle } from "lucide-react";
 import checkmarkIcon from "../checkmark.svg";
 import { DongPostsHeader } from "../home/dong-posts-header";
 import { formatAdministrativeAreaNameForHomeDisplay } from "../../lib/geo/format-administrative-area";
@@ -68,14 +68,8 @@ function CheckmarkGlyph({ sizePx }: { sizePx: number }) {
 }
 
 export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
-  const [copied, setCopied] = useState(false);
   const titleLineRef = useRef<HTMLHeadingElement>(null);
   const [titleTextWidthPx, setTitleTextWidthPx] = useState<number | null>(null);
-
-  const voiceUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/v/${post.publicUuid}`
-      : `/v/${post.publicUuid}`;
 
   const displayDong = formatAdministrativeAreaNameForHomeDisplay(
     post.administrativeDongName,
@@ -101,16 +95,6 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
       window.removeEventListener("resize", update);
     };
   }, []);
-
-  async function handleCopyLink() {
-    try {
-      await navigator.clipboard.writeText(voiceUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // silent
-    }
-  }
 
   const columnStyle =
     titleTextWidthPx != null
@@ -351,7 +335,7 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: uiSpacing.md,
+              gap: uiSpacing.sm,
               paddingBottom: uiSpacing.xxl,
               paddingTop: uiSpacing.xl,
             }}
@@ -381,65 +365,6 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
             >
               <Download color="#000000" size={16} strokeWidth={2.25} />
               포토카드 다운로드
-            </a>
-
-            <button
-              onClick={handleCopyLink}
-              type="button"
-              style={{
-                alignItems: "center",
-                appearance: "none",
-                background: copied
-                  ? uiBrandYellow.surfaceWarm
-                  : uiBrandYellow.surfaceSoft,
-                border: `1px solid ${copied ? uiBrandYellow.borderWarm : uiBrandYellow.borderSoft}`,
-                borderRadius: uiRadius.md,
-                color: uiBrandYellow.textOnCta,
-                cursor: "pointer",
-                display: "flex",
-                fontSize: "14px",
-                fontWeight: 600,
-                gap: uiSpacing.xs,
-                justifyContent: "center",
-                padding: `14px ${uiSpacing.xl}`,
-                transition: "all 150ms ease",
-                width: "100%",
-              }}
-            >
-              {copied ? (
-                <>
-                  <CheckmarkGlyph sizePx={16} />
-                  복사됨
-                </>
-              ) : (
-                <>
-                  <Copy size={16} />
-                  링크 복사하기
-                </>
-              )}
-            </button>
-
-            <a
-              href="/"
-              style={{
-                alignItems: "center",
-                appearance: "none",
-                background: uiBrandYellow.ctaGradient,
-                border: `1px solid ${uiBrandYellow.ctaBorder}`,
-                borderRadius: uiRadius.md,
-                boxShadow:
-                  "0 10px 22px rgba(116, 94, 62, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
-                color: uiBrandYellow.textOnCta,
-                display: "flex",
-                fontSize: "15px",
-                fontWeight: 700,
-                justifyContent: "center",
-                padding: `14px ${uiSpacing.xl}`,
-                textDecoration: "none",
-                width: "100%",
-              }}
-            >
-              나도 목소리 남기기
             </a>
           </div>
         </div>
