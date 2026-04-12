@@ -1,4 +1,4 @@
--- Feed: include reply data (name, photo_url, content, is_promise) + sort replied posts first.
+-- Feed: add reply_candidate_photo_url to list_posts_feed.
 
 drop function if exists public.list_posts_feed(
   double precision,
@@ -34,6 +34,7 @@ returns table (
   can_report boolean,
   reply_status text,
   reply_candidate_name text,
+  reply_candidate_photo_url text,
   reply_content varchar(200),
   reply_is_promise boolean
 )
@@ -168,6 +169,7 @@ as $$
     select
       sp.*,
       c.name as reply_candidate_name,
+      c.photo_url as reply_candidate_photo_url,
       r.content as reply_content,
       r.is_promise as reply_is_promise
     from selected_posts sp
@@ -192,6 +194,7 @@ as $$
     end as can_report,
     wr.reply_status,
     wr.reply_candidate_name,
+    wr.reply_candidate_photo_url,
     wr.reply_content,
     wr.reply_is_promise
   from with_replies wr

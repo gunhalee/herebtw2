@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
-import type { CandidateMatchType } from "../../app/api/candidates/messages/route";
+
+type CandidateMatchType = "local" | "metro" | "other";
 
 type CandidateMessage = {
   id: string;
@@ -14,6 +15,7 @@ type CandidateMessage = {
   firstMessagePublicUuid: string;
   metroCouncilDistrict: string | null;
   localCouncilDistrict: string | null;
+  councilType: string | null;
   matchType: CandidateMatchType;
 };
 
@@ -64,13 +66,18 @@ const PHOTO_FALLBACK_WIDTH = 72;
 function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
   const initials = candidate.name.slice(-1);
 
-  // 선거구 레이블 표시 (local → 구시군의회, metro → 시도의회)
-  const electionDistrictLabel =
-    candidate.matchType === "local"
-      ? candidate.localCouncilDistrict
-      : candidate.matchType === "metro"
-        ? candidate.metroCouncilDistrict
-        : null;
+  // 표시할 지역명: 선거구명 우선, 없으면 자유 텍스트 district
+  const districtLabel =
+    candidate.localCouncilDistrict ?? candidate.metroCouncilDistrict ?? candidate.district;
+
+  // 의회 구분 배지: council_type이 있으면 그대로, 없으면 선거구로 추정
+  const councilBadge =
+    candidate.councilType ??
+    (candidate.localCouncilDistrict
+      ? "구·시·군의회"
+      : candidate.metroCouncilDistrict
+        ? "시도의회"
+        : null);
 
   return (
     <a
@@ -157,9 +164,9 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
               {candidate.name}
             </span>
             <span style={{ color: uiColors.textMuted, fontWeight: 400 }}>
-              · {candidate.district}
+              · {districtLabel}
             </span>
-            {electionDistrictLabel ? (
+            {councilBadge ? (
               <span
                 style={{
                   background: "#eff6ff",
@@ -171,7 +178,7 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
                   padding: "2px 7px",
                 }}
               >
-                {electionDistrictLabel}
+                {councilBadge}
               </span>
             ) : null}
           </p>

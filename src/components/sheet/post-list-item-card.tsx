@@ -18,6 +18,7 @@ type PostListItemCardProps = {
   relativeTime: string;
   replyStatus?: "delivered" | "replied";
   replyCandidateName?: string | null;
+  replyCandidatePhotoUrl?: string | null;
   replyContent?: string | null;
   replyIsPromise?: boolean | null;
   onCloseMenu?: () => void;
@@ -37,6 +38,7 @@ export function PostListItemCard({
   relativeTime,
   replyStatus,
   replyCandidateName,
+  replyCandidatePhotoUrl,
   replyContent,
   replyIsPromise,
   onCloseMenu,
@@ -179,55 +181,113 @@ export function PostListItemCard({
           </p>
         </div>
 
-        {/* 답변 영역 (C안: 하단 황색 섹션) */}
+        {/* 답변 영역 — CandidateMessageCard 스타일 그대로 */}
         {hasReply ? (
           <div
             style={{
               background: uiBrandYellow.surfaceWarm,
               borderTop: `1px solid ${uiBrandYellow.borderWarm}`,
-              padding: `${uiSpacing.md} ${uiSpacing.xl}`,
-              paddingBottom: `calc(${uiSpacing.lg} + 18px)`,
+              display: "flex",
+              overflow: "hidden",
             }}
           >
-            <p
+            {/* 프로필 사진 */}
+            {replyCandidatePhotoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={`${replyCandidateName ?? ""} 후보`}
+                src={replyCandidatePhotoUrl}
+                style={{
+                  display: "block",
+                  flexShrink: 0,
+                  height: "76px",
+                  width: "auto",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  alignItems: "center",
+                  alignSelf: "stretch",
+                  background: "#e5e7eb",
+                  display: "flex",
+                  flexShrink: 0,
+                  justifyContent: "center",
+                  width: "72px",
+                }}
+              >
+                <span style={{ color: "#6b7280", fontSize: "22px", fontWeight: 700 }}>
+                  {replyCandidateName?.slice(-1) ?? "?"}
+                </span>
+              </div>
+            )}
+
+            {/* 태그·이름·본문 */}
+            <div
               style={{
-                alignItems: "center",
-                color: "#92400e",
-                display: "flex",
-                fontSize: "11px",
-                fontWeight: 700,
-                gap: "5px",
-                lineHeight: 1.35,
-                margin: `0 0 5px`,
+                flex: 1,
+                minWidth: 0,
+                padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
+                paddingBottom: `calc(${uiSpacing.lg} + 18px)`,
+                paddingRight: `calc(${uiSpacing.xl} + 54px)`,
               }}
             >
-              {replyCandidateName} 후보 답변
-              {replyIsPromise ? (
+              {/* 메타 행: 후보 태그 + 이름 */}
+              <p
+                style={{
+                  alignItems: "center",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  fontSize: "11px",
+                  gap: "6px",
+                  lineHeight: 1.35,
+                  margin: `0 0 ${uiSpacing.sm}`,
+                }}
+              >
                 <span
                   style={{
-                    background: "#fbbf24",
-                    borderRadius: "4px",
-                    color: "#78350f",
+                    background: uiBrandYellow.surfaceWarm,
+                    border: `1px solid ${uiBrandYellow.borderWarm}`,
+                    borderRadius: "999px",
+                    color: uiColors.textStrong,
                     fontSize: "10px",
                     fontWeight: 700,
-                    padding: "1px 5px",
+                    padding: "2px 8px",
                   }}
                 >
-                  약속
+                  후보
                 </span>
-              ) : null}
-            </p>
-            <p
-              style={{
-                color: "#78350f",
-                fontSize: "14px",
-                fontWeight: 400,
-                lineHeight: 1.55,
-                margin: 0,
-              }}
-            >
-              {replyContent}
-            </p>
+                <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
+                  {replyCandidateName}
+                </span>
+                {replyIsPromise ? (
+                  <span
+                    style={{
+                      background: "#fbbf24",
+                      borderRadius: "4px",
+                      color: "#78350f",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      padding: "1px 5px",
+                    }}
+                  >
+                    약속
+                  </span>
+                ) : null}
+              </p>
+              {/* 답변 본문 */}
+              <p
+                style={{
+                  color: uiColors.textStrong,
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  lineHeight: 1.5,
+                  margin: 0,
+                }}
+              >
+                {replyContent}
+              </p>
+            </div>
           </div>
         ) : null}
       </div>

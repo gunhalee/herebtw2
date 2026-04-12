@@ -11,6 +11,7 @@ type CandidateRow = {
   first_message_id: string;
   metro_council_district: string | null;
   local_council_district: string | null;
+  council_type: string | null;
 };
 
 type PostRow = {
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
   try {
     let candidateRows: CandidateRow[] | null = null;
     const baseSelect =
-      "id,name,district,photo_url,first_message_id,metro_council_district,local_council_district";
+      "id,name,district,photo_url,first_message_id,metro_council_district,local_council_district,council_type";
 
     if (localDistrict || metroDistrict) {
       // 내 선거구 후보 우선 조회 (OR 필터)
@@ -104,6 +105,7 @@ export async function GET(request: Request) {
           firstMessagePublicUuid: post.public_uuid,
           metroCouncilDistrict: c.metro_council_district ?? null,
           localCouncilDistrict: c.local_council_district ?? null,
+          councilType: c.council_type ?? null,
           matchType,
         };
       })

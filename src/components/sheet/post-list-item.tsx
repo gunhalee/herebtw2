@@ -18,6 +18,7 @@ export function PostListItem({
   isHighlighted,
   replyStatus,
   replyCandidateName,
+  replyCandidatePhotoUrl,
   replyContent,
   replyIsPromise,
   isMenuOpen,
@@ -64,6 +65,7 @@ export function PostListItem({
           relativeTime={relativeTime}
           replyStatus={replyStatus}
           replyCandidateName={replyCandidateName}
+          replyCandidatePhotoUrl={replyCandidatePhotoUrl}
           replyContent={replyContent}
           replyIsPromise={replyIsPromise}
           onCloseMenu={onCloseMenu}
