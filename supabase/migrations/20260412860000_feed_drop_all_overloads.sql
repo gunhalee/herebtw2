@@ -1,12 +1,18 @@
--- Feed: reply candidate ???(local_council_district) + council_type ??
+-- list_posts_feed 오버로드 전체 제거 후 단일 버전으로 재생성
 
--- ?? ?? ?? (?? ?? ???? replace ??)
-drop function if exists public.list_posts_feed(
-  double precision, double precision, text, integer, timestamptz, uuid, integer
-);
-drop function if exists public.list_posts_feed(
-  double precision, double precision, text, integer, timestamptz, uuid, integer, text
-);
+do $$
+declare
+  r record;
+begin
+  for r in
+    select oid::regprocedure::text as sig
+    from pg_proc
+    where proname = 'list_posts_feed'
+      and pronamespace = 'public'::regnamespace
+  loop
+    execute 'drop function if exists ' || r.sig || ' cascade';
+  end loop;
+end $$;
 
 create function public.list_posts_feed(
   viewer_latitude double precision default null,

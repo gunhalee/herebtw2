@@ -427,12 +427,19 @@ function mergeLayers(metroIndex, localIndex) {
   )) {
     const m = metroIndex.get(key);
     const l = localIndex.get(key);
+    const wiwName = m?.wiwName ?? l?.wiwName ?? "";
+    // 구시군의원 선거구명("나선거구" 등)은 시군구 전체에서 중복되므로
+    // "{시군구명} {선거구명}" 형태로 저장해 유일성을 확보.
+    const rawLocalDistrict = l?.districtName ?? null;
+    const localCouncilDistrict = rawLocalDistrict
+      ? `${wiwName} ${rawLocalDistrict}`
+      : null;
     index[key] = {
       sdName: m?.sdName ?? l?.sdName ?? "",
-      wiwName: m?.wiwName ?? l?.wiwName ?? "",
+      wiwName,
       emdName: m?.emdName ?? l?.emdName ?? "",
       metroCouncilDistrict: m?.districtName ?? null,
-      localCouncilDistrict: l?.districtName ?? null,
+      localCouncilDistrict,
     };
   }
 

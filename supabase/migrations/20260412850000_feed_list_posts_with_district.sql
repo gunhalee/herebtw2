@@ -1,6 +1,5 @@
--- Feed: reply candidate ???(local_council_district) + council_type ??
+-- list_posts_feed: reply_candidate_local_council_district + council_type 추가
 
--- ?? ?? ?? (?? ?? ???? replace ??)
 drop function if exists public.list_posts_feed(
   double precision, double precision, text, integer, timestamptz, uuid, integer
 );
