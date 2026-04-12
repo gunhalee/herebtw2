@@ -13,12 +13,14 @@ type CandidateMessagesSectionProps = {
   dongCode: string | null;
   initialData?: CandidateMessagesPayload | null;
   initialDongCode?: string | null;
+  onSelectCandidate?: (candidateId: string) => void;
 };
 
 export function CandidateMessagesSection({
   dongCode,
   initialData = null,
   initialDongCode = null,
+  onSelectCandidate,
 }: CandidateMessagesSectionProps) {
   const {
     candidates,
@@ -86,7 +88,11 @@ export function CandidateMessagesSection({
       ) : null}
 
       {visibleCandidates.map((candidate) => (
-        <CandidateMessageCard key={candidate.id} candidate={candidate} />
+        <CandidateMessageCard
+          key={candidate.id}
+          candidate={candidate}
+          onSelect={onSelectCandidate}
+        />
       ))}
 
       {collapsedCandidates.length > 0 ? (
@@ -114,7 +120,11 @@ export function CandidateMessagesSection({
 
           {othersOpen
             ? collapsedCandidates.map((candidate) => (
-                <CandidateMessageCard key={candidate.id} candidate={candidate} />
+                <CandidateMessageCard
+                  key={candidate.id}
+                  candidate={candidate}
+                  onSelect={onSelectCandidate}
+                />
               ))
             : null}
         </>

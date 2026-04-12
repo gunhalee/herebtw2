@@ -1,7 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
+import type { SelectedCandidateRepliesPayload } from "../candidate/candidate-replies-types";
 import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import { DongPostsScreen } from "./dong-posts-screen";
 import { ComposePermissionDialog } from "./compose-permission-dialog";
@@ -30,13 +32,18 @@ type HomeScreenProps = {
   initialAppShellState: AppShellState;
   initialCandidateMessages: CandidateMessagesPayload | null;
   initialPostListState: PostListState;
+  selectedCandidateReplies: SelectedCandidateRepliesPayload | null;
 };
 
 export function HomeScreen({
   initialAppShellState,
   initialCandidateMessages,
   initialPostListState,
+  selectedCandidateReplies,
 }: HomeScreenProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [postListState, setPostListState] = useState(initialPostListState);
   const [pendingFeedSnapshot, setPendingFeedSnapshot] =
     useState<PendingFeedSnapshot | null>(null);
@@ -145,6 +152,28 @@ export function HomeScreen({
     setPendingFeedSnapshot,
   });
 
+  function buildCandidateRepliesUrl(candidateId?: string | null) {
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+
+    if (candidateId) {
+      nextSearchParams.set("candidateId", candidateId);
+    } else {
+      nextSearchParams.delete("candidateId");
+    }
+
+    const nextQuery = nextSearchParams.toString();
+
+    return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+  }
+
+  function handleSelectCandidate(candidateId: string) {
+    router.push(buildCandidateRepliesUrl(candidateId), { scroll: false });
+  }
+
+  function handleCloseCandidateReplies() {
+    router.replace(buildCandidateRepliesUrl(null), { scroll: false });
+  }
+
   return (
     <div
       style={{
@@ -166,6 +195,7 @@ export function HomeScreen({
         initialCandidateMessagesDongCode={initialAppShellState.selectedDongCode}
         interactionLocked={composePanelOpen || composePermissionDialogOpen}
         obscurePosts={obscureGlobalFallbackList}
+        onCloseCandidateReplies={handleCloseCandidateReplies}
         onApplyPendingUpdates={handleApplyPendingFeedSnapshot}
         onCloseMenu={handleCloseMenu}
         onCloseReportDialog={handleCloseReportDialog}
@@ -175,7 +205,9 @@ export function HomeScreen({
         onLoadMore={handleLoadMore}
         onOpenMenu={handleOpenMenu}
         onScrollTargetApplied={() => setPendingAppliedScrollTargetPostId(null)}
+        onSelectCandidate={handleSelectCandidate}
         onSelectReport={handleSelectReport}
+        selectedCandidateReplies={selectedCandidateReplies}
         onToggleAgree={handleToggleAgree}
         pendingNewItemsCount={pendingFeedSnapshot?.newItemsCount ?? 0}
         reportErrorMessage={reportErrorMessage}

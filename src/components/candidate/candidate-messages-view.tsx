@@ -1,6 +1,4 @@
 "use client";
-
-import Link from "next/link";
 import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
 import type {
   CandidateMessage,
@@ -37,8 +35,10 @@ export function CandidateDistrictBadge({
 
 export function CandidateMessageCard({
   candidate,
+  onSelect,
 }: {
   candidate: CandidateMessage;
+  onSelect?: (candidateId: string) => void;
 }) {
   const initials = candidate.name.slice(-1);
   const districtLabel =
@@ -54,9 +54,19 @@ export function CandidateMessageCard({
         : null);
 
   return (
-    <Link
-      href={`/voices/candidate/${candidate.id}`}
-      style={{ display: "block", textDecoration: "none" }}
+    <button
+      onClick={() => onSelect?.(candidate.id)}
+      style={{
+        appearance: "none",
+        background: "transparent",
+        border: "none",
+        cursor: onSelect ? "pointer" : "default",
+        display: "block",
+        padding: 0,
+        textAlign: "left",
+        width: "100%",
+      }}
+      type="button"
     >
       <div
         style={{
@@ -170,7 +180,7 @@ export function CandidateMessageCard({
           </p>
         </div>
       </div>
-    </Link>
+    </button>
   );
 }
 

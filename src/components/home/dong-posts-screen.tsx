@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { SelectedCandidateRepliesPayload } from "../candidate/candidate-replies-types";
 import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import type { PostListState } from "../../types/post";
 import { DongPostsFeed } from "./dong-posts-feed";
@@ -16,6 +17,7 @@ type DongPostsScreenProps = {
   initialCandidateMessages?: CandidateMessagesPayload | null;
   initialCandidateMessagesDongCode?: string | null;
   interactionLocked?: boolean;
+  selectedCandidateReplies?: SelectedCandidateRepliesPayload | null;
   scrollTargetPostId?: string | null;
   state: PostListState;
   reportErrorMessage?: string | null;
@@ -25,10 +27,12 @@ type DongPostsScreenProps = {
   activeReportPostId?: string | null;
   reportSubmitting?: boolean;
   obscurePosts?: boolean;
+  onCloseCandidateReplies?: () => void;
   onCompose?: () => void;
   onApplyPendingUpdates?: () => void;
   onLoadMore?: () => void;
   onScrollTargetApplied?: () => void;
+  onSelectCandidate?: (candidateId: string) => void;
   onToggleAgree?: (postId?: string) => void;
   onOpenMenu?: (postId: string) => void;
   onCloseMenu?: () => void;
@@ -45,6 +49,7 @@ export function DongPostsScreen({
   initialCandidateMessages = null,
   initialCandidateMessagesDongCode = null,
   interactionLocked = false,
+  selectedCandidateReplies = null,
   scrollTargetPostId,
   state,
   reportErrorMessage = null,
@@ -54,10 +59,12 @@ export function DongPostsScreen({
   activeReportPostId,
   reportSubmitting = false,
   obscurePosts = false,
+  onCloseCandidateReplies,
   onCompose,
   onApplyPendingUpdates,
   onLoadMore,
   onScrollTargetApplied,
+  onSelectCandidate,
   onToggleAgree,
   onOpenMenu,
   onCloseMenu,
@@ -71,7 +78,9 @@ export function DongPostsScreen({
   const shouldObscurePosts =
     obscurePosts && !state.loading && !state.errorMessage && !state.empty;
   const shouldShowPendingUpdatesButton =
-    pendingNewItemsCount > 0 && !shouldObscurePosts;
+    !selectedCandidateReplies && pendingNewItemsCount > 0 && !shouldObscurePosts;
+  const shouldShowFloatingComposeButton = !selectedCandidateReplies;
+  const shouldShowReportDialogs = !selectedCandidateReplies;
 
   function handleScreenClickCapture(event: React.MouseEvent<HTMLElement>) {
     if (!activeMenuPostId) {
@@ -159,9 +168,12 @@ export function DongPostsScreen({
         interactionLocked={interactionLocked}
         initialCandidateMessages={initialCandidateMessages}
         initialCandidateMessagesDongCode={initialCandidateMessagesDongCode}
+        selectedCandidateReplies={selectedCandidateReplies}
+        onCloseCandidateReplies={onCloseCandidateReplies}
         onCloseMenu={onCloseMenu}
         onLoadMore={onLoadMore}
         onOpenMenu={onOpenMenu}
+        onSelectCandidate={onSelectCandidate}
         onSelectReport={onSelectReport}
         onToggleAgree={onToggleAgree}
         scrollContainerRef={scrollContainerRef}
@@ -177,21 +189,25 @@ export function DongPostsScreen({
         />
       ) : null}
 
-      <FloatingComposeButton
-        disabled={interactionLocked}
-        elevated={shouldShowPendingUpdatesButton}
-        onCompose={onCompose}
-      />
+      {shouldShowFloatingComposeButton ? (
+        <FloatingComposeButton
+          disabled={interactionLocked}
+          elevated={shouldShowPendingUpdatesButton}
+          onCompose={onCompose}
+        />
+      ) : null}
 
-      <HomeReportDialogs
-        onCloseReportDialog={onCloseReportDialog}
-        onCloseReportSuccessDialog={onCloseReportSuccessDialog}
-        onConfirmReport={onConfirmReport}
-        reportDialogOpen={reportDialogOpen}
-        reportErrorMessage={reportErrorMessage}
-        reportSubmitting={reportSubmitting}
-        reportSuccessMessage={reportSuccessMessage}
-      />
+      {shouldShowReportDialogs ? (
+        <HomeReportDialogs
+          onCloseReportDialog={onCloseReportDialog}
+          onCloseReportSuccessDialog={onCloseReportSuccessDialog}
+          onConfirmReport={onConfirmReport}
+          reportDialogOpen={reportDialogOpen}
+          reportErrorMessage={reportErrorMessage}
+          reportSubmitting={reportSubmitting}
+          reportSuccessMessage={reportSuccessMessage}
+        />
+      ) : null}
     </section>
   );
 }

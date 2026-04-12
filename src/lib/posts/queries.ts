@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { cookies } from "next/headers";
 import type { CandidateMessagesPayload } from "../candidates/messages";
 import { loadCandidateMessages } from "../candidates/messages";
+import type { SelectedCandidateRepliesPayload } from "../../components/candidate/candidate-replies-types";
 import {
   SELECTED_DONG_CODE_COOKIE_KEY,
   SELECTED_DONG_NAME_COOKIE_KEY,
@@ -9,7 +10,9 @@ import {
 import type { AppShellState } from "../../types/device";
 import type { PostListState } from "../../types/post";
 import {
+  findCandidateById,
   loadGlobalPostsListRepository,
+  loadCandidateRepliesFeedRepository,
 } from "./repository";
 
 const ANONYMOUS_DEVICE_COOKIE_KEY = "shout_anonymous_device_id";
@@ -76,10 +79,13 @@ async function readAdministrativeLocationCookies(): Promise<{
   }
 }
 
-export async function getHomePageState(): Promise<{
+export async function getHomePageState(options?: {
+  candidateId?: string | null;
+}): Promise<{
   appShellState: AppShellState;
   candidateMessages: CandidateMessagesPayload | null;
   postListState: PostListState;
+  selectedCandidateReplies: SelectedCandidateRepliesPayload | null;
 }> {
   const [anonymousDeviceId, administrativeLocation] = await Promise.all([
     readDeviceCookie(),
@@ -90,18 +96,46 @@ export async function getHomePageState(): Promise<{
     selectedDongCode: administrativeLocation.selectedDongCode,
     selectedDongName: administrativeLocation.selectedDongName,
   });
-  const [postListState, candidateMessages] = await Promise.all([
-    loadCachedGlobalPostsList(),
-    administrativeLocation.selectedDongCode
-      ? loadCandidateMessages(administrativeLocation.selectedDongCode).catch(
-          () => null,
-        )
-      : Promise.resolve(null),
+  const [postListState, candidateMessages, selectedCandidateReplies] =
+    await Promise.all([
+      loadCachedGlobalPostsList(),
+      administrativeLocation.selectedDongCode
+        ? loadCandidateMessages(administrativeLocation.selectedDongCode).catch(
+            () => null,
+          )
+        : Promise.resolve(null),
+      loadSelectedCandidateReplies(options?.candidateId ?? null),
   ]);
 
   return {
     appShellState,
     candidateMessages,
     postListState,
+    selectedCandidateReplies,
+  };
+}
+
+async function loadSelectedCandidateReplies(
+  candidateId: string | null,
+): Promise<SelectedCandidateRepliesPayload | null> {
+  if (!candidateId) {
+    return null;
+  }
+
+  const candidate = await findCandidateById(candidateId);
+
+  if (!candidate) {
+    return null;
+  }
+
+  const initialState = await loadCandidateRepliesFeedRepository({
+    candidateId: candidate.id,
+    limit: 10,
+  });
+
+  return {
+    candidateId: candidate.id,
+    candidateName: candidate.name,
+    initialState,
   };
 }
