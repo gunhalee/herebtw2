@@ -26,7 +26,7 @@ type CreatedLocationResolutionToken = {
 function getLocationResolutionTokenSecret() {
   return (
     process.env.LOCATION_RESOLUTION_TOKEN_SECRET ??
-    getSupabaseConfig().serviceRoleKey ??
+    getSupabaseConfig().secretKey ??
     null
   );
 }

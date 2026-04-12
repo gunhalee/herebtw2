@@ -1,4 +1,4 @@
-import { getSupabaseConfig, hasSupabaseServerConfig } from "./config";
+import { requireSupabaseServerConfig } from "./config";
 
 type RequestMethod = "GET" | "POST" | "PATCH" | "DELETE";
 const SUPABASE_REQUEST_TIMEOUT_MS = 8000;
@@ -24,15 +24,8 @@ async function supabaseRestRequest<T>(
   body?: unknown,
   extraHeaders?: Record<string, string>,
 ): Promise<T | null> {
-  if (!hasSupabaseServerConfig()) {
-    return null;
-  }
-
-  const config = getSupabaseConfig();
-  const headers = buildSupabaseAuthHeaders(
-    config.serviceRoleKey!,
-    extraHeaders,
-  );
+  const config = requireSupabaseServerConfig();
+  const headers = buildSupabaseAuthHeaders(config.secretKey, extraHeaders);
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
@@ -99,11 +92,7 @@ export async function supabaseUpsert<T>(path: string, body: unknown) {
 }
 
 export async function supabaseRpc<T>(fn: string, body: unknown) {
-  if (!hasSupabaseServerConfig()) {
-    return null;
-  }
-
-  const config = getSupabaseConfig();
+  const config = requireSupabaseServerConfig();
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
@@ -113,7 +102,7 @@ export async function supabaseRpc<T>(fn: string, body: unknown) {
   try {
     const response = await fetch(`${config.url}/rest/v1/rpc/${fn}`, {
       method: "POST",
-      headers: buildSupabaseAuthHeaders(config.serviceRoleKey!),
+      headers: buildSupabaseAuthHeaders(config.secretKey),
       body: JSON.stringify(body),
       cache: "no-store",
       signal: controller.signal,

@@ -1,7 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { resolveLocalElection9DistrictsByAdministrativeCode } from "../geo/local-election-9-districts";
 import { supabaseSelect } from "../supabase/rest";
-import { hasSupabaseServerConfig } from "../supabase/config";
 
 export type CandidateMatchType = "local" | "metro" | "other";
 
@@ -173,9 +172,5 @@ export async function loadCandidateMessages(dongCode: string | null): Promise<{
   candidates: CandidateMessage[];
   userDistricts: UserDistricts;
 }> {
-  if (!hasSupabaseServerConfig()) {
-    return { candidates: [], userDistricts: null };
-  }
-
   return loadCachedCandidateMessages(dongCode ?? ALL_DISTRICTS_CACHE_KEY);
 }

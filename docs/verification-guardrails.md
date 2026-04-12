@@ -31,6 +31,6 @@
 
 - Do not use raw `fetch("/api/...")` inside `src/components`.
 - Component route access should go through `fetchClientApiData(...)` and `*-api.ts` helpers.
-- Do not read `SUPABASE_SERVICE_ROLE_KEY` or `NEXT_PUBLIC_SUPABASE_URL` directly inside `src/app/api/**/route.ts`.
+- Do not read `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, or `NEXT_PUBLIC_SUPABASE_URL` directly inside `src/app/api/**/route.ts`.
 - Do not compose Supabase REST paths such as `rest/v1/...` directly inside route handlers.
 - Files above 300 lines in `src/components` or `src/lib` should be treated as exceptions. Split responsibilities before adding more logic, and only extend the allowlist deliberately.

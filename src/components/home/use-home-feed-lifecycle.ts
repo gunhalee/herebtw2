@@ -27,7 +27,6 @@ const POLLING_IDLE_INTERVALS = [
 ] as const;
 
 type UseHomeFeedLifecycleParams = {
-  dataSourceMode: "supabase" | "mock";
   feedLocation: PostLocation | null;
   feedSortMode: "nearby" | "global";
   hasInitialGlobalFeed: boolean;
@@ -48,7 +47,6 @@ type UseHomeFeedLifecycleParams = {
 };
 
 export function useHomeFeedLifecycle({
-  dataSourceMode,
   feedLocation,
   feedSortMode,
   hasInitialGlobalFeed,
@@ -77,7 +75,6 @@ export function useHomeFeedLifecycle({
     let cancelled = false;
 
     void bootstrapHomeFeed({
-      dataSourceMode,
       hasInitialGlobalFeed: hasInitialGlobalFeedRef.current,
       initialPostListState: initialPostListStateRef.current,
       isCancelled: () => cancelled,
@@ -99,7 +96,7 @@ export function useHomeFeedLifecycle({
     return () => {
       cancelled = true;
     };
-  }, [dataSourceMode]);
+  }, []);
 
   useEffect(() => {
     if (feedSortMode !== "nearby") {
@@ -109,9 +106,7 @@ export function useHomeFeedLifecycle({
 
   useVisiblePolling({
     enabled:
-      dataSourceMode === "supabase" &&
-      feedSortMode === "nearby" &&
-      feedLocation !== null,
+      feedSortMode === "nearby" && feedLocation !== null,
     idleIntervals: POLLING_IDLE_INTERVALS,
     intervalMs: ACTIVE_POLLING_INTERVAL_MS,
     label: "nearby_feed_sync",
@@ -130,7 +125,7 @@ export function useHomeFeedLifecycle({
   });
 
   useVisiblePolling({
-    enabled: dataSourceMode === "supabase",
+    enabled: true,
     idleIntervals: POLLING_IDLE_INTERVALS,
     intervalMs: ACTIVE_POLLING_INTERVAL_MS,
     label: "post_engagement_sync",

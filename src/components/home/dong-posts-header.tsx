@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Ref } from "react";
 import { homeScreenCopy } from "../../lib/content/home-copy";
-import { uiColors, uiRadius, uiSpacing } from "../../lib/ui/tokens";
+import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import {
   COMPOSE_DONG_PLACEHOLDER_LABEL,
   ComposeDongFlashcard,
@@ -10,17 +10,13 @@ import {
 type DongPostsHeaderProps = {
   currentDongName: string;
   animateComposeDongPlaceholder?: boolean;
-  runtimeNotice?: string | null;
-  /** /v — 「여기 근데 한마디 할게요」실제 문구 너비 측정 */
   titleLineRef?: Ref<HTMLHeadingElement>;
-  /** true면 h1을 fit-content로 두어 ref로 측정한 너비가 문구와 일치 */
   shrinkTitleToIntrinsicWidth?: boolean;
 };
 
 export function DongPostsHeader({
   currentDongName,
   animateComposeDongPlaceholder = false,
-  runtimeNotice,
   titleLineRef,
   shrinkTitleToIntrinsicWidth = false,
 }: DongPostsHeaderProps) {
@@ -114,22 +110,6 @@ export function DongPostsHeader({
           </p>
         ) : null}
       </Link>
-
-      {runtimeNotice ? (
-        <div
-          style={{
-            background: "#fff7ed",
-            border: "1px solid #fdba74",
-            borderRadius: uiRadius.md,
-            color: "#9a3412",
-            fontSize: "12px",
-            lineHeight: 1.5,
-            padding: `${uiSpacing.sm} ${uiSpacing.md}`,
-          }}
-        >
-          {runtimeNotice}
-        </div>
-      ) : null}
 
       <div
         style={{

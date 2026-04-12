@@ -18,7 +18,6 @@ import {
 } from "./home-feed-state";
 
 type BootstrapHomeFeedParams = {
-  dataSourceMode: "supabase" | "mock";
   hasInitialGlobalFeed: boolean;
   initialPostListState: PostListState;
   isCancelled: () => boolean;
@@ -32,7 +31,6 @@ type BootstrapHomeFeedParams = {
 };
 
 export async function bootstrapHomeFeed({
-  dataSourceMode,
   hasInitialGlobalFeed,
   initialPostListState,
   isCancelled,
@@ -66,8 +64,7 @@ export async function bootstrapHomeFeed({
 
   void ensureRegisteredBrowserDevice().catch(() => undefined);
 
-  const latestCachedNearbyPostList =
-    dataSourceMode === "supabase" ? readLatestCachedNearbyPostList() : null;
+  const latestCachedNearbyPostList = readLatestCachedNearbyPostList();
 
   if (latestCachedNearbyPostList) {
     primeBrowserLocationSession(latestCachedNearbyPostList.location);
@@ -91,10 +88,6 @@ export async function bootstrapHomeFeed({
   if (!resolvedCoordinates && latestCachedNearbyPostList && hasInitialGlobalFeed) {
     setFeedSortMode("global");
     setPostListState(initialPostListState);
-  }
-
-  if (dataSourceMode !== "supabase") {
-    return;
   }
 
   const shouldFetchGlobalFeed = !resolvedCoordinates && !hasInitialGlobalFeed;

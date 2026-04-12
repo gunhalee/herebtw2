@@ -125,11 +125,6 @@ type PostListCursor = {
   postId: string;
 };
 
-type GlobalPostListCursor = {
-  createdAt: string;
-  postId: string;
-};
-
 type PostEngagementRow = {
   post_id: string;
   agree_count: number;
@@ -156,16 +151,12 @@ type ToggleAgreeRpcRow = {
 
 type FeedScope = "nearby" | "global";
 
-type FeedFallbackReason = "missing_rpc" | "unexpected_rpc_shape";
-
 export type {
   CandidateRow,
   DashboardStatsRow,
   DeviceIdentityRow,
   DistrictPostRow,
-  FeedFallbackReason,
   FeedScope,
-  GlobalPostListCursor,
   NearbyPostRow,
   PostDetailRow,
   PostEngagementRow,

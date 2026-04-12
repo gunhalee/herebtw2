@@ -1,5 +1,4 @@
 import { GLOBAL_FEED_DISTANCE_SENTINEL_METERS } from "../../geo/location-buckets";
-import { hasSupabaseServerConfig } from "../../supabase/config";
 import { supabaseSelect } from "../../supabase/rest";
 import { formatRelativeTime } from "../../utils/datetime";
 import type { PostListItem, PostListState } from "../../../types/post";
@@ -127,10 +126,6 @@ async function loadCandidateRepliesFeedRepository(input: {
   limit?: number;
   cursor?: string;
 }): Promise<PostListState> {
-  if (!hasSupabaseServerConfig()) {
-    return createEmptyCandidateRepliesState();
-  }
-
   const limit = clampRepliesLimit(input.limit);
   const cursor = decodeCandidateRepliesCursor(input.cursor);
   const cursorFilter = createCandidateRepliesCursorFilter(cursor);

@@ -25,12 +25,9 @@ import { useMountedRef } from "../../lib/hooks/use-mounted-ref";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 
-const COMPOSE_PLACEHOLDER_DONG_NAME = "우리 동네";
-const MOCK_RUNTIME_NOTICE =
-  "Supabase 연결이 아직 설정되지 않아 샘플 데이터를 보여주고 있어요.";
+const COMPOSE_PLACEHOLDER_DONG_NAME = "?곕━ ?숇꽕";
 
 type UseHomeShellStateParams = {
-  dataSourceMode: "supabase" | "mock";
   initialAppShellState: AppShellState;
   initialPostListState: PostListState;
   setPostListState: Dispatch<SetStateAction<PostListState>>;
@@ -67,7 +64,6 @@ function applyLocationSessionToHomeShell(
 }
 
 export function useHomeShellState({
-  dataSourceMode,
   initialAppShellState,
   initialPostListState,
   setPostListState,
@@ -173,7 +169,6 @@ export function useHomeShellState({
     isMountedRef,
     obscureGlobalFallbackList:
       appShellState.readOnlyMode && feedSortMode === "global",
-    runtimeNotice: dataSourceMode === "mock" ? MOCK_RUNTIME_NOTICE : null,
     setAppShellState,
     setFeedSortMode,
   };

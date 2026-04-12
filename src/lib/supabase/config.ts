@@ -1,38 +1,35 @@
 type SupabaseRuntimeConfig = {
   url: string | null;
-  anonKey: string | null;
-  serviceRoleKey: string | null;
+  browserKey: string | null;
+  secretKey: string | null;
 };
 
-/** Publishable (sb_publishable_…), legacy anon JWT, or shadcn env name. */
 function getSupabaseBrowserKey(): string | null {
-  return (
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    null
-  );
+  return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? null;
 }
 
-/** Secret (sb_secret_...), legacy service_role JWT, or env fallback. */
 function getSupabaseServerKey(): string | null {
-  return (
-    process.env.SUPABASE_SECRET_KEY ??
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    null
-  );
+  return process.env.SUPABASE_SECRET_KEY ?? null;
 }
 
 export function getSupabaseConfig(): SupabaseRuntimeConfig {
   return {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? null,
-    anonKey: getSupabaseBrowserKey(),
-    serviceRoleKey: getSupabaseServerKey(),
+    browserKey: getSupabaseBrowserKey(),
+    secretKey: getSupabaseServerKey(),
   };
 }
 
-export function hasSupabaseServerConfig() {
+export function requireSupabaseServerConfig() {
   const config = getSupabaseConfig();
 
-  return Boolean(config.url && config.serviceRoleKey);
+  if (!config.url || !config.secretKey) {
+    throw new Error("Missing Supabase server config.");
+  }
+
+  return {
+    ...config,
+    url: config.url,
+    secretKey: config.secretKey,
+  };
 }

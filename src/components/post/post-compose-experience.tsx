@@ -16,7 +16,6 @@ type ComposeSuccessData = {
 };
 
 type PostComposeExperienceProps = {
-  dataSourceMode: "supabase" | "mock";
   onDismiss?: () => void;
   onSuccess?: () => void | Promise<void>;
 };
@@ -32,7 +31,6 @@ function createInitialComposeState(): PostComposeState {
 }
 
 export function PostComposeExperience({
-  dataSourceMode,
   onDismiss,
   onSuccess,
 }: PostComposeExperienceProps) {
@@ -48,7 +46,6 @@ export function PostComposeExperience({
   });
   const { handleChangeContent, handleSubmit, submitDisabled } = useComposeSubmit({
     composeState,
-    dataSourceMode,
     locationReadyForSubmit,
     notificationEmail,
     onDismiss,

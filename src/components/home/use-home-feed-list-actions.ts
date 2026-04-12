@@ -15,7 +15,6 @@ import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 
 type UseHomeFeedListActionsParams = {
-  dataSourceMode: "supabase" | "mock";
   appShellStateRef: MutableRefObject<AppShellState>;
   feedSortMode: "nearby" | "global";
   postListState: PostListState;
@@ -29,7 +28,6 @@ type UseHomeFeedListActionsParams = {
 };
 
 export function useHomeFeedListActions({
-  dataSourceMode,
   appShellStateRef,
   feedSortMode,
   postListState,
@@ -73,7 +71,6 @@ export function useHomeFeedListActions({
 
   async function handleLoadMore() {
     if (
-      dataSourceMode !== "supabase" ||
       postListState.loading ||
       postListState.loadingMore ||
       !postListState.nextCursor

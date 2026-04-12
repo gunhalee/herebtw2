@@ -26,10 +26,6 @@ function getAdministrativeLocationCacheKey(location: PostLocation) {
   ].join(":");
 }
 
-function getLegacyAdministrativeLocationCacheKey(location: PostLocation) {
-  return `${location.latitude.toFixed(4)}:${location.longitude.toFixed(4)}`;
-}
-
 function normalizeCachedLocationResolutionToken(
   cached: Partial<CachedAdministrativeLocation>,
 ) {
@@ -74,11 +70,9 @@ export function readCachedAdministrativeLocation(
   try {
     const cached = JSON.parse(raw) as Partial<CachedAdministrativeLocation>;
     const currentCacheKey = getAdministrativeLocationCacheKey(location);
-    const legacyCacheKey = getLegacyAdministrativeLocationCacheKey(location);
 
     if (
-      (cached.cacheKey !== currentCacheKey &&
-        cached.cacheKey !== legacyCacheKey) ||
+      cached.cacheKey !== currentCacheKey ||
       typeof cached.cachedAt !== "number" ||
       Date.now() - cached.cachedAt > ADMINISTRATIVE_LOCATION_CACHE_TTL_MS ||
       typeof cached.administrativeDongName !== "string" ||

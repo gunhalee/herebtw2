@@ -1,4 +1,3 @@
-import { hasSupabaseServerConfig } from "../../supabase/config";
 import { supabaseRpc, supabaseSelect } from "../../supabase/rest";
 import type {
   CandidateRow,
@@ -9,8 +8,6 @@ import type {
 } from "./types";
 
 async function findCandidateByAuthUserId(authUserId: string) {
-  if (!hasSupabaseServerConfig()) return null;
-
   const rows = await supabaseSelect<CandidateRow[]>(
     `candidates?select=id,auth_user_id,name,district,email,first_message_id,is_active,created_at,activated_at&auth_user_id=eq.${authUserId}&limit=1`,
   );
@@ -19,8 +16,6 @@ async function findCandidateByAuthUserId(authUserId: string) {
 }
 
 async function findCandidateById(candidateId: string) {
-  if (!hasSupabaseServerConfig()) return null;
-
   const rows = await supabaseSelect<CandidateRow[]>(
     `candidates?select=id,auth_user_id,name,district,email,first_message_id,is_active,created_at,activated_at&id=eq.${candidateId}&limit=1`,
   );
@@ -29,8 +24,6 @@ async function findCandidateById(candidateId: string) {
 }
 
 async function loadDistrictPosts(district: string, candidateId?: string) {
-  if (!hasSupabaseServerConfig()) return [];
-
   const rows = await supabaseRpc<DistrictPostRow[]>("list_district_posts", {
     target_district: district,
     viewer_candidate_id: candidateId ?? null,
@@ -40,10 +33,6 @@ async function loadDistrictPosts(district: string, candidateId?: string) {
 }
 
 async function loadDashboardStats(district: string) {
-  if (!hasSupabaseServerConfig()) {
-    return { total_posts: 0, replied_posts: 0, unreplied_posts: 0, reply_rate: 0 };
-  }
-
   const rows = await supabaseRpc<DashboardStatsRow[]>(
     "get_candidate_dashboard_stats",
     { target_district: district },
@@ -53,8 +42,6 @@ async function loadDashboardStats(district: string) {
 }
 
 async function loadCandidateDistrictRepository(candidateId: string) {
-  if (!hasSupabaseServerConfig()) return null;
-
   const rows = await supabaseSelect<Array<{ id: string; district: string }>>(
     `candidates?select=id,district&id=eq.${candidateId}&limit=1`,
   );
@@ -63,8 +50,6 @@ async function loadCandidateDistrictRepository(candidateId: string) {
 }
 
 async function loadReplyNotificationPostRepository(postId: string) {
-  if (!hasSupabaseServerConfig()) return null;
-
   const rows = await supabaseSelect<
     Array<{
       id: string;
@@ -80,8 +65,6 @@ async function loadReplyNotificationPostRepository(postId: string) {
 }
 
 async function loadCandidatePromises(candidateId: string) {
-  if (!hasSupabaseServerConfig()) return [];
-
   const rows = await supabaseRpc<PromiseRow[]>("list_candidate_promises", {
     target_candidate_id: candidateId,
   });
@@ -90,8 +73,6 @@ async function loadCandidatePromises(candidateId: string) {
 }
 
 async function loadFirstMessage(postId: string) {
-  if (!hasSupabaseServerConfig()) return null;
-
   const rows = await supabaseSelect<Array<{ id: string; content: string }>>(
     `posts?select=id,content&id=eq.${postId}&limit=1`,
   );
@@ -100,8 +81,6 @@ async function loadFirstMessage(postId: string) {
 }
 
 async function loadSetting(key: string) {
-  if (!hasSupabaseServerConfig()) return null;
-
   const rows = await supabaseSelect<SettingRow[]>(
     `settings?select=key,value&key=eq.${key}&limit=1`,
   );

@@ -1,12 +1,10 @@
 import type { PostLocation } from "../../../types/post";
 import { quantizeLocationTo100MeterGrid } from "../../geo/location-buckets";
-import { hasSupabaseServerConfig } from "../../supabase/config";
 import {
   supabaseInsert,
   supabaseRpc,
   supabaseUpsert,
 } from "../../supabase/rest";
-import { toggleMockPostAgree } from "../mock-data";
 import { ensureDeviceIdentity } from "./shared";
 import type { PostRow, ToggleAgreeRpcRow } from "./types";
 
@@ -20,30 +18,14 @@ type CreatePostRepositoryInput = {
 };
 
 async function syncDeviceRepository(anonymousDeviceId: string) {
-  if (!hasSupabaseServerConfig()) {
-    return {
-      mode: "mock" as const,
-      device: {
-        id: "device_uuid_mock",
-        anonymous_device_id: anonymousDeviceId,
-      },
-    };
-  }
-
   const device = await ensureDeviceIdentity(anonymousDeviceId);
 
-  return {
-    mode: "supabase" as const,
-    device,
-  };
+  return { device };
 }
 
 async function createPostRepository(input: CreatePostRepositoryInput) {
-  if (!hasSupabaseServerConfig() || !input.anonymousDeviceId) {
-    return {
-      mode: "mock" as const,
-      post: null,
-    };
+  if (!input.anonymousDeviceId) {
+    throw new Error("Missing anonymous device id.");
   }
 
   const device = await ensureDeviceIdentity(input.anonymousDeviceId);
@@ -68,18 +50,12 @@ async function createPostRepository(input: CreatePostRepositoryInput) {
     },
   );
 
-  return {
-    mode: "supabase" as const,
-    post: rows?.[0] ?? null,
-  };
+  return { post: rows?.[0] ?? null };
 }
 
 async function toggleAgreeRepository(postId: string, anonymousDeviceId?: string) {
-  if (!hasSupabaseServerConfig() || !anonymousDeviceId) {
-    return {
-      mode: "mock" as const,
-      ...toggleMockPostAgree(postId),
-    };
+  if (!anonymousDeviceId?.trim()) {
+    throw new Error("Missing anonymous device id.");
   }
 
   const rpcRows =
@@ -90,7 +66,6 @@ async function toggleAgreeRepository(postId: string, anonymousDeviceId?: string)
   const rpcRow = rpcRows[0];
 
   return {
-    mode: "supabase" as const,
     postId,
     agreed: Boolean(rpcRow?.agreed),
     agreeCount: Number(rpcRow?.agree_count ?? 0),
@@ -102,14 +77,6 @@ async function reportPostRepository(
   reasonCode: string,
   anonymousDeviceId?: string,
 ) {
-  if (!hasSupabaseServerConfig()) {
-    return {
-      mode: "mock" as const,
-      postId,
-      reasonCode,
-    };
-  }
-
   if (!anonymousDeviceId?.trim()) {
     throw new Error("Missing anonymous device id.");
   }
@@ -129,11 +96,7 @@ async function reportPostRepository(
     },
   );
 
-  return {
-    mode: "supabase" as const,
-    postId,
-    reasonCode,
-  };
+  return { postId, reasonCode };
 }
 
 export {

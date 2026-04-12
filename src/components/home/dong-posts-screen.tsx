@@ -15,7 +15,6 @@ type DongPostsScreenProps = {
   interactionLocked?: boolean;
   scrollTargetPostId?: string | null;
   state: PostListState;
-  runtimeNotice?: string | null;
   reportErrorMessage?: string | null;
   reportSuccessMessage?: string | null;
   pendingNewItemsCount?: number;
@@ -43,7 +42,6 @@ export function DongPostsScreen({
   interactionLocked = false,
   scrollTargetPostId,
   state,
-  runtimeNotice,
   reportErrorMessage = null,
   reportSuccessMessage = null,
   pendingNewItemsCount = 0,
@@ -148,7 +146,6 @@ export function DongPostsScreen({
       <DongPostsHeader
         animateComposeDongPlaceholder={animateComposeDongPlaceholder}
         currentDongName={currentDongName}
-        runtimeNotice={runtimeNotice}
       />
 
       <DongPostsFeed

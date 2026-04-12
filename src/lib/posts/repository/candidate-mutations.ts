@@ -1,4 +1,3 @@
-import { hasSupabaseServerConfig } from "../../supabase/config";
 import { supabaseInsert, supabasePatchMinimal } from "../../supabase/rest";
 import type { ReplyRow } from "./types";
 
@@ -7,8 +6,6 @@ async function createCandidateFirstMessageRepository(input: {
   district: string;
   content: string;
 }) {
-  if (!hasSupabaseServerConfig()) return null;
-
   const rows = await supabaseInsert<
     Array<{ id: string; public_uuid: string; created_at: string }>
   >("posts?select=id,public_uuid,created_at", {
@@ -27,8 +24,6 @@ async function attachCandidateFirstMessageRepository(
   candidateId: string,
   postId: string,
 ) {
-  if (!hasSupabaseServerConfig()) return;
-
   await supabasePatchMinimal(`candidates?id=eq.${candidateId}`, {
     first_message_id: postId,
   });
@@ -38,8 +33,6 @@ async function updateCandidateFirstMessageRepository(
   postId: string,
   content: string,
 ) {
-  if (!hasSupabaseServerConfig()) return;
-
   await supabasePatchMinimal(`posts?id=eq.${postId}`, {
     content,
   });
@@ -52,8 +45,6 @@ async function createReply(input: {
   isPromise: boolean;
   promiseDeadline: string | null;
 }) {
-  if (!hasSupabaseServerConfig()) return null;
-
   const rows = await supabaseInsert<ReplyRow[]>(
     "replies?select=id,post_id,candidate_id,content,is_promise,promise_deadline,created_at",
     {

@@ -18,7 +18,6 @@ type ComposeSuccessResult = {
 
 type UseComposeSubmitParams = {
   composeState: PostComposeState;
-  dataSourceMode: "supabase" | "mock";
   locationReadyForSubmit: boolean;
   locationResolutionToken: string | null;
   notificationEmail: string;
@@ -30,7 +29,6 @@ type UseComposeSubmitParams = {
 
 export function useComposeSubmit({
   composeState,
-  dataSourceMode,
   locationReadyForSubmit,
   locationResolutionToken,
   notificationEmail,
@@ -55,12 +53,8 @@ export function useComposeSubmit({
   }
 
   useEffect(() => {
-    if (dataSourceMode !== "supabase") {
-      return;
-    }
-
     void ensureDeviceRegistrationStarted().catch(() => undefined);
-  }, [dataSourceMode]);
+  }, []);
 
   function handleChangeContent(value: string) {
     setComposeState((current) => ({
@@ -75,18 +69,10 @@ export function useComposeSubmit({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (dataSourceMode !== "supabase") {
-      setComposeState((current) => ({
-        ...current,
-        errorMessage: "실시간으로 글을 등록하려면 Supabase 연결이 필요해요.",
-      }));
-      return;
-    }
-
     if (!submitLocation || !locationReadyForSubmit) {
       setComposeState((current) => ({
         ...current,
-        errorMessage: "현재 위치 확인이 끝난 뒤에 글을 등록할 수 있어요.",
+        errorMessage: "?꾩옱 ?꾩튂 ?뺤씤???앸궃 ?ㅼ뿉 湲???깅줉?????덉뼱??",
       }));
       return;
     }
@@ -107,7 +93,7 @@ export function useComposeSubmit({
           administrativeDongName: string;
         };
       }>({
-        errorMessage: "글을 등록하지 못했어요.",
+        errorMessage: "湲???깅줉?섏? 紐삵뻽?댁슂.",
         init: createJsonPostRequestInit({
           anonymousDeviceId,
           content: composeState.content,
@@ -119,7 +105,7 @@ export function useComposeSubmit({
           ...(trimmedEmail ? { notificationEmail: trimmedEmail } : {}),
         }),
         path: "/api/posts",
-        timeoutErrorMessage: "글 등록이 지연되고 있어요. 다시 시도해 주세요.",
+        timeoutErrorMessage: "湲 ?깅줉??吏?곕릺怨??덉뼱?? ?ㅼ떆 ?쒕룄??二쇱꽭??",
       });
 
       if (onSuccess) {
@@ -140,7 +126,7 @@ export function useComposeSubmit({
         ...current,
         submitting: false,
         errorMessage:
-          error instanceof Error ? error.message : "글을 등록하지 못했어요.",
+          error instanceof Error ? error.message : "湲???깅줉?섏? 紐삵뻽?댁슂.",
       }));
     }
   }
@@ -149,7 +135,6 @@ export function useComposeSubmit({
     handleChangeContent,
     handleSubmit,
     submitDisabled:
-      dataSourceMode !== "supabase" ||
       composeState.submitting ||
       !locationReadyForSubmit ||
       composeState.charCount < 1 ||

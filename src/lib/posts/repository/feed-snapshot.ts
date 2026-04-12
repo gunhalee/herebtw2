@@ -1,6 +1,4 @@
-import { hasSupabaseServerConfig } from "../../supabase/config";
 import { supabaseSelect } from "../../supabase/rest";
-import { getMockPostListState } from "../mock-data";
 import { buildInFilter, ensureDeviceIdentity, isUuid } from "./shared";
 import type { PostEngagementRow, ReactionRow, ReportRow } from "./types";
 
@@ -55,30 +53,6 @@ async function loadPostEngagementSnapshotRepository(input: {
         agreeCount: number;
         myAgree: boolean;
       }>,
-    };
-  }
-
-  if (!hasSupabaseServerConfig()) {
-    const itemMap = new Map(
-      getMockPostListState().items.map((item) => [item.id, item]),
-    );
-
-    return {
-      items: requestedPostIds
-        .map((postId) => {
-          const item = itemMap.get(postId);
-
-          if (!item) {
-            return null;
-          }
-
-          return {
-            id: postId,
-            agreeCount: item.agreeCount,
-            myAgree: item.myAgree,
-          };
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null),
     };
   }
 

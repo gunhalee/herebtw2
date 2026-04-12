@@ -4,18 +4,11 @@ import {
   buildFeedMetricsContext,
   clampFeedLimit,
   decodePostListCursor,
-  getFeedRpcFallbackReason,
   logFeedMetrics,
-  shouldFallbackToLegacyFeedRpc,
   type FeedMetricsContext,
 } from "./feed-helpers";
 import { getElapsedTimeMs, getMonotonicTimeMs } from "./shared";
-import type {
-  FeedFallbackReason,
-  FeedScope,
-  NearbyPostRow,
-  PostListCursor,
-} from "./types";
+import type { FeedScope, NearbyPostRow, PostListCursor } from "./types";
 
 async function loadPostsFeedRpc(input: {
   scope: FeedScope;
@@ -43,19 +36,10 @@ async function loadPostsFeedRpc(input: {
       })) ?? [];
 
     return {
-      rows,
       durationMs: getElapsedTimeMs(startedAtMs),
-      fallbackReason: null as FeedFallbackReason | null,
+      rows,
     };
   } catch (error) {
-    if (shouldFallbackToLegacyFeedRpc(error)) {
-      return {
-        rows: null,
-        durationMs: getElapsedTimeMs(startedAtMs),
-        fallbackReason: "missing_rpc" as FeedFallbackReason,
-      };
-    }
-
     logFeedMetrics("error", "rpc_failed", {
       ...buildFeedMetricsContext(input),
       rpcDurationMs: getElapsedTimeMs(startedAtMs),
@@ -113,10 +97,6 @@ async function prepareFeedLoad({
     cursor,
     metricsContext,
     rpcResult,
-    fallbackReason: getFeedRpcFallbackReason(
-      rpcResult.rows,
-      rpcResult.fallbackReason,
-    ),
   };
 }
 

@@ -2,10 +2,8 @@ import { unstable_cache } from "next/cache";
 import { cookies } from "next/headers";
 import type { AppShellState } from "../../types/device";
 import type { PostListState } from "../../types/post";
-import { hasSupabaseServerConfig } from "../supabase/config";
 import {
   loadGlobalPostsListRepository,
-  loadPostsListRepository,
 } from "./repository";
 
 const ANONYMOUS_DEVICE_COOKIE_KEY = "shout_anonymous_device_id";
@@ -50,19 +48,7 @@ export async function getHomePageState(): Promise<{
 }> {
   const anonymousDeviceId = await readDeviceCookie();
   const appShellState = getInitialAppShellState(anonymousDeviceId);
-
-  if (hasSupabaseServerConfig()) {
-    const postListState = await loadCachedGlobalPostsList();
-
-    return {
-      appShellState,
-      postListState,
-    };
-  }
-
-  const postListState = await loadPostsListRepository({
-    limit: 10,
-  });
+  const postListState = await loadCachedGlobalPostsList();
 
   return {
     appShellState,

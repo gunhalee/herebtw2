@@ -53,10 +53,7 @@ const SECTION_RULES = [
     title: "Sample & Placeholder Text",
     description: "샘플 데이터, placeholder, 데모용 텍스트입니다.",
     match(filePath) {
-      return (
-        filePath === "src/lib/posts/mock-data.ts" ||
-        filePath === "src/components/home/use-compose-dong-flashcard.ts"
-      );
+      return filePath === "src/components/home/use-compose-dong-flashcard.ts";
     },
   },
   {

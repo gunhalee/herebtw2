@@ -26,13 +26,11 @@ const DeferredPostComposeExperience = dynamic(
 );
 
 type HomeScreenProps = {
-  dataSourceMode: "supabase" | "mock";
   initialAppShellState: AppShellState;
   initialPostListState: PostListState;
 };
 
 export function HomeScreen({
-  dataSourceMode,
   initialAppShellState,
   initialPostListState,
 }: HomeScreenProps) {
@@ -59,11 +57,9 @@ export function HomeScreen({
     hasInitialGlobalFeed,
     isMountedRef,
     obscureGlobalFallbackList,
-    runtimeNotice,
     setAppShellState,
     setFeedSortMode,
   } = useHomeShellState({
-    dataSourceMode,
     initialAppShellState,
     initialPostListState,
     setPostListState,
@@ -77,7 +73,6 @@ export function HomeScreen({
     handleLoadMore,
     handleOpenMenu,
   } = useHomeFeedListActions({
-    dataSourceMode,
     appShellStateRef,
     feedSortMode,
     postListState,
@@ -119,7 +114,6 @@ export function HomeScreen({
     handleComposeSuccess,
     handleRetryCompose,
   } = useHomeComposeFlow({
-    dataSourceMode,
     isMountedRef,
     appShellStateRef,
     feedLocationRef,
@@ -131,7 +125,6 @@ export function HomeScreen({
   });
 
   useHomeFeedLifecycle({
-    dataSourceMode,
     feedLocation,
     feedSortMode,
     hasInitialGlobalFeed,
@@ -183,13 +176,11 @@ export function HomeScreen({
         reportErrorMessage={reportErrorMessage}
         reportSubmitting={reportSubmitting}
         reportSuccessMessage={reportSuccessMessage}
-        runtimeNotice={runtimeNotice}
         scrollTargetPostId={pendingAppliedScrollTargetPostId}
         state={postListState}
       />
       {composePanelOpen ? (
         <DeferredPostComposeExperience
-          dataSourceMode={dataSourceMode}
           onDismiss={handleCloseComposePanel}
           onSuccess={handleComposeSuccess}
         />

@@ -101,20 +101,25 @@ export async function createPost(
   }
 
   const repositoryResult = await createPostRepository(input);
-  const createdAt = repositoryResult.post?.created_at ?? new Date().toISOString();
-  const deleteExpiresAt =
-    repositoryResult.post?.delete_expires_at ??
-    new Date(Date.now() + 180 * 1000).toISOString();
+  const createdPost = repositoryResult.post;
+
+  if (!createdPost) {
+    throw new Error("Failed to create post.");
+  }
+
+  if (!createdPost.public_uuid) {
+    throw new Error("Created post is missing public UUID.");
+  }
 
   return {
     ok: true,
     post: {
-      id: repositoryResult.post?.id ?? "post_new",
-      publicUuid: repositoryResult.post?.public_uuid ?? repositoryResult.post?.id ?? "post_new",
+      id: createdPost.id,
+      publicUuid: createdPost.public_uuid,
       content: input.content.trim(),
       administrativeDongName: input.resolvedDongName,
-      createdAt,
-      deleteExpiresAt,
+      createdAt: createdPost.created_at,
+      deleteExpiresAt: createdPost.delete_expires_at,
     },
   };
 }

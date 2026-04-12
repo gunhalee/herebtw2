@@ -17,7 +17,6 @@ import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 
 type UseHomeComposeFlowParams = {
-  dataSourceMode: "supabase" | "mock";
   isMountedRef: MutableRefObject<boolean>;
   appShellStateRef: MutableRefObject<AppShellState>;
   feedLocationRef: MutableRefObject<PostLocation | null>;
@@ -29,7 +28,6 @@ type UseHomeComposeFlowParams = {
 };
 
 export function useHomeComposeFlow({
-  dataSourceMode,
   isMountedRef,
   appShellStateRef,
   feedLocationRef,
@@ -80,10 +78,6 @@ export function useHomeComposeFlow({
 
   async function handleComposeSuccess() {
     setPendingFeedSnapshot(null);
-
-    if (dataSourceMode !== "supabase") {
-      return;
-    }
 
     try {
       const latestLocation = feedLocationRef.current;
