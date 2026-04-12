@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Ref } from "react";
 import { homeScreenCopy } from "../../lib/content/home-copy";
 import { uiColors, uiRadius, uiSpacing } from "../../lib/ui/tokens";
@@ -43,13 +44,17 @@ export function DongPostsHeader({
         zIndex: 2,
       }}
     >
-      <div
+      <Link
+        aria-label="메인 화면으로 이동"
+        href="/"
         style={{
           alignItems: "center",
+          color: "inherit",
           display: "flex",
           flexDirection: "column",
           gap: uiSpacing.xs,
           textAlign: "center",
+          textDecoration: "none",
         }}
       >
         <h1
@@ -108,7 +113,7 @@ export function DongPostsHeader({
             {homeScreenCopy.subtitle}
           </p>
         ) : null}
-      </div>
+      </Link>
 
       {runtimeNotice ? (
         <div
