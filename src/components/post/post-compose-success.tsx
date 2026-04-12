@@ -11,6 +11,7 @@ import {
   uiSpacing,
   uiTypography,
 } from "../../lib/ui/tokens";
+import { normalizeAdministrativeDongName } from "../../lib/geo/format-administrative-area";
 
 const copyButtonSurface = {
   idle: {
@@ -74,6 +75,7 @@ export function PostComposeSuccess({
     typeof window !== "undefined"
       ? `${window.location.origin}/v/${publicUuid}`
       : `/v/${publicUuid}`;
+  const displayDongName = normalizeAdministrativeDongName(dongName);
 
   async function handleCopyLink() {
     try {
@@ -127,7 +129,7 @@ export function PostComposeSuccess({
             lineHeight: 1.5,
           }}
         >
-          {dongName}에 남긴 목소리를 포토카드로 바로 저장할 수 있어요.
+          {`${displayDongName}에 남긴 목소리를 포토카드로 저장해보세요.`}
         </p>
       </div>
 
@@ -178,20 +180,19 @@ export function PostComposeSuccess({
         style={{
           alignItems: "center",
           appearance: "none",
-          background: uiBrandYellow.ctaGradient,
-          border: `1px solid ${uiBrandYellow.ctaBorder}`,
+          background: copyButtonSurface.idle.background,
+          border: `1px solid ${copyButtonSurface.idle.border}`,
           borderRadius: uiRadius.md,
-          boxShadow:
-            "0 8px 18px rgba(116, 94, 62, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
-          color: uiBrandYellow.textOnCta,
+          color: copyButtonSurface.idle.color,
           cursor: "pointer",
           display: "flex",
-          fontSize: "15px",
-          fontWeight: 700,
+          fontSize: uiTypography.body.fontSize,
+          fontWeight: 600,
           gap: uiSpacing.xs,
           justifyContent: "center",
-          padding: `14px ${uiSpacing.xl}`,
+          padding: `${uiSpacing.md} ${uiSpacing.xl}`,
           textDecoration: "none",
+          transition: "all 150ms ease",
           width: "100%",
           maxWidth: 320,
         }}
@@ -205,12 +206,10 @@ export function PostComposeSuccess({
         type="button"
         style={{
           appearance: "none",
-          background: uiBrandYellow.ctaGradient,
-          border: `1px solid ${uiBrandYellow.ctaBorder}`,
+          background: uiColors.buttonPrimary,
+          border: "none",
           borderRadius: uiRadius.md,
-          boxShadow:
-            "0 10px 22px rgba(116, 94, 62, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
-          color: uiBrandYellow.textOnCta,
+          color: uiColors.textInverse,
           cursor: "pointer",
           fontSize: "15px",
           fontWeight: 700,
