@@ -58,23 +58,8 @@ export function PostListItemCard({
   const hasReply = replyStatus === "replied" && Boolean(replyContent);
   const replyNameLabel = replyCandidateName?.trim() ?? "";
   const replyDistrictLabel = replyCandidateLocalCouncilDistrict?.trim() ?? "";
-  const replyCouncilLabel = replyCandidateCouncilType
-    ? `${replyCandidateCouncilType} 후보`
-    : "후보";
-  const replyTaglineParts: string[] = [];
-
-  if (replyNameLabel) {
-    replyTaglineParts.push(replyNameLabel);
-  }
-
-  if (replyDistrictLabel) {
-    replyTaglineParts.push(
-      replyTaglineParts.length > 0 ? `· ${replyDistrictLabel}` : replyDistrictLabel,
-    );
-  }
-
-  replyTaglineParts.push(replyCouncilLabel);
-  const replyTagline = replyTaglineParts.join(" ");
+  const replyCouncilBadge =
+    replyCandidateCouncilType ?? (replyDistrictLabel ? "구·시·군의회" : null);
 
   return (
     <>
@@ -284,7 +269,27 @@ export function PostListItemCard({
                 }}
               >
                 <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
-                  {replyTagline}
+                  {replyNameLabel}
+                </span>
+                {replyDistrictLabel ? (
+                  <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
+                    · {replyDistrictLabel}
+                  </span>
+                ) : null}
+                <span
+                  style={{
+                    background: uiBrandYellow.surfaceWarm,
+                    border: `1px solid ${uiBrandYellow.borderWarm}`,
+                    borderRadius: "999px",
+                    color: uiColors.textStrong,
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                  }}
+                >
+                  {replyCouncilBadge
+                    ? `${replyCouncilBadge.replace(/의회$/, "의원")} 후보`
+                    : "후보"}
                 </span>
               </p>
               {/* 답변 본문 */}
