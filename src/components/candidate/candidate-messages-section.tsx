@@ -68,20 +68,14 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
       >
         {/* ── Left: profile photo ──────────────────────────────────── */}
         {candidate.photoUrl ? (
-          // img is a direct flex child. align-self:stretch sets its height to
-          // the row height (determined by the text column). width:auto then
-          // follows the image's natural aspect ratio.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             alt={`${candidate.name} 후보`}
             src={candidate.photoUrl}
             style={{
-              alignSelf: "stretch",
               display: "block",
               flexShrink: 0,
-              maxWidth: "120px",
-              objectFit: "cover",
-              objectPosition: "center top",
+              height: "76px",
               width: "auto",
             }}
           />
