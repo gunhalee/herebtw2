@@ -70,7 +70,7 @@ export function CandidateMessagesSection({
               marginRight: "2px",
             }}
           >
-            ?곕━ ?좉굅援??꾨낫
+            우리 동네 후보
           </span>
           {userDistricts.localCouncilDistrict ? (
             <CandidateDistrictBadge
@@ -115,7 +115,7 @@ export function CandidateMessagesSection({
             }}
           >
             {othersOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            ?ㅻⅨ 吏???꾨낫 {collapsedCandidates.length}紐?
+            다른 후보들도 살펴보기기
           </button>
 
           {othersOpen

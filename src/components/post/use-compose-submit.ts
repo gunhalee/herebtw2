@@ -72,7 +72,7 @@ export function useComposeSubmit({
     if (!submitLocation || !locationReadyForSubmit) {
       setComposeState((current) => ({
         ...current,
-        errorMessage: "?꾩옱 ?꾩튂 ?뺤씤???앸궃 ?ㅼ뿉 湲???깅줉?????덉뼱??",
+        errorMessage: "위치 정보를 로드하고 있어요. 잠시만 기다려주세요.",
       }));
       return;
     }
@@ -93,7 +93,7 @@ export function useComposeSubmit({
           administrativeDongName: string;
         };
       }>({
-        errorMessage: "湲???깅줉?섏? 紐삵뻽?댁슂.",
+        errorMessage: "글을 등록하지 못했어요.",
         init: createJsonPostRequestInit({
           anonymousDeviceId,
           content: composeState.content,
@@ -105,7 +105,7 @@ export function useComposeSubmit({
           ...(trimmedEmail ? { notificationEmail: trimmedEmail } : {}),
         }),
         path: "/api/posts",
-        timeoutErrorMessage: "湲 ?깅줉??吏?곕릺怨??덉뼱?? ?ㅼ떆 ?쒕룄??二쇱꽭??",
+        timeoutErrorMessage: "저장이 늦어졌어요. 잠시 후에 다시 시도해 주세요.",
       });
 
       if (onSuccess) {
@@ -126,7 +126,7 @@ export function useComposeSubmit({
         ...current,
         submitting: false,
         errorMessage:
-          error instanceof Error ? error.message : "湲???깅줉?섏? 紐삵뻽?댁슂.",
+          error instanceof Error ? error.message : "글을 등록하지 못했어요.",
       }));
     }
   }

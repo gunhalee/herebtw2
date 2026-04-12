@@ -1,6 +1,6 @@
 # Copy Review
 
-Generated: 2026-04-12T10:29:11.177Z
+Generated: 2026-04-12T11:21:33.084Z
 
 이 문서는 `npm run generate:copy-review`로 생성됩니다.
 화면 문구, 시스템 메시지, 샘플/참조 라벨을 파일별로 모아 검토할 수 있게 정리했습니다.
@@ -68,18 +68,18 @@ Generated: 2026-04-12T10:29:11.177Z
 
 ### src/components/candidate/candidate-messages-section.tsx
 
-- L66: ?곕━ ?좉굅援??꾨낫
-- L107: ?ㅻⅨ 吏???꾨낫 {collapsedCandidates.length}紐?
+- L73: 우리 동네 후보
+- L118: 다른 후보들도 살펴보기기
 
 ### src/components/candidate/candidate-messages-view.tsx
 
-- L30: 기초의회
-- L30: 광역의회
-- L48: 기초의회
-- L50: 광역의회
-- L84: ${candidate.name} 후보
-- L153: 후보
-- L153: ${councilBadge} 후보
+- L31: 기초의회
+- L31: 광역의회
+- L51: 기초의회
+- L53: 광역의회
+- L97: ${candidate.name} 후보
+- L166: 후보
+- L166: ${councilBadge} 후보
 
 ### src/components/candidate/candidate-onboarding-form.tsx
 
@@ -184,11 +184,6 @@ Generated: 2026-04-12T10:29:11.177Z
 
 - L6: 서비스 이용을 위해 위치 권한을 허용해주세요.
 
-### src/components/home/dong-posts-feed.tsx
-
-- L88: 메뉴 닫기
-- L105: 목록을 불러오는 중
-
 ### src/components/home/dong-posts-header.tsx
 
 - L44: 메인 화면으로 이동
@@ -208,7 +203,7 @@ Generated: 2026-04-12T10:29:11.177Z
 
 ### src/components/home/use-home-shell-state.ts
 
-- L28: ?곕━ ?숇꽕
+- L29: 우리 동네
 
 ### src/components/post/post-compose-form.tsx
 
@@ -368,10 +363,10 @@ Generated: 2026-04-12T10:29:11.177Z
 
 ### src/components/post/use-compose-submit.ts
 
-- L75: ?꾩옱 ?꾩튂 ?뺤씤???앸궃 ?ㅼ뿉 湲???깅줉?????덉뼱??
-- L96: 湲???깅줉?섏? 紐삵뻽?댁슂.
-- L108: 湲 ?깅줉??吏?곕릺怨??덉뼱?? ?ㅼ떆 ?쒕룄??二쇱꽭??
-- L129: 湲???깅줉?섏? 紐삵뻽?댁슂.
+- L75: 위치 정보를 로드하고 있어요. 잠시만 기다려주세요.
+- L96: 글을 등록하지 못했어요.
+- L108: 저장이 늦어졌어요. 잠시 후에 다시 시도해 주세요.
+- L129: 글을 등록하지 못했어요.
 
 ### src/lib/device/browser-device.ts
 
@@ -394,8 +389,8 @@ Generated: 2026-04-12T10:29:11.177Z
 
 - L80: 내용을 다시 확인해 주세요.
 - L98: 같은 내용의 글이 이미 있어요. 내용을 조금 수정해 다시 시도해 주세요.
-- L143: anonymousDeviceId가 필요합니다.
-- L153: 신고 사유 코드가 필요합니다.
+- L147: anonymousDeviceId가 필요합니다.
+- L157: 신고 사유 코드가 필요합니다.
 
 ### src/lib/posts/validators.ts
 

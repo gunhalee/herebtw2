@@ -26,7 +26,7 @@ import { useMountedRef } from "../../lib/hooks/use-mounted-ref";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 
-const COMPOSE_PLACEHOLDER_DONG_NAME = "?곕━ ?숇꽕";
+const COMPOSE_PLACEHOLDER_DONG_NAME = "우리 동네";
 
 type UseHomeShellStateParams = {
   initialAppShellState: AppShellState;
