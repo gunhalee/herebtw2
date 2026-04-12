@@ -90,6 +90,16 @@ async function loadCandidatePromises(candidateId: string) {
   return rows ?? [];
 }
 
+async function loadFirstMessage(postId: string) {
+  if (!hasSupabaseServerConfig()) return null;
+
+  const rows = await supabaseSelect<Array<{ id: string; content: string }>>(
+    `posts?select=id,content&id=eq.${postId}&limit=1`,
+  );
+
+  return rows?.[0] ?? null;
+}
+
 async function loadSetting(key: string) {
   if (!hasSupabaseServerConfig()) return null;
 
@@ -107,5 +117,6 @@ export {
   loadCandidatePromises,
   loadDashboardStats,
   loadDistrictPosts,
+  loadFirstMessage,
   loadSetting,
 };

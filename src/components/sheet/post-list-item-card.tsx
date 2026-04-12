@@ -7,6 +7,7 @@ import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
 import thumbsUpImage from "../thumbs_up.png";
 
 type PostListItemCardProps = {
+  menuPostId: string;
   agreeCount: number;
   administrativeDongName: string;
   content: string;
@@ -21,6 +22,7 @@ type PostListItemCardProps = {
 };
 
 export function PostListItemCard({
+  menuPostId,
   agreeCount,
   administrativeDongName,
   content,
@@ -129,6 +131,7 @@ export function PostListItemCard({
 
           <button
             aria-label="신고 메뉴 열기"
+            data-post-menu-trigger-for={menuPostId}
             onClick={isMenuOpen ? onCloseMenu : onOpenMenu}
             style={{
               appearance: "none",

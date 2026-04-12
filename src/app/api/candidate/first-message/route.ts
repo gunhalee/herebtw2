@@ -4,6 +4,54 @@ import { getCandidateSession } from "../../../../lib/auth/candidate-session";
 import { hasSupabaseServerConfig } from "../../../../lib/supabase/config";
 import { supabaseInsert, supabaseSelect } from "../../../../lib/supabase/rest";
 
+type UpdateFirstMessageRequest = {
+  content: string;
+};
+
+export async function PATCH(request: Request) {
+  if (!hasSupabaseServerConfig()) {
+    return fail({ code: "NO_CONFIG", message: "Supabase 설정이 없습니다." }, 500);
+  }
+
+  const session = await getCandidateSession();
+
+  if (!session) {
+    return fail({ code: "UNAUTHORIZED", message: "인증이 필요합니다." }, 401);
+  }
+
+  if (!session.firstMessageId) {
+    return fail({ code: "NOT_FOUND", message: "첫 마디가 없습니다." }, 404);
+  }
+
+  const bodyResult = await readJsonBody<UpdateFirstMessageRequest>(request);
+  if (!bodyResult.ok) {
+    return bodyResult.response;
+  }
+
+  const { content } = bodyResult.body;
+  const trimmedContent = content?.trim() ?? "";
+
+  if (trimmedContent.length < 1 || trimmedContent.length > 100) {
+    return fail({ code: "VALIDATION_ERROR", message: "내용은 1~100자여야 합니다." }, 400);
+  }
+
+  await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/posts?id=eq.${session.firstMessageId}`,
+    {
+      method: "PATCH",
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ content: trimmedContent }),
+    },
+  );
+
+  return ok({ content: trimmedContent });
+}
+
 type FirstMessageRequest = {
   candidateId: string;
   content: string;
@@ -47,11 +95,10 @@ export async function POST(request: Request) {
     return fail({ code: "NOT_FOUND", message: "후보 정보를 찾을 수 없습니다." }, 404);
   }
 
-  // Create post as candidate first message
+  // Create post as candidate first message (no device_id, no expiry)
   const posts = await supabaseInsert<Array<{ id: string; public_uuid: string; created_at: string }>>(
     "posts?select=id,public_uuid,created_at",
     {
-      author_device_id: null,
       content: trimmedContent,
       administrative_dong_name: candidate.district,
       administrative_dong_code: `candidate:${session.candidateId}`,

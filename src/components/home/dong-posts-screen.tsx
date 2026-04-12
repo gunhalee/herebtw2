@@ -79,7 +79,11 @@ export function DongPostsScreen({
       return;
     }
 
-    if (target.closest(`[data-post-id="${activeMenuPostId}"]`)) {
+    if (target.closest(`[data-post-menu-surface-for="${activeMenuPostId}"]`)) {
+      return;
+    }
+
+    if (target.closest(`[data-post-menu-trigger-for="${activeMenuPostId}"]`)) {
       return;
     }
 

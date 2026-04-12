@@ -1,6 +1,7 @@
 "use client";
 
-import { BarChart3, LogOut, MessageCircle } from "lucide-react";
+import { BarChart3, Check, LogOut, MessageCircle, Pencil, X } from "lucide-react";
+import { useState } from "react";
 import {
   uiColors,
   uiRadius,
@@ -35,12 +36,18 @@ type DashboardStats = {
   reply_rate: number;
 };
 
+type FirstMessage = {
+  id: string;
+  content: string;
+};
+
 type DashboardScreenProps = {
   candidateName: string;
   candidateId: string;
   district: string;
   posts: DashboardPost[];
   stats: DashboardStats;
+  firstMessage: FirstMessage | null;
 };
 
 const HIGHLIGHT_THRESHOLD = 3;
@@ -51,11 +58,49 @@ export function DashboardScreen({
   district,
   posts,
   stats,
+  firstMessage,
 }: DashboardScreenProps) {
+  const [editingMessage, setEditingMessage] = useState(false);
+  const [messageContent, setMessageContent] = useState(firstMessage?.content ?? "");
+  const [savingMessage, setSavingMessage] = useState(false);
+  const [messageError, setMessageError] = useState<string | null>(null);
+
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
     window.location.href = "/";
+  }
+
+  async function handleSaveMessage() {
+    const trimmed = messageContent.trim();
+    if (trimmed.length < 1 || trimmed.length > 100) {
+      setMessageError("1~100자 이내로 입력해 주세요.");
+      return;
+    }
+    setSavingMessage(true);
+    setMessageError(null);
+    try {
+      const res = await fetch("/api/candidate/first-message", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: trimmed }),
+      });
+      if (!res.ok) {
+        setMessageError("저장에 실패했습니다. 다시 시도해 주세요.");
+      } else {
+        setEditingMessage(false);
+      }
+    } catch {
+      setMessageError("저장에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setSavingMessage(false);
+    }
+  }
+
+  function handleCancelEdit() {
+    setMessageContent(firstMessage?.content ?? "");
+    setMessageError(null);
+    setEditingMessage(false);
   }
 
   return (
@@ -121,6 +166,147 @@ export function DashboardScreen({
           로그아웃
         </button>
       </header>
+
+      {/* 후보자 한마디 */}
+      {firstMessage ? (
+        <div
+          style={{
+            background: "#ffffff",
+            borderBottom: `1px solid ${uiColors.border}`,
+            padding: `${uiSpacing.md} ${uiSpacing.pageX}`,
+          }}
+        >
+          <div
+            style={{
+              alignItems: "center",
+              display: "flex",
+              gap: uiSpacing.xs,
+              marginBottom: "6px",
+            }}
+          >
+            <span
+              style={{
+                color: uiColors.textMuted,
+                fontSize: "11px",
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              후보자 한마디
+            </span>
+          </div>
+
+          {editingMessage ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <textarea
+                value={messageContent}
+                onChange={(e) => setMessageContent(e.target.value)}
+                maxLength={100}
+                rows={2}
+                style={{
+                  border: `1px solid ${uiColors.border}`,
+                  borderRadius: uiRadius.sm,
+                  color: uiColors.textStrong,
+                  fontSize: "14px",
+                  lineHeight: 1.5,
+                  outline: "none",
+                  padding: "8px 10px",
+                  resize: "none",
+                  width: "100%",
+                  boxSizing: "border-box",
+                }}
+              />
+              <div style={{ alignItems: "center", display: "flex", gap: "6px" }}>
+                <span style={{ color: uiColors.textMuted, fontSize: "11px", marginRight: "auto" }}>
+                  {messageContent.trim().length}/100
+                </span>
+                {messageError ? (
+                  <span style={{ color: "#ef4444", fontSize: "11px" }}>{messageError}</span>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  style={{
+                    alignItems: "center",
+                    appearance: "none",
+                    background: "transparent",
+                    border: `1px solid ${uiColors.border}`,
+                    borderRadius: uiRadius.sm,
+                    color: uiColors.textMuted,
+                    cursor: "pointer",
+                    display: "flex",
+                    fontSize: "12px",
+                    gap: "3px",
+                    padding: "4px 10px",
+                  }}
+                >
+                  <X size={12} />
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveMessage}
+                  disabled={savingMessage}
+                  style={{
+                    alignItems: "center",
+                    appearance: "none",
+                    background: uiColors.buttonPrimary,
+                    border: "none",
+                    borderRadius: uiRadius.sm,
+                    color: "#ffffff",
+                    cursor: savingMessage ? "not-allowed" : "pointer",
+                    display: "flex",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    gap: "3px",
+                    opacity: savingMessage ? 0.6 : 1,
+                    padding: "4px 10px",
+                  }}
+                >
+                  <Check size={12} />
+                  저장
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ alignItems: "flex-start", display: "flex", gap: "8px" }}>
+              <p
+                style={{
+                  color: uiColors.textStrong,
+                  flex: 1,
+                  fontSize: "14px",
+                  lineHeight: 1.6,
+                  margin: 0,
+                }}
+              >
+                {messageContent}
+              </p>
+              <button
+                type="button"
+                onClick={() => setEditingMessage(true)}
+                style={{
+                  alignItems: "center",
+                  appearance: "none",
+                  background: "transparent",
+                  border: `1px solid ${uiColors.border}`,
+                  borderRadius: uiRadius.sm,
+                  color: uiColors.textMuted,
+                  cursor: "pointer",
+                  display: "flex",
+                  flexShrink: 0,
+                  fontSize: "12px",
+                  gap: "3px",
+                  padding: "3px 8px",
+                }}
+              >
+                <Pencil size={11} />
+                수정
+              </button>
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {/* Stats */}
       <div

@@ -5,6 +5,7 @@ export {
   loadCandidatePromises,
   loadDashboardStats,
   loadDistrictPosts,
+  loadFirstMessage,
   loadSetting,
 } from "./repository/candidate";
 export {

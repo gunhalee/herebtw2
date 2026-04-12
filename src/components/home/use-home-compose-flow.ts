@@ -12,10 +12,7 @@ import {
   buildReadyPostListState,
   type PendingFeedSnapshot,
 } from "./home-feed-state";
-import {
-  ensureBrowserLocationCoordinates,
-  ensureBrowserLocationResolutionToken,
-} from "../../lib/geo/browser-location-session";
+import { ensureBrowserLocationCoordinates } from "../../lib/geo/browser-location-session";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 
@@ -61,13 +58,6 @@ export function useHomeComposeFlow({
 
         return;
       }
-    }
-
-    if (dataSourceMode === "supabase") {
-      void ensureBrowserLocationResolutionToken({
-        maxWaitMs: 0,
-        triggerRefresh: true,
-      }).catch(() => undefined);
     }
 
     if (isMountedRef.current) {

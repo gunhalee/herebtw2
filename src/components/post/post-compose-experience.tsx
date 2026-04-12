@@ -45,7 +45,6 @@ export function PostComposeExperience({
   const [successData, setSuccessData] = useState<ComposeSuccessData | null>(null);
   const {
     locationReadyForSubmit,
-    locationResolutionTokenPending,
     locationResolutionToken,
     submitLocation,
   } =
@@ -60,7 +59,6 @@ export function PostComposeExperience({
       composeState,
       dataSourceMode,
       locationReadyForSubmit,
-      locationResolutionTokenPending,
       notificationEmail,
       onDismiss,
       onSuccess: (result) => {

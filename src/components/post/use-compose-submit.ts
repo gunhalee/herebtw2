@@ -9,7 +9,6 @@ import {
 } from "react";
 import { createJsonPostRequestInit, fetchClientApiData } from "../../lib/api/client";
 import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
-import { ensureBrowserLocationResolutionToken } from "../../lib/geo/browser-location-session";
 import type { PostComposeState, PostLocation } from "../../types/post";
 
 type ComposeSuccessResult = {
@@ -21,7 +20,6 @@ type UseComposeSubmitParams = {
   composeState: PostComposeState;
   dataSourceMode: "supabase" | "mock";
   locationReadyForSubmit: boolean;
-  locationResolutionTokenPending: boolean;
   locationResolutionToken: string | null;
   notificationEmail: string;
   onDismiss?: () => void;
@@ -34,7 +32,6 @@ export function useComposeSubmit({
   composeState,
   dataSourceMode,
   locationReadyForSubmit,
-  locationResolutionTokenPending,
   locationResolutionToken,
   notificationEmail,
   onDismiss,
@@ -103,12 +100,6 @@ export function useComposeSubmit({
     try {
       const anonymousDeviceId = await ensureDeviceRegistrationStarted();
       const trimmedEmail = notificationEmail.trim();
-      const resolvedLocationToken = locationResolutionTokenPending
-        ? await ensureBrowserLocationResolutionToken({
-            maxWaitMs: 450,
-            triggerRefresh: true,
-          })
-        : locationResolutionToken;
       const response = await fetchClientApiData<{
         post: {
           id: string;
@@ -124,7 +115,7 @@ export function useComposeSubmit({
             latitude: submitLocation.latitude,
             longitude: submitLocation.longitude,
           },
-          locationResolutionToken: resolvedLocationToken ?? locationResolutionToken,
+          locationResolutionToken,
           ...(trimmedEmail ? { notificationEmail: trimmedEmail } : {}),
         }),
         path: "/api/posts",

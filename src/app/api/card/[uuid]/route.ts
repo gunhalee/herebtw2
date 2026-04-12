@@ -16,7 +16,6 @@ export async function GET(request: Request, context: RouteContext) {
   const { uuid } = await context.params;
   const { searchParams } = new URL(request.url);
   const cardType = searchParams.get("type") ?? "voter";
-  const shouldDownload = searchParams.get("download") === "1";
 
   const post = await findPostByUuidRepository(uuid);
 
@@ -77,11 +76,6 @@ export async function GET(request: Request, context: RouteContext) {
       headers: {
         "Content-Type": "image/png",
         "Cache-Control": "public, max-age=60, s-maxage=300",
-        ...(shouldDownload
-          ? {
-              "Content-Disposition": `attachment; filename="voice-${uuid}.png"`,
-            }
-          : {}),
       },
     });
   } catch (error) {

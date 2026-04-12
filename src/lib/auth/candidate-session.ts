@@ -8,6 +8,7 @@ export type CandidateSession = {
   district: string;
   isActive: boolean;
   hasFirstMessage: boolean;
+  firstMessageId: string | null;
 };
 
 export async function getCandidateSession(): Promise<CandidateSession | null> {
@@ -32,6 +33,7 @@ export async function getCandidateSession(): Promise<CandidateSession | null> {
       district: candidate.district,
       isActive: candidate.is_active,
       hasFirstMessage: candidate.first_message_id !== null,
+      firstMessageId: candidate.first_message_id ?? null,
     };
   } catch {
     return null;

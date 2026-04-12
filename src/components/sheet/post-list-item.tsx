@@ -49,6 +49,7 @@ export function PostListItem({
         }}
       >
         <PostListItemCard
+          menuPostId={id}
           agreeCount={agreeCount}
           administrativeDongName={administrativeDongName}
           content={content}
@@ -63,7 +64,7 @@ export function PostListItem({
         />
 
         {isMenuOpen ? (
-          <PostListItemMenu onSelectReport={() => onSelectReport?.(id)} />
+          <PostListItemMenu postId={id} onSelectReport={() => onSelectReport?.(id)} />
         ) : null}
       </div>
     </article>

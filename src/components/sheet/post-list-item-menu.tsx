@@ -3,14 +3,17 @@
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 
 type PostListItemMenuProps = {
+  postId: string;
   onSelectReport?: () => void;
 };
 
 export function PostListItemMenu({
+  postId,
   onSelectReport,
 }: PostListItemMenuProps) {
   return (
     <div
+      data-post-menu-surface-for={postId}
       style={{
         position: "absolute",
         right: uiSpacing.xs,
