@@ -335,6 +335,8 @@ function buildRpcPostListItems(
     replyStatus: post.reply_status === "replied" ? ("replied" as const) : post.reply_status === "delivered" ? ("delivered" as const) : undefined,
     replyCandidateName: post.reply_candidate_name ?? null,
     replyCandidatePhotoUrl: post.reply_candidate_photo_url ?? null,
+    replyCandidateLocalCouncilDistrict: post.reply_candidate_local_council_district ?? null,
+    replyCandidateCouncilType: post.reply_candidate_council_type ?? null,
     replyContent: post.reply_content ?? null,
     replyIsPromise: post.reply_is_promise ?? null,
   }));

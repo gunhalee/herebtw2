@@ -21,6 +21,8 @@ type NearbyPostRow = PostRow & {
   can_report?: boolean;
   reply_candidate_name?: string | null;
   reply_candidate_photo_url?: string | null;
+  reply_candidate_local_council_district?: string | null;
+  reply_candidate_council_type?: string | null;
   reply_content?: string | null;
   reply_is_promise?: boolean | null;
 };

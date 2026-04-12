@@ -48,6 +48,7 @@ function createNearbyFeedSearchParams(input: {
   cursor?: string | null;
   limit: number;
   location: PostLocation;
+  dongCode?: string | null;
 }) {
   const quantizedLocation = quantizeLocationTo100MeterGrid(input.location);
   const params = new URLSearchParams({
@@ -62,6 +63,10 @@ function createNearbyFeedSearchParams(input: {
 
   if (input.anonymousDeviceId) {
     params.set("anonymousDeviceId", input.anonymousDeviceId);
+  }
+
+  if (input.dongCode) {
+    params.set("dongCode", input.dongCode);
   }
 
   return params;
@@ -94,6 +99,7 @@ async function fetchNearbyPostsList(
   cursor?: string | null,
   anonymousDeviceId?: string,
   limit = DEFAULT_FEED_PAGE_LIMIT,
+  dongCode?: string | null,
 ) {
   const data = await fetchPostsListPage(
     `/api/feed/nearby?${createNearbyFeedSearchParams({
@@ -101,6 +107,7 @@ async function fetchNearbyPostsList(
       cursor,
       limit,
       location,
+      dongCode,
     }).toString()}`,
     "동네 글을 불러오지 못했습니다.",
   );
@@ -171,6 +178,7 @@ export async function fetchActiveHomeFeedPage(
   options?: {
     anonymousDeviceId?: string;
     cursor?: string | null;
+    dongCode?: string | null;
   },
 ) {
   const data = location
@@ -178,6 +186,8 @@ export async function fetchActiveHomeFeedPage(
         location,
         options?.cursor,
         options?.anonymousDeviceId,
+        DEFAULT_FEED_PAGE_LIMIT,
+        options?.dongCode,
       )
     : await fetchGlobalPostsList(options?.cursor);
 

@@ -19,6 +19,7 @@ export async function GET(request: Request) {
   const limit = Number(searchParams.get("limit") ?? "10");
   const cursor = searchParams.get("cursor") ?? undefined;
   const anonymousDeviceId = searchParams.get("anonymousDeviceId")?.trim() || undefined;
+  const viewerDongCode = searchParams.get("dongCode")?.trim() || null;
 
   if (latitudeBucket100m === null || longitudeBucket100m === null) {
     return fail({
@@ -36,6 +37,7 @@ export async function GET(request: Request) {
     limit: Number.isFinite(limit) ? limit : 10,
     cursor,
     location: quantizedLocation,
+    viewerDongCode,
   });
 
   return ok(

@@ -88,8 +88,9 @@ export function useHomeFeedListActions({
       const result = await fetchActiveHomeFeedPage(
         feedSortMode === "nearby" ? feedLocation : null,
         {
-        anonymousDeviceId: appShellStateRef.current.anonymousDeviceId ?? undefined,
-        cursor: postListState.nextCursor,
+          anonymousDeviceId: appShellStateRef.current.anonymousDeviceId ?? undefined,
+          cursor: postListState.nextCursor,
+          dongCode: appShellStateRef.current.selectedDongCode ?? null,
         },
       );
 

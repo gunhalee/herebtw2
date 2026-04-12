@@ -19,6 +19,8 @@ type PostListItemCardProps = {
   replyStatus?: "delivered" | "replied";
   replyCandidateName?: string | null;
   replyCandidatePhotoUrl?: string | null;
+  replyCandidateLocalCouncilDistrict?: string | null;
+  replyCandidateCouncilType?: string | null;
   replyContent?: string | null;
   replyIsPromise?: boolean | null;
   onCloseMenu?: () => void;
@@ -39,6 +41,8 @@ export function PostListItemCard({
   replyStatus,
   replyCandidateName,
   replyCandidatePhotoUrl,
+  replyCandidateLocalCouncilDistrict,
+  replyCandidateCouncilType,
   replyContent,
   replyIsPromise,
   onCloseMenu,
@@ -234,7 +238,7 @@ export function PostListItemCard({
                 padding: `${uiSpacing.lg} ${uiSpacing.xl}`,
               }}
             >
-              {/* 메타 행: 후보 태그 + 이름 */}
+              {/* 메타 행: 이름 · 선거구 + 의회 태그 */}
               <p
                 style={{
                   alignItems: "center",
@@ -246,6 +250,14 @@ export function PostListItemCard({
                   margin: `0 0 ${uiSpacing.sm}`,
                 }}
               >
+                <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
+                  {replyCandidateName}
+                </span>
+                {replyCandidateLocalCouncilDistrict ? (
+                  <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
+                    · {replyCandidateLocalCouncilDistrict}
+                  </span>
+                ) : null}
                 <span
                   style={{
                     background: uiBrandYellow.surfaceWarm,
@@ -257,10 +269,9 @@ export function PostListItemCard({
                     padding: "2px 8px",
                   }}
                 >
-                  후보
-                </span>
-                <span style={{ color: uiColors.textStrong, fontWeight: 500 }}>
-                  {replyCandidateName}
+                  {replyCandidateCouncilType
+                    ? `${replyCandidateCouncilType} 후보`
+                    : "후보"}
                 </span>
                 {replyIsPromise ? (
                   <span

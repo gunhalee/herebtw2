@@ -19,6 +19,8 @@ export function PostListItem({
   replyStatus,
   replyCandidateName,
   replyCandidatePhotoUrl,
+  replyCandidateLocalCouncilDistrict,
+  replyCandidateCouncilType,
   replyContent,
   replyIsPromise,
   isMenuOpen,
@@ -66,6 +68,8 @@ export function PostListItem({
           replyStatus={replyStatus}
           replyCandidateName={replyCandidateName}
           replyCandidatePhotoUrl={replyCandidatePhotoUrl}
+          replyCandidateLocalCouncilDistrict={replyCandidateLocalCouncilDistrict}
+          replyCandidateCouncilType={replyCandidateCouncilType}
           replyContent={replyContent}
           replyIsPromise={replyIsPromise}
           onCloseMenu={onCloseMenu}

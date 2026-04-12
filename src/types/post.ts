@@ -17,6 +17,8 @@ export type PostListItem = {
   replyStatus?: "delivered" | "replied";
   replyCandidateName?: string | null;
   replyCandidatePhotoUrl?: string | null;
+  replyCandidateLocalCouncilDistrict?: string | null;
+  replyCandidateCouncilType?: string | null;
   replyContent?: string | null;
   replyIsPromise?: boolean | null;
 };
