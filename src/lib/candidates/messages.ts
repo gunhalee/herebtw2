@@ -1,6 +1,7 @@
-import { hasSupabaseServerConfig } from "../supabase/config";
-import { supabaseSelect } from "../supabase/rest";
+import { unstable_cache } from "next/cache";
 import { resolveLocalElection9DistrictsByAdministrativeCode } from "../geo/local-election-9-districts";
+import { supabaseSelect } from "../supabase/rest";
+import { hasSupabaseServerConfig } from "../supabase/config";
 
 export type CandidateMatchType = "local" | "metro" | "other";
 
@@ -39,23 +40,24 @@ type PostRow = {
   public_uuid: string;
 };
 
+const ALL_DISTRICTS_CACHE_KEY = "__all__";
 const BASE_SELECT =
   "id,name,district,photo_url,first_message_id,metro_council_district,local_council_district,council_type";
+const ORDER: Record<CandidateMatchType, number> = {
+  local: 0,
+  metro: 1,
+  other: 2,
+};
 
-const ORDER: Record<CandidateMatchType, number> = { local: 0, metro: 1, other: 2 };
-
-export async function loadCandidateMessages(dongCode: string | null): Promise<{
+async function loadCandidateMessagesUncached(
+  dongCode: string | null,
+): Promise<{
   candidates: CandidateMessage[];
   userDistricts: UserDistricts;
 }> {
-  if (!hasSupabaseServerConfig()) {
-    return { candidates: [], userDistricts: null };
-  }
-
   const resolved = dongCode
     ? resolveLocalElection9DistrictsByAdministrativeCode(dongCode)
     : null;
-
   const metroDistrict = resolved?.metroCouncilDistrict ?? null;
   const localDistrict = resolved?.localCouncilDistrict ?? null;
 
@@ -63,11 +65,17 @@ export async function loadCandidateMessages(dongCode: string | null): Promise<{
 
   if (localDistrict || metroDistrict) {
     const orParts: string[] = [];
+
     if (localDistrict) {
-      orParts.push(`local_council_district.eq.${encodeURIComponent(localDistrict)}`);
+      orParts.push(
+        `local_council_district.eq.${encodeURIComponent(localDistrict)}`,
+      );
     }
+
     if (metroDistrict) {
-      orParts.push(`metro_council_district.eq.${encodeURIComponent(metroDistrict)}`);
+      orParts.push(
+        `metro_council_district.eq.${encodeURIComponent(metroDistrict)}`,
+      );
     }
 
     const matchedRows = await supabaseSelect<CandidateRow[]>(
@@ -90,50 +98,84 @@ export async function loadCandidateMessages(dongCode: string | null): Promise<{
     return {
       candidates: [],
       userDistricts: resolved
-        ? { metroCouncilDistrict: metroDistrict, localCouncilDistrict: localDistrict }
+        ? {
+            metroCouncilDistrict: metroDistrict,
+            localCouncilDistrict: localDistrict,
+          }
         : null,
     };
   }
 
-  const postIds = candidateRows.map((c) => c.first_message_id).join(",");
+  const postIds = candidateRows.map((candidate) => candidate.first_message_id).join(",");
   const postRows = await supabaseSelect<PostRow[]>(
     `posts?select=id,content,public_uuid&id=in.(${postIds})`,
   );
-  const postMap = new Map((postRows ?? []).map((p) => [p.id, p]));
+  const postMap = new Map((postRows ?? []).map((post) => [post.id, post]));
 
   const candidates = candidateRows
-    .map((c) => {
-      const post = postMap.get(c.first_message_id);
-      if (!post) return null;
+    .map((candidate) => {
+      const post = postMap.get(candidate.first_message_id);
+      if (!post) {
+        return null;
+      }
 
       let matchType: CandidateMatchType = "other";
-      if (localDistrict && c.local_council_district === localDistrict) {
+      if (localDistrict && candidate.local_council_district === localDistrict) {
         matchType = "local";
-      } else if (metroDistrict && c.metro_council_district === metroDistrict) {
+      } else if (
+        metroDistrict &&
+        candidate.metro_council_district === metroDistrict
+      ) {
         matchType = "metro";
       }
 
       return {
-        id: c.id,
-        name: c.name,
-        district: c.district,
-        photoUrl: c.photo_url ?? null,
+        id: candidate.id,
+        name: candidate.name,
+        district: candidate.district,
+        photoUrl: candidate.photo_url ?? null,
         firstMessageContent: post.content,
         firstMessagePublicUuid: post.public_uuid,
-        metroCouncilDistrict: c.metro_council_district ?? null,
-        localCouncilDistrict: c.local_council_district ?? null,
-        councilType: c.council_type ?? null,
+        metroCouncilDistrict: candidate.metro_council_district ?? null,
+        localCouncilDistrict: candidate.local_council_district ?? null,
+        councilType: candidate.council_type ?? null,
         matchType,
       };
     })
-    .filter((c): c is CandidateMessage => c !== null);
+    .filter((candidate): candidate is CandidateMessage => candidate !== null);
 
-  candidates.sort((a, b) => ORDER[a.matchType] - ORDER[b.matchType]);
+  candidates.sort((left, right) => ORDER[left.matchType] - ORDER[right.matchType]);
 
   return {
     candidates,
     userDistricts: resolved
-      ? { metroCouncilDistrict: metroDistrict, localCouncilDistrict: localDistrict }
+      ? {
+          metroCouncilDistrict: metroDistrict,
+          localCouncilDistrict: localDistrict,
+        }
       : null,
   };
+}
+
+const loadCachedCandidateMessages = unstable_cache(
+  async (cacheDongCode: string) =>
+    loadCandidateMessagesUncached(
+      cacheDongCode === ALL_DISTRICTS_CACHE_KEY ? null : cacheDongCode,
+    ),
+  ["candidate-messages"],
+  {
+    revalidate: 60,
+    tags: ["candidate-messages"],
+  },
+);
+
+export async function loadCandidateMessages(dongCode: string | null): Promise<{
+  candidates: CandidateMessage[];
+  userDistricts: UserDistricts;
+}> {
+  if (!hasSupabaseServerConfig()) {
+    return { candidates: [], userDistricts: null };
+  }
+
+  return loadCachedCandidateMessages(dongCode ?? ALL_DISTRICTS_CACHE_KEY);
 }

@@ -29,7 +29,6 @@ export default async function DashboardPage() {
   return (
     <DashboardScreen
       candidateName={session.name}
-      candidateId={session.candidateId}
       district={session.district}
       posts={posts}
       stats={stats}

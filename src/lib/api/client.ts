@@ -19,15 +19,28 @@ type ClientRequestAbortState = {
   signal: AbortSignal;
 };
 
-export function createJsonPostRequestInit(body: unknown): RequestInit {
+type JsonRequestMethod = "DELETE" | "PATCH" | "POST" | "PUT";
+
+export function createJsonRequestInit(
+  method: JsonRequestMethod,
+  body?: unknown,
+): RequestInit {
   return {
-    method: "POST",
+    method,
     headers: {
       "Content-Type": "application/json",
     },
     cache: "no-store",
-    body: JSON.stringify(body),
+    body: body === undefined ? undefined : JSON.stringify(body),
   };
+}
+
+export function createJsonPostRequestInit(body: unknown): RequestInit {
+  return createJsonRequestInit("POST", body);
+}
+
+export function createJsonPatchRequestInit(body: unknown): RequestInit {
+  return createJsonRequestInit("PATCH", body);
 }
 
 function createClientRequestAbortState(

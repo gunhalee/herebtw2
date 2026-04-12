@@ -51,7 +51,6 @@ export default async function ReplyPage({ params }: PageProps) {
       postContent={post.content}
       postDongName={post.administrative_dong_name}
       postCreatedAt={post.created_at}
-      candidateId={session.candidateId}
       candidateName={session.name}
     />
   );

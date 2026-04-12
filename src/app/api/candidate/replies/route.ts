@@ -1,13 +1,10 @@
 import { fail, ok } from "../../../../lib/api/response";
 import { readJsonBody } from "../../../../lib/api/request";
 import { getCandidateSession } from "../../../../lib/auth/candidate-session";
-import { createReply, findPostByUuidRepository } from "../../../../lib/posts/repository";
-import { sendReplyNotification } from "../../../../lib/email/send-reply-notification";
-import { supabaseSelect } from "../../../../lib/supabase/rest";
+import { createCandidateReply } from "../../../../lib/candidates/mutations";
 
 type CreateReplyRequest = {
   postId: string;
-  candidateId: string;
   content: string;
   isPromise: boolean;
   promiseDeadline: string | null;
@@ -36,44 +33,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const reply = await createReply({
+  const result = await createCandidateReply({
     postId,
     candidateId: session.candidateId,
+    candidateName: session.name,
     content: trimmedContent,
     isPromise: Boolean(isPromise),
     promiseDeadline: promiseDeadline || null,
   });
 
-  if (!reply) {
+  if (!result.ok) {
     return fail(
-      { code: "CREATE_FAILED", message: "답변 등록에 실패했습니다." },
+      { code: result.code, message: result.message },
       500,
     );
   }
 
-  // Send email notification if the post has a notification_email
-  try {
-    const posts = await supabaseSelect<Array<{
-      id: string;
-      public_uuid: string;
-      content: string;
-      notification_email: string | null;
-    }>>(
-      `posts?select=id,public_uuid,content,notification_email&id=eq.${postId}&limit=1`,
-    );
-
-    const post = posts?.[0];
-    if (post?.notification_email) {
-      await sendReplyNotification({
-        toEmail: post.notification_email,
-        postContent: post.content,
-        publicUuid: post.public_uuid,
-        candidateName: session.name,
-      });
-    }
-  } catch (emailError) {
-    console.error("[reply] Email notification failed:", emailError);
-  }
-
-  return ok({ reply });
+  return ok({ reply: result.reply });
 }

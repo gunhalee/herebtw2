@@ -1,8 +1,11 @@
 import { fail, ok } from "../../../../lib/api/response";
 import { readJsonBody } from "../../../../lib/api/request";
 import { getCandidateSession } from "../../../../lib/auth/candidate-session";
+import {
+  createCandidateFirstMessage,
+  updateCandidateFirstMessage,
+} from "../../../../lib/candidates/mutations";
 import { hasSupabaseServerConfig } from "../../../../lib/supabase/config";
-import { supabaseInsert, supabaseSelect } from "../../../../lib/supabase/rest";
 
 type UpdateFirstMessageRequest = {
   content: string;
@@ -35,25 +38,15 @@ export async function PATCH(request: Request) {
     return fail({ code: "VALIDATION_ERROR", message: "내용은 1~100자여야 합니다." }, 400);
   }
 
-  await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/posts?id=eq.${session.firstMessageId}`,
-    {
-      method: "PATCH",
-      headers: {
-        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({ content: trimmedContent }),
-    },
-  );
+  await updateCandidateFirstMessage({
+    postId: session.firstMessageId,
+    content: trimmedContent,
+  });
 
   return ok({ content: trimmedContent });
 }
 
 type FirstMessageRequest = {
-  candidateId: string;
   content: string;
 };
 
@@ -85,49 +78,17 @@ export async function POST(request: Request) {
     return fail({ code: "VALIDATION_ERROR", message: "내용은 1~100자여야 합니다." }, 400);
   }
 
-  // Find candidate's district for dong_name
-  const candidates = await supabaseSelect<Array<{ id: string; district: string }>>(
-    `candidates?select=id,district&id=eq.${session.candidateId}&limit=1`,
-  );
-  const candidate = candidates?.[0];
+  const result = await createCandidateFirstMessage({
+    candidateId: session.candidateId,
+    content: trimmedContent,
+  });
 
-  if (!candidate) {
-    return fail({ code: "NOT_FOUND", message: "후보 정보를 찾을 수 없습니다." }, 404);
+  if (!result.ok) {
+    return fail(
+      { code: result.code, message: result.message },
+      result.code === "NOT_FOUND" ? 404 : 500,
+    );
   }
 
-  // Create post as candidate first message (no device_id, no expiry)
-  const posts = await supabaseInsert<Array<{ id: string; public_uuid: string; created_at: string }>>(
-    "posts?select=id,public_uuid,created_at",
-    {
-      content: trimmedContent,
-      administrative_dong_name: candidate.district,
-      administrative_dong_code: `candidate:${session.candidateId}`,
-      is_pinned: true,
-      author_type: "candidate",
-      candidate_id: session.candidateId,
-    },
-  );
-
-  const post = posts?.[0];
-
-  if (!post) {
-    return fail({ code: "CREATE_FAILED", message: "첫 마디를 등록하지 못했습니다." }, 500);
-  }
-
-  // Update candidate's first_message_id
-  await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/candidates?id=eq.${session.candidateId}`,
-    {
-      method: "PATCH",
-      headers: {
-        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({ first_message_id: post.id }),
-    },
-  );
-
-  return ok({ post });
+  return ok({ post: result.post });
 }

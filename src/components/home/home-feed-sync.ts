@@ -9,11 +9,15 @@ import {
 } from "./home-feed-api";
 import {
   buildReadyPostListState,
-  matchesLoadedPostIds,
+  matchesLoadedPostIdWindow,
   patchPostEngagementItems,
   patchPostListItems,
   type PendingFeedSnapshot,
 } from "./home-feed-state";
+
+const NEARBY_SYNC_WINDOW_LIMIT = 12;
+const NEARBY_SYNC_MIN_REQUEST_COUNT = 10;
+const ENGAGEMENT_SYNC_WINDOW_LIMIT = 12;
 
 type SyncNearbyFeedParams = {
   isCancelled: () => boolean;
@@ -65,8 +69,15 @@ export async function syncNearbyHomeFeed({
     return;
   }
 
-  const loadedPostIds = latestPostListState.items.map((item) => item.id);
-  const requestedItemCount = Math.max(loadedPostIds.length, 10);
+  const syncWindowItems = latestPostListState.items.slice(
+    0,
+    NEARBY_SYNC_WINDOW_LIMIT,
+  );
+  const loadedPostIds = syncWindowItems.map((item) => item.id);
+  const requestedItemCount = Math.max(
+    loadedPostIds.length,
+    NEARBY_SYNC_MIN_REQUEST_COUNT,
+  );
 
   syncInFlightRef.current = true;
 
@@ -82,7 +93,14 @@ export async function syncNearbyHomeFeed({
       return;
     }
 
-    if (!matchesLoadedPostIds(postListStateRef.current.items, loadedPostIds)) {
+    if (!data) {
+      setPendingFeedSnapshot(null);
+      return;
+    }
+
+    if (
+      !matchesLoadedPostIdWindow(postListStateRef.current.items, loadedPostIds)
+    ) {
       return;
     }
 
@@ -92,7 +110,6 @@ export async function syncNearbyHomeFeed({
     }));
 
     const currentItemCount = postListStateRef.current.items.length;
-    const hasMatchingWindow = currentItemCount === loadedPostIds.length;
 
     if (currentItemCount === 0 && data.items.length > 0) {
       setPendingFeedSnapshot(null);
@@ -110,7 +127,10 @@ export async function syncNearbyHomeFeed({
       return;
     }
 
-    if (data.newItemsCount > 0 && hasMatchingWindow) {
+    if (
+      data.newItemsCount > 0 &&
+      matchesLoadedPostIdWindow(postListStateRef.current.items, loadedPostIds)
+    ) {
       setPendingFeedSnapshot({
         items: data.items,
         nextCursor: data.nextCursor,
@@ -120,9 +140,7 @@ export async function syncNearbyHomeFeed({
       return;
     }
 
-    if (data.newItemsCount === 0) {
-      setPendingFeedSnapshot(null);
-    }
+    setPendingFeedSnapshot(null);
   } finally {
     syncInFlightRef.current = false;
   }
@@ -156,10 +174,12 @@ export async function syncHomePostEngagement({
     return;
   }
 
-  const loadedPostIds = latestPostListState.items.map((item) => item.id);
-  const snapshotToken = createPostEngagementSnapshotToken(
-    latestPostListState.items,
+  const syncWindowItems = latestPostListState.items.slice(
+    0,
+    ENGAGEMENT_SYNC_WINDOW_LIMIT,
   );
+  const loadedPostIds = syncWindowItems.map((item) => item.id);
+  const snapshotToken = createPostEngagementSnapshotToken(syncWindowItems);
   engagementSyncInFlightRef.current = true;
 
   try {
@@ -169,15 +189,13 @@ export async function syncHomePostEngagement({
       snapshotToken,
     );
 
-    if (isCancelled()) {
+    if (isCancelled() || !data) {
       return;
     }
 
-    if (!data) {
-      return;
-    }
-
-    if (!matchesLoadedPostIds(postListStateRef.current.items, loadedPostIds)) {
+    if (
+      !matchesLoadedPostIdWindow(postListStateRef.current.items, loadedPostIds)
+    ) {
       return;
     }
 

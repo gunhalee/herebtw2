@@ -16,6 +16,12 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function createNoStoreHeaders() {
+  return {
+    "Cache-Control": "private, no-store, max-age=0",
+  };
+}
+
 export async function POST(request: Request) {
   const bodyResult = await readJsonBody<NearbyFeedSyncRequest>(request);
 
@@ -47,6 +53,13 @@ export async function POST(request: Request) {
     },
   });
 
+  if (syncState.newItemsCount === 0) {
+    return new Response(null, {
+      status: 204,
+      headers: createNoStoreHeaders(),
+    });
+  }
+
   return ok(
     {
       items: syncState.items.map((item) => ({
@@ -57,9 +70,7 @@ export async function POST(request: Request) {
       newItemsCount: syncState.newItemsCount,
     },
     {
-      headers: {
-        "Cache-Control": "private, no-store, max-age=0",
-      },
+      headers: createNoStoreHeaders(),
     },
   );
 }

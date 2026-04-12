@@ -1,0 +1,122 @@
+import { hasSupabaseServerConfig } from "../../supabase/config";
+import { supabaseRpc, supabaseSelect } from "../../supabase/rest";
+import type {
+  CandidateRow,
+  DashboardStatsRow,
+  DistrictPostRow,
+  PromiseRow,
+  SettingRow,
+} from "./types";
+
+async function findCandidateByAuthUserId(authUserId: string) {
+  if (!hasSupabaseServerConfig()) return null;
+
+  const rows = await supabaseSelect<CandidateRow[]>(
+    `candidates?select=id,auth_user_id,name,district,email,first_message_id,is_active,created_at,activated_at&auth_user_id=eq.${authUserId}&limit=1`,
+  );
+
+  return rows?.[0] ?? null;
+}
+
+async function findCandidateById(candidateId: string) {
+  if (!hasSupabaseServerConfig()) return null;
+
+  const rows = await supabaseSelect<CandidateRow[]>(
+    `candidates?select=id,auth_user_id,name,district,email,first_message_id,is_active,created_at,activated_at&id=eq.${candidateId}&limit=1`,
+  );
+
+  return rows?.[0] ?? null;
+}
+
+async function loadDistrictPosts(district: string, candidateId?: string) {
+  if (!hasSupabaseServerConfig()) return [];
+
+  const rows = await supabaseRpc<DistrictPostRow[]>("list_district_posts", {
+    target_district: district,
+    viewer_candidate_id: candidateId ?? null,
+  });
+
+  return rows ?? [];
+}
+
+async function loadDashboardStats(district: string) {
+  if (!hasSupabaseServerConfig()) {
+    return { total_posts: 0, replied_posts: 0, unreplied_posts: 0, reply_rate: 0 };
+  }
+
+  const rows = await supabaseRpc<DashboardStatsRow[]>(
+    "get_candidate_dashboard_stats",
+    { target_district: district },
+  );
+
+  return rows?.[0] ?? { total_posts: 0, replied_posts: 0, unreplied_posts: 0, reply_rate: 0 };
+}
+
+async function loadCandidateDistrictRepository(candidateId: string) {
+  if (!hasSupabaseServerConfig()) return null;
+
+  const rows = await supabaseSelect<Array<{ id: string; district: string }>>(
+    `candidates?select=id,district&id=eq.${candidateId}&limit=1`,
+  );
+
+  return rows?.[0] ?? null;
+}
+
+async function loadReplyNotificationPostRepository(postId: string) {
+  if (!hasSupabaseServerConfig()) return null;
+
+  const rows = await supabaseSelect<
+    Array<{
+      id: string;
+      public_uuid: string;
+      content: string;
+      notification_email: string | null;
+    }>
+  >(
+    `posts?select=id,public_uuid,content,notification_email&id=eq.${postId}&limit=1`,
+  );
+
+  return rows?.[0] ?? null;
+}
+
+async function loadCandidatePromises(candidateId: string) {
+  if (!hasSupabaseServerConfig()) return [];
+
+  const rows = await supabaseRpc<PromiseRow[]>("list_candidate_promises", {
+    target_candidate_id: candidateId,
+  });
+
+  return rows ?? [];
+}
+
+async function loadFirstMessage(postId: string) {
+  if (!hasSupabaseServerConfig()) return null;
+
+  const rows = await supabaseSelect<Array<{ id: string; content: string }>>(
+    `posts?select=id,content&id=eq.${postId}&limit=1`,
+  );
+
+  return rows?.[0] ?? null;
+}
+
+async function loadSetting(key: string) {
+  if (!hasSupabaseServerConfig()) return null;
+
+  const rows = await supabaseSelect<SettingRow[]>(
+    `settings?select=key,value&key=eq.${key}&limit=1`,
+  );
+
+  return rows?.[0]?.value ?? null;
+}
+
+export {
+  findCandidateByAuthUserId,
+  findCandidateById,
+  loadCandidateDistrictRepository,
+  loadCandidatePromises,
+  loadDashboardStats,
+  loadDistrictPosts,
+  loadFirstMessage,
+  loadReplyNotificationPostRepository,
+  loadSetting,
+};

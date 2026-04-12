@@ -30,6 +30,8 @@
 ### 작성 시트 로직
 
 - `src/components/post/post-compose-experience.tsx`
+- `src/components/post/post-compose-sheet-shell.tsx`
+- `src/components/post/post-compose-form.tsx`
 - `src/components/post/use-compose-location.ts`
 - `src/components/post/use-compose-sheet-layout.ts`
 - `src/components/post/use-compose-submit.ts`
@@ -37,9 +39,13 @@
 ### 서버/도메인 로직
 
 - `src/app/api/**/route.ts`
+- `src/lib/candidates/mutations.ts`
 - `src/lib/posts/mutations.ts`
 - `src/lib/posts/repository.ts`
 - `src/lib/posts/repository/feed.ts`
+- `src/lib/posts/repository/feed-preparation.ts`
+- `src/lib/posts/repository/feed-list-loaders.ts`
+- `src/lib/posts/repository/feed-snapshot.ts`
 - `src/lib/posts/repository/mutations.ts`
 
 ### 공통 API/위치 유틸
@@ -57,16 +63,24 @@
 - `home-screen.tsx`는 화면 조립과 hook 연결만 담당한다.
 - 세부 로직은 `use-home-*` hook과 `home-*.ts` helper로 분리돼 있다.
 - 작성 시트도 `post-compose-experience.tsx`는 UI 조립 중심이고, 위치/레이아웃/제출은 `use-compose-*`로 나뉜다.
+- 입력 UI는 `post-compose-form.tsx`, 오버레이/시트 컨테이너는 `post-compose-sheet-shell.tsx`로 분리돼 있다.
+- 홈 화면에서는 compose 패널을 `next/dynamic`으로 지연 로딩한다.
 
 ### 3-2. API route는 얇게 유지한다
 
 - `src/app/api/**/route.ts`는 request 파싱, 최소 검증, 응답 포맷팅에 집중한다.
 - business logic은 route에 두지 말고 `src/lib/posts/*`, `src/lib/geo/*`로 내린다.
+- 후보자 write flow처럼 여러 Supabase 호출이 묶이는 작업은 `src/lib/candidates/mutations.ts` 같은 use-case 함수로 모은다.
 - 응답은 가능하면 `ok(...)`, `fail(...)` helper를 재사용한다.
+- client component의 `/api/*` 호출은 가능하면 `src/components/**/**-api.ts` 또는 `fetchClientApiData(...)` helper를 통해 모은다.
+- server의 Supabase REST write는 route에서 직접 `fetch(...)`하지 말고 `src/lib/supabase/rest.ts` helper를 통해서만 호출한다.
 
 ### 3-3. posts 도메인은 repository 아래에 모아둔다
 
-- `src/lib/posts/repository/feed.ts`: 피드 조회, nearby sync, engagement snapshot
+- `src/lib/posts/repository/feed.ts`: 피드 오케스트레이션, nearby/global 진입점
+- `src/lib/posts/repository/feed-preparation.ts`: RPC 준비, cursor 해석, fallback 결정
+- `src/lib/posts/repository/feed-list-loaders.ts`: rpc/legacy list state 조립
+- `src/lib/posts/repository/feed-snapshot.ts`: engagement/report snapshot 조회
 - `src/lib/posts/repository/mutations.ts`: 작성, 공감, 신고, 디바이스 sync
 - `src/lib/posts/repository/feed-helpers.ts`: cursor, metrics, item mapping
 - `src/lib/posts/mutations.ts`: route와 repository 사이의 얇은 use-case layer
@@ -87,6 +101,7 @@
 5. `home-feed-api.ts`
 6. `/api/feed/*`
 7. `src/lib/posts/repository/feed.ts`
+8. 필요 시 `feed-preparation.ts` / `feed-list-loaders.ts` / `feed-snapshot.ts`
 
 ### 4-2. 글 작성
 
@@ -169,11 +184,19 @@
 - server route: `src/app/api/...`
 - domain logic: `src/lib/posts/...`
 
+### 6-2-1. 후보자/부가 client fetch는 candidate API 파일로 모은다
+
+- 후보자 관련 client-side 호출은 `src/components/candidate/*-api.ts`를 우선 본다.
+- route가 세션에서 이미 아는 값은 client request body에 중복으로 보내지 않는다.
+- 예: `candidateId`를 화면 props에서 다시 내려보내기보다 route 내부 세션을 신뢰한다.
+
 ### 6-3. 작성 시트 기능이 추가되는 경우
 
 예: 글 제한, 첨부 정보, 작성 규칙
 
-- UI: `post-compose-experience.tsx`
+- UI entry: `post-compose-experience.tsx`
+- form UI: `post-compose-form.tsx`
+- sheet shell: `post-compose-sheet-shell.tsx`
 - 위치/상태: `use-compose-location.ts`
 - 제출: `use-compose-submit.ts`
 - server validation: `src/lib/posts/mutations.ts`, `src/lib/posts/validators.ts`
@@ -182,7 +205,10 @@
 
 - route query parsing: `src/app/api/feed/*/route.ts`
 - client request builder: `src/components/home/home-feed-api.ts`
-- repository: `src/lib/posts/repository/feed.ts`
+- repository entry: `src/lib/posts/repository/feed.ts`
+- rpc/cursor/fallback: `src/lib/posts/repository/feed-preparation.ts`
+- rpc/legacy state assembly: `src/lib/posts/repository/feed-list-loaders.ts`
+- snapshot/engagement query: `src/lib/posts/repository/feed-snapshot.ts`
 - cursor/metrics/mapping: `src/lib/posts/repository/feed-helpers.ts`
 
 ## 7. 수정 시 지켜야 할 규칙
@@ -213,6 +239,12 @@
 - API smoke 시 mock post id는 UUID가 아닐 수 있다.
 - 특히 `/api/posts/engagement`는 UUID만 받으므로 mock smoke 시엔 dummy UUID를 넣어야 한다.
 
+### 7-5. API 접근 경로를 새로 흩뜨리지 않는다
+
+- UI에서 raw `fetch("/api/...")`를 새로 추가하기 전에 기존 `*-api.ts` 파일이 있는지 먼저 본다.
+- 새 client-side write 요청은 `createJsonPostRequestInit(...)`, `createJsonPatchRequestInit(...)` 같은 공용 helper를 우선 사용한다.
+- route 안에서 `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`를 직접 조합하는 코드는 만들지 않는다.
+
 ## 8. 문구 수정 규칙
 
 - 사용자-facing copy를 바꿨다면 `docs/copy-review.md`도 같이 갱신하는 편이 좋다.
@@ -239,10 +271,46 @@ npm run build
 npx tsc --noEmit --noUnusedLocals --noUnusedParameters
 ```
 
+## 10. Candidate screen composition
+
+- `src/components/candidate/dashboard-screen.tsx` should stay as a composition entry point.
+- Move first-message editing state into `use-candidate-first-message-editor.ts`.
+- Keep dashboard sections split across:
+  - `candidate-dashboard-header.tsx`
+  - `candidate-first-message-panel.tsx`
+  - `candidate-dashboard-stats-grid.tsx`
+  - `candidate-dashboard-post-list.tsx`
+- `src/components/candidate/reply-compose-screen.tsx` should compose:
+  - `candidate-reply-form.tsx`
+  - `candidate-reply-confirm-dialog.tsx`
+  - `use-candidate-reply-compose.ts`
+- `src/components/candidate/onboarding-screen.tsx` should compose:
+  - `candidate-onboarding-form.tsx`
+  - `use-candidate-onboarding.ts`
+- If a new candidate flow needs API access, use the existing `candidate-*-api.ts` helpers instead of raw `fetch("/api/...")` inside the screen file.
+
+## 11. Home feed sync budget
+
+- `src/lib/hooks/use-visible-polling.ts` now supports activity-aware polling intervals.
+- Home feed polling should stay on a stepped schedule:
+  - active: 20s
+  - idle for 1m+: 30s
+  - idle for 3m+: 60s
+- `src/components/home/home-feed-sync.ts` should sync only the leading feed window by default instead of every loaded post id.
+- `src/app/api/posts/engagement/route.ts` and `src/app/api/feed/nearby/sync/route.ts` should prefer `204 No Content` when there is no meaningful delta to send back.
+
+## 12. Initial load budget
+
+- `src/app/(public)/page.tsx` should load only the minimum state needed for the first home render.
+- Candidate message data should not block the home page response.
+- `src/components/home/dong-posts-feed.tsx` should lazy-load `candidate-messages-section.tsx`, and only after a concrete `dongCode` is available.
+- `src/lib/candidates/messages.ts` should stay behind server-side caching because it is now primarily a deferred API source.
+- In candidate client screens, prefer App Router navigation (`next/link`, `router.push`, `router.replace`) over `window.location.href` for in-app transitions.
+
 주의:
 
-- `.next/types` 재생성 타이밍 때문에 위 명령은 첫 실행에 흔들릴 수 있다.
-- 이 경우 `npm run build` 후 한 번 더 실행해서 재확인한다.
+- `npm run typecheck`는 내부적으로 `next typegen`을 먼저 실행한다.
+- route/page/layout 타입이 갱신되지 않은 상태라면 `npm run build` 또는 `npm run typegen` 후 다시 확인한다.
 
 ## 10. API smoke 테스트 팁
 

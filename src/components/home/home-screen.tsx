@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRef, useState } from "react";
 import { DongPostsScreen } from "./dong-posts-screen";
 import { ComposePermissionDialog } from "./compose-permission-dialog";
@@ -9,24 +10,31 @@ import { useHomeFeedListActions } from "./use-home-feed-list-actions";
 import { useHomeFeedLifecycle } from "./use-home-feed-lifecycle";
 import { useHomePostActions } from "./use-home-post-actions";
 import { useHomeShellState } from "./use-home-shell-state";
-import { PostComposeExperience } from "../post/post-compose-experience";
 import { useLatestRef } from "../../lib/hooks/use-latest-ref";
 import type { AppShellState } from "../../types/device";
 import type { PostListState } from "../../types/post";
-import type { CandidateMessage } from "../../lib/candidates/messages";
+
+const DeferredPostComposeExperience = dynamic(
+  () =>
+    import("../post/post-compose-experience").then(
+      (module) => module.PostComposeExperience,
+    ),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
 type HomeScreenProps = {
   dataSourceMode: "supabase" | "mock";
   initialAppShellState: AppShellState;
   initialPostListState: PostListState;
-  initialCandidates?: CandidateMessage[];
 };
 
 export function HomeScreen({
   dataSourceMode,
   initialAppShellState,
   initialPostListState,
-  initialCandidates,
 }: HomeScreenProps) {
   const [postListState, setPostListState] = useState(initialPostListState);
   const [pendingFeedSnapshot, setPendingFeedSnapshot] =
@@ -158,7 +166,6 @@ export function HomeScreen({
         animateComposeDongPlaceholder={shouldAnimateComposeDongPlaceholder}
         currentDongName={currentDongName}
         dongCode={selectedDongCode}
-        initialCandidates={initialCandidates}
         interactionLocked={composePanelOpen || composePermissionDialogOpen}
         obscurePosts={obscureGlobalFallbackList}
         onApplyPendingUpdates={handleApplyPendingFeedSnapshot}
@@ -181,7 +188,7 @@ export function HomeScreen({
         state={postListState}
       />
       {composePanelOpen ? (
-        <PostComposeExperience
+        <DeferredPostComposeExperience
           dataSourceMode={dataSourceMode}
           onDismiss={handleCloseComposePanel}
           onSuccess={handleComposeSuccess}

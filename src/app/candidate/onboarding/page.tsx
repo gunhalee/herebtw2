@@ -16,7 +16,6 @@ export default async function OnboardingPage() {
   return (
     <OnboardingScreen
       candidateName={session.name}
-      candidateId={session.candidateId}
       district={session.district}
     />
   );

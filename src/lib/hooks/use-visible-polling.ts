@@ -7,9 +7,15 @@ type VisibilityAwarePollingCallback = (
   isCancelled: () => boolean,
 ) => void | Promise<void>;
 
+type IdlePollingInterval = {
+  idleAfterMs: number;
+  intervalMs: number;
+};
+
 type UseVisiblePollingParams = {
   enabled: boolean;
   intervalMs: number;
+  idleIntervals?: ReadonlyArray<IdlePollingInterval>;
   label?: string;
   maxIntervalMs?: number;
   onTick: VisibilityAwarePollingCallback;
@@ -17,6 +23,13 @@ type UseVisiblePollingParams = {
 };
 
 const DEFAULT_BACKOFF_MULTIPLIER = 2;
+const ACTIVITY_EVENT_NAMES = [
+  "pointerdown",
+  "keydown",
+  "touchstart",
+  "scroll",
+  "focus",
+] as const;
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
@@ -29,6 +42,7 @@ function getErrorMessage(error: unknown) {
 export function useVisiblePolling({
   enabled,
   intervalMs,
+  idleIntervals,
   label,
   maxIntervalMs = intervalMs,
   onTick,
@@ -45,6 +59,7 @@ export function useVisiblePolling({
     let inFlight = false;
     let timeoutId: number | null = null;
     let consecutiveFailureCount = 0;
+    let lastActivityAt = Date.now();
 
     const clearScheduledRun = () => {
       if (timeoutId !== null) {
@@ -53,14 +68,34 @@ export function useVisiblePolling({
       }
     };
 
-    const getNextDelay = () => {
-      if (consecutiveFailureCount === 0) {
+    const getBaseInterval = () => {
+      const inactiveForMs = Date.now() - lastActivityAt;
+
+      if (!idleIntervals || idleIntervals.length === 0) {
         return intervalMs;
+      }
+
+      let nextIntervalMs = intervalMs;
+
+      for (const idleInterval of idleIntervals) {
+        if (inactiveForMs >= idleInterval.idleAfterMs) {
+          nextIntervalMs = Math.max(nextIntervalMs, idleInterval.intervalMs);
+        }
+      }
+
+      return nextIntervalMs;
+    };
+
+    const getNextDelay = () => {
+      const baseIntervalMs = getBaseInterval();
+
+      if (consecutiveFailureCount === 0) {
+        return baseIntervalMs;
       }
 
       return Math.min(
         maxIntervalMs,
-        intervalMs *
+        baseIntervalMs *
           Math.pow(DEFAULT_BACKOFF_MULTIPLIER, consecutiveFailureCount),
       );
     };
@@ -79,7 +114,7 @@ export function useVisiblePolling({
       }
 
       if (document.hidden) {
-        scheduleNextRun(intervalMs);
+        scheduleNextRun(getBaseInterval());
         return;
       }
 
@@ -107,27 +142,46 @@ export function useVisiblePolling({
       }
     };
 
+    const handleActivity = () => {
+      lastActivityAt = Date.now();
+    };
+
     const handleVisibilityChange = () => {
       if (document.hidden) {
         clearScheduledRun();
         return;
       }
 
+      handleActivity();
       void run();
     };
 
     if (runImmediately) {
       void run();
     } else {
-      scheduleNextRun(intervalMs);
+      scheduleNextRun(getBaseInterval());
     }
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    for (const eventName of ACTIVITY_EVENT_NAMES) {
+      window.addEventListener(eventName, handleActivity, { passive: true });
+    }
 
     return () => {
       cancelled = true;
       clearScheduledRun();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      for (const eventName of ACTIVITY_EVENT_NAMES) {
+        window.removeEventListener(eventName, handleActivity);
+      }
     };
-  }, [enabled, intervalMs, label, maxIntervalMs, onTickRef, runImmediately]);
+  }, [
+    enabled,
+    idleIntervals,
+    intervalMs,
+    label,
+    maxIntervalMs,
+    onTickRef,
+    runImmediately,
+  ]);
 }

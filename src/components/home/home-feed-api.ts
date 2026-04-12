@@ -72,7 +72,10 @@ function createNearbyFeedSearchParams(input: {
   return params;
 }
 
-function createGlobalFeedSearchParams(cursor?: string | null, limit = DEFAULT_FEED_PAGE_LIMIT) {
+function createGlobalFeedSearchParams(
+  cursor?: string | null,
+  limit = DEFAULT_FEED_PAGE_LIMIT,
+) {
   const params = new URLSearchParams({
     limit: String(limit),
   });
@@ -84,10 +87,7 @@ function createGlobalFeedSearchParams(cursor?: string | null, limit = DEFAULT_FE
   return params;
 }
 
-async function fetchPostsListPage(
-  path: string,
-  errorMessage: string,
-) {
+async function fetchPostsListPage(path: string, errorMessage: string) {
   return fetchClientApiData<PostsListResponse>({
     errorMessage,
     path,
@@ -124,6 +124,7 @@ export async function fetchNearbyFeedSync(
   anonymousDeviceId?: string,
 ) {
   return fetchClientApiData<NearbyFeedSyncResponse>({
+    allowNoContent: true,
     errorMessage: "피드 갱신에 실패했습니다.",
     init: createJsonPostRequestInit({
       anonymousDeviceId,
@@ -142,7 +143,7 @@ export async function fetchPostEngagementSnapshot(
 ) {
   return fetchClientApiData<PostEngagementSnapshotResponse>({
     allowNoContent: true,
-    errorMessage: "맞아요 상태를 갱신하지 못했습니다.",
+    errorMessage: "공감 상태를 갱신하지 못했습니다.",
     init: createJsonPostRequestInit({
       anonymousDeviceId,
       postIds,

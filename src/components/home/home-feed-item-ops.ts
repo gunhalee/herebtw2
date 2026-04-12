@@ -92,3 +92,14 @@ export function matchesLoadedPostIds(
     items.every((item, index) => item.id === loadedPostIds[index])
   );
 }
+
+export function matchesLoadedPostIdWindow(
+  items: PostListState["items"],
+  loadedPostIds: string[],
+) {
+  if (loadedPostIds.length > items.length) {
+    return false;
+  }
+
+  return loadedPostIds.every((postId, index) => items[index]?.id === postId);
+}

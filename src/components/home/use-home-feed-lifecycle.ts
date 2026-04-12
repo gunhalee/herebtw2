@@ -14,6 +14,18 @@ import { useVisiblePolling } from "../../lib/hooks/use-visible-polling";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 
+const ACTIVE_POLLING_INTERVAL_MS = 20000;
+const POLLING_IDLE_INTERVALS = [
+  {
+    idleAfterMs: 60000,
+    intervalMs: 30000,
+  },
+  {
+    idleAfterMs: 180000,
+    intervalMs: 60000,
+  },
+] as const;
+
 type UseHomeFeedLifecycleParams = {
   dataSourceMode: "supabase" | "mock";
   feedLocation: PostLocation | null;
@@ -100,7 +112,8 @@ export function useHomeFeedLifecycle({
       dataSourceMode === "supabase" &&
       feedSortMode === "nearby" &&
       feedLocation !== null,
-    intervalMs: 20000,
+    idleIntervals: POLLING_IDLE_INTERVALS,
+    intervalMs: ACTIVE_POLLING_INTERVAL_MS,
     label: "nearby_feed_sync",
     maxIntervalMs: 60000,
     onTick: (isCancelled) =>
@@ -118,9 +131,10 @@ export function useHomeFeedLifecycle({
 
   useVisiblePolling({
     enabled: dataSourceMode === "supabase",
-    intervalMs: 10000,
+    idleIntervals: POLLING_IDLE_INTERVALS,
+    intervalMs: ACTIVE_POLLING_INTERVAL_MS,
     label: "post_engagement_sync",
-    maxIntervalMs: 30000,
+    maxIntervalMs: 60000,
     onTick: (isCancelled) =>
       syncHomePostEngagement({
         isCancelled,
