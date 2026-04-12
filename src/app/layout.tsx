@@ -9,9 +9,13 @@ export const metadata = {
   title: "여기 근데",
   description: "한마디 할게요",
   icons: {
-    icon: [{ url: "/icons/checkmark.svg", type: "image/svg+xml" }],
-    shortcut: "/icons/checkmark.svg",
-    apple: "/icons/checkmark.svg",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
 };
 

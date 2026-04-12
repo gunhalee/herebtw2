@@ -142,16 +142,16 @@ function CardFooter() {
     <div
       style={{
         display: "flex",
-        minHeight: "304px",
+        height: "232px",
         position: "relative",
         width: "100%",
       }}
     >
       <img
         alt=""
-        height={294}
+        height={221}
         src={justiceLogoCardImgSrc}
-        width={472}
+        width={354}
         style={{
           bottom: "0",
           display: "block",
@@ -164,21 +164,21 @@ function CardFooter() {
           alignItems: "flex-end",
           display: "flex",
           flexDirection: "column",
-          gap: "20px",
+          gap: "0px",
+          bottom: "0",
           position: "absolute",
           right: "0",
           textAlign: "right",
-          top: "0",
         }}
       >
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            fontSize: "54px",
+            fontSize: "62px",
             fontWeight: 700,
             letterSpacing: "-0.03em",
-            lineHeight: 1.25,
+            lineHeight: 1.3,
           }}
         >
           <span style={{ color: "#111827" }}>여기 근데</span>
