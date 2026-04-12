@@ -177,10 +177,21 @@ export function CandidateMessageCard({
             color: uiColors.textMuted,
             display: "flex",
             flexShrink: 0,
+            gap: "4px",
             justifyContent: "center",
             padding: `0 ${uiSpacing.lg} 0 0`,
           }}
         >
+          <span
+            style={{
+              color: uiColors.textMuted,
+              fontSize: "15px",
+              fontWeight: 500,
+              lineHeight: 1,
+            }}
+          >
+            모아보기
+          </span>
           <ChevronRight size={26} strokeWidth={2.25} />
         </div>
       ) : null}
