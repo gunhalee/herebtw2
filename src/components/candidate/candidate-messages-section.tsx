@@ -70,12 +70,14 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
         <div
           style={{
             alignItems: "center",
+            alignSelf: "stretch",
             background: "#e5e7eb",
             display: "flex",
             flexShrink: 0,
             justifyContent: "center",
-            minHeight: "100%",
-            width: `${PHOTO_WIDTH}px`,
+            // width is determined by the image itself (aspect ratio × card height)
+            // or falls back to PHOTO_WIDTH when there's no photo
+            width: candidate.photoUrl ? undefined : `${PHOTO_WIDTH}px`,
           }}
         >
           {candidate.photoUrl ? (
@@ -85,10 +87,11 @@ function CandidateMessageCard({ candidate }: { candidate: CandidateMessage }) {
               src={candidate.photoUrl}
               style={{
                 display: "block",
+                // Fill card height; width follows natural aspect ratio
                 height: "100%",
-                objectFit: "cover",
-                objectPosition: "center top",
-                width: "100%",
+                maxWidth: "120px", // cap very wide images
+                minWidth: "60px",  // floor for very narrow images
+                width: "auto",
               }}
             />
           ) : (
