@@ -12,6 +12,38 @@ type RouteContext = {
   params: Promise<{ uuid: string }>;
 };
 
+function buildReplyCandidateTagline(input: {
+  name: string;
+  district?: string | null;
+  localCouncilDistrict?: string | null;
+  metroCouncilDistrict?: string | null;
+  councilType?: string | null;
+}) {
+  const name = input.name.trim();
+  const districtLabel =
+    input.localCouncilDistrict?.trim() ||
+    input.metroCouncilDistrict?.trim() ||
+    input.district?.trim() ||
+    "";
+  const councilLabel = input.councilType?.trim()
+    ? `${input.councilType.trim()} 후보`
+    : "후보";
+  const taglineParts: string[] = [];
+
+  if (name) {
+    taglineParts.push(name);
+  }
+
+  if (districtLabel) {
+    taglineParts.push(
+      taglineParts.length > 0 ? `· ${districtLabel}` : districtLabel,
+    );
+  }
+
+  taglineParts.push(councilLabel);
+  return taglineParts.join(" ");
+}
+
 export async function GET(request: Request, context: RouteContext) {
   const { uuid } = await context.params;
   const { searchParams } = new URL(request.url);
@@ -36,12 +68,20 @@ export async function GET(request: Request, context: RouteContext) {
     post.reply_candidate_name &&
     post.reply_content
   ) {
+    const replyTagline = buildReplyCandidateTagline({
+      name: post.reply_candidate_name,
+      district: post.reply_candidate_district ?? null,
+      localCouncilDistrict: post.reply_candidate_local_council_district ?? null,
+      metroCouncilDistrict: post.reply_candidate_metro_council_district ?? null,
+      councilType: post.reply_candidate_council_type ?? null,
+    });
+
     if (cardType === "candidate") {
       element = createElement(RepliedCandidateCard, {
         headerLine,
         content: post.content,
         dongName: dongDisplay,
-        replyCandidateName: post.reply_candidate_name,
+        replyTagline,
         replyContent: post.reply_content,
         replyIsPromise: post.reply_is_promise ?? false,
         agreeCount: post.agree_count,
@@ -53,7 +93,7 @@ export async function GET(request: Request, context: RouteContext) {
         dongName: dongDisplay,
         createdAt: post.created_at,
         agreeCount: post.agree_count,
-        replyCandidateName: post.reply_candidate_name,
+        replyTagline,
         replyContent: post.reply_content,
         replyIsPromise: post.reply_is_promise ?? false,
         replyCreatedAt: post.reply_created_at ?? post.created_at,

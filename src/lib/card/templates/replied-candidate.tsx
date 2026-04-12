@@ -6,7 +6,7 @@ type RepliedCandidateCardProps = {
   headerLine: string;
   content: string;
   dongName: string;
-  replyCandidateName: string;
+  replyTagline: string;
   replyContent: string;
   replyIsPromise: boolean;
   agreeCount: number;
@@ -35,7 +35,7 @@ export function RepliedCandidateCard({
   headerLine,
   content,
   dongName,
-  replyCandidateName,
+  replyTagline,
   replyContent,
   replyIsPromise,
   agreeCount,
@@ -141,7 +141,7 @@ export function RepliedCandidateCard({
                 fontWeight: 600,
               }}
             >
-              {replyCandidateName} 후보
+              {replyTagline}
             </span>
             {replyIsPromise ? (
               <span

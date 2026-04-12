@@ -9,7 +9,7 @@ type RepliedVoterCardProps = {
   dongName: string;
   createdAt: string;
   agreeCount: number;
-  replyCandidateName: string;
+  replyTagline: string;
   replyContent: string;
   replyIsPromise: boolean;
   replyCreatedAt?: string | null;
@@ -196,7 +196,7 @@ export function RepliedVoterCard({
   dongName,
   createdAt,
   agreeCount: _agreeCount,
-  replyCandidateName,
+  replyTagline,
   replyContent,
   replyIsPromise: _replyIsPromise,
   replyCreatedAt,
@@ -239,7 +239,7 @@ export function RepliedVoterCard({
 
           <SpeechBubble
             content={replyContent}
-            primaryLabel={`${replyCandidateName} 후보 답글`}
+            primaryLabel={replyTagline}
             timeLabel={formatRelativeTime(replyCreatedAt ?? createdAt)}
           />
         </div>

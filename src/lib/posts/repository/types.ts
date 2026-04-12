@@ -38,6 +38,10 @@ type PostDetailRow = {
   notification_email?: string | null;
   reply_id?: string | null;
   reply_candidate_name?: string | null;
+  reply_candidate_district?: string | null;
+  reply_candidate_local_council_district?: string | null;
+  reply_candidate_metro_council_district?: string | null;
+  reply_candidate_council_type?: string | null;
   reply_content?: string | null;
   reply_is_promise?: boolean;
   reply_promise_deadline?: string | null;
