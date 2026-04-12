@@ -15,7 +15,7 @@ export const homeScreenCopy = {
   title: "여기 근데",
   titleSuffix: "한마디 할게요",
   subtitle: null,
-  emptyTitle: "아직 이 근처엔 올라온 이야기가 없어요",
+  emptyTitle: "이 곳에 첫 한마디를 남겨주세요.",
   emptyDescription: undefined,
   composeCta(currentDongName: string) {
     return {

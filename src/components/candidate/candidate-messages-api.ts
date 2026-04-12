@@ -19,9 +19,9 @@ function createCandidateMessagesPath(dongCode: string | null) {
 
 export async function fetchCandidateMessages(dongCode: string | null) {
   return fetchClientApiData<CandidateMessagesResponse>({
-    errorMessage: "후보 메시지를 불러오지 못했습니다.",
+    errorMessage: "후보의 한마디를 불러오지 못했습니다. 새로고침을 해주세요.",
     path: createCandidateMessagesPath(dongCode),
     timeoutErrorMessage:
-      "후보 메시지 로딩이 지연되고 있어요. 다시 시도해 주세요.",
+      "후보의 한마디 로딩이 지연되고 있어요. 새로고침을 해주세요.",
   });
 }

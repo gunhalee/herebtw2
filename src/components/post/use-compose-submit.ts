@@ -93,7 +93,7 @@ export function useComposeSubmit({
           administrativeDongName: string;
         };
       }>({
-        errorMessage: "글을 등록하지 못했어요.",
+        errorMessage: "죄송합니다. 저장을 실패하였습니다.",
         init: createJsonPostRequestInit({
           anonymousDeviceId,
           content: composeState.content,
@@ -105,7 +105,7 @@ export function useComposeSubmit({
           ...(trimmedEmail ? { notificationEmail: trimmedEmail } : {}),
         }),
         path: "/api/posts",
-        timeoutErrorMessage: "저장이 늦어졌어요. 잠시 후에 다시 시도해 주세요.",
+        timeoutErrorMessage: "저장이 지연되고 있습니다. 잠시 후에 다시 시도해주세요.",
       });
 
       if (onSuccess) {
@@ -126,7 +126,7 @@ export function useComposeSubmit({
         ...current,
         submitting: false,
         errorMessage:
-          error instanceof Error ? error.message : "글을 등록하지 못했어요.",
+          error instanceof Error ? error.message : "죄송합니다. 저장을 실패하였습니다.",
       }));
     }
   }

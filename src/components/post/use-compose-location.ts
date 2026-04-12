@@ -69,7 +69,7 @@ export function useComposeLocation({
       errorMessage: locationReadyForSubmit
         ? null
         : current.submitting
-          ? "현재 위치 확인이 끝난 뒤에 글을 등록할 수 있어요."
+          ? "위치 정보를 로드하고 있어요. 잠시만 기다려주세요."
           : current.errorMessage,
     }));
   }, [locationReadyForSubmit, setComposeState]);

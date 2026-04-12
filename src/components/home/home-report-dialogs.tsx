@@ -73,7 +73,7 @@ export function HomeReportDialogs({
                 margin: 0,
               }}
             >
-              운영자가 확인할 예정입니다.
+              신속하게 확인하겠습니다. 불편을 드려 죄송합니다.
             </p>
             <button
               onClick={onCloseReportSuccessDialog}
@@ -182,7 +182,7 @@ export function HomeReportDialogs({
                 }}
                 type="button"
               >
-                {reportSubmitting ? "처리 중.." : "예"}
+                {reportSubmitting ? "신고 처리 중" : "예"}
               </button>
             </div>
           </div>

@@ -115,7 +115,7 @@ export function CandidateMessagesSection({
             }}
           >
             {othersOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            다른 후보들도 살펴보기기
+            다른 후보들도 살펴보기
           </button>
 
           {othersOpen

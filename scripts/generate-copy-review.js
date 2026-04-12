@@ -162,7 +162,9 @@ function extractCopyEntries(text) {
     if (
       trimmedLine.startsWith("import ") ||
       trimmedLine.startsWith("//") ||
-      trimmedLine.includes("/[가-힣]/")
+      trimmedLine.includes("/[가-힣]/") ||
+      trimmedLine.includes("aria-label=") ||
+      trimmedLine.includes("alt=")
     ) {
       continue;
     }

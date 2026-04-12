@@ -32,7 +32,7 @@ export function useCandidateFirstMessageEditor(initialContent: string) {
     const trimmed = messageContent.trim();
 
     if (trimmed.length < 1 || trimmed.length > 100) {
-      setMessageError("1~100자 이내로 입력해 주세요.");
+      setMessageError("100자 이내로 입력해주세요.");
       return;
     }
 

@@ -112,7 +112,7 @@ export function PostComposeForm({
           id="sheet-post-content"
           maxLength={100}
           onChange={(event) => onChangeContent(event.target.value)}
-          placeholder="지금 여기에서 글을 남겨보세요."
+          placeholder="지금 여기에 한마디 해주세요."
           style={{
             background: "transparent",
             border: "none",

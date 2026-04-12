@@ -1,6 +1,6 @@
 # Copy Review
 
-Generated: 2026-04-12T11:21:33.084Z
+Generated: 2026-04-12T12:15:02.965Z
 
 이 문서는 `npm run generate:copy-review`로 생성됩니다.
 화면 문구, 시스템 메시지, 샘플/참조 라벨을 파일별로 모아 검토할 수 있게 정리했습니다.
@@ -63,23 +63,22 @@ Generated: 2026-04-12T11:21:33.084Z
 
 ### src/components/candidate/candidate-messages-api.ts
 
-- L22: 후보 메시지를 불러오지 못했습니다.
-- L25: 후보 메시지 로딩이 지연되고 있어요. 다시 시도해 주세요.
+- L22: 후보의 한마디를 불러오지 못했습니다. 새로고침을 해주세요.
+- L25: 후보의 한마디 로딩이 지연되고 있어요. 새로고침을 해주세요.
 
 ### src/components/candidate/candidate-messages-section.tsx
 
 - L73: 우리 동네 후보
-- L118: 다른 후보들도 살펴보기기
+- L118: 다른 후보들도 살펴보기
 
 ### src/components/candidate/candidate-messages-view.tsx
 
-- L31: 기초의회
-- L31: 광역의회
-- L51: 기초의회
-- L53: 광역의회
-- L97: ${candidate.name} 후보
-- L166: 후보
-- L166: ${councilBadge} 후보
+- L32: 기초의회
+- L32: 광역의회
+- L54: 기초의회
+- L56: 광역의회
+- L155: 후보
+- L155: ${councilBadge} 후보
 
 ### src/components/candidate/candidate-onboarding-form.tsx
 
@@ -145,7 +144,7 @@ Generated: 2026-04-12T11:21:33.084Z
 
 ### src/components/candidate/use-candidate-first-message-editor.ts
 
-- L35: 1~100자 이내로 입력해 주세요.
+- L35: 100자 이내로 입력해주세요.
 - L53: 수정에 실패했습니다. 다시 시도해 주세요.
 
 ### src/components/candidate/use-candidate-onboarding.ts
@@ -182,19 +181,15 @@ Generated: 2026-04-12T11:21:33.084Z
 
 ### src/components/home/dong-posts-feed-veil.tsx
 
-- L6: 서비스 이용을 위해 위치 권한을 허용해주세요.
-
-### src/components/home/dong-posts-header.tsx
-
-- L44: 메인 화면으로 이동
+- L6: 주민들의 한마디를 보기 위해 위치 권한을 허용해주세요.
 
 ### src/components/home/home-report-dialogs.tsx
 
-- L76: 운영자가 확인할 예정입니다.
+- L76: 신속하게 확인하겠습니다. 불편을 드려 죄송합니다.
 - L93: 확인
 - L138: 이 글을 신고할까요?
 - L166: 닫기
-- L185: 처리 중..
+- L185: 신고 처리 중
 - L185: 예
 
 ### src/components/home/pending-feed-updates-button.tsx
@@ -217,10 +212,6 @@ Generated: 2026-04-12T11:21:33.084Z
 - L195: 이메일은 답변 알림 용도로만 사용되며, 다른 목적으로 쓰지 않습니다.
 - L219: 같은 내용의 글이 이미 있어요. 내용을 조금 수정한 뒤 다시 시도해 주세요.
 
-### src/components/post/post-compose-sheet-shell.tsx
-
-- L28: 글쓰기 닫기
-
 ### src/components/post/post-compose-success.tsx
 
 - L30: /** viewBox 1:1 SVG — width·height 동일로만 그려 비율이 깨지지 않게 함 */
@@ -242,16 +233,15 @@ Generated: 2026-04-12T11:21:33.084Z
 - L62: 구·시·군의회
 - L117: /* 답변 있는 카드: 왼쪽 노란 띠 */
 - L130: /* 원글 영역 */
-- L168: 신고 메뉴 열기
 - L206: /* 답변 영역 — CandidateMessageCard 스타일 그대로 */
 - L216: /* 프로필 사진 */
-- L220: ${replyCandidateName ?? ""} 후보
 - L251: /* 태그·이름·본문 */
 - L259: /* 메타 행: 이름 · 선거구 + 의회 태그 */
 - L291: 의원
 - L291: ${replyCouncilBadge.replace(/의회$/, "의원")} 후보
 - L292: 후보
-- L295: /* 답변 본문 */
+- L305: 약속
+- L309: /* 답변 본문 */
 
 ### src/components/sheet/post-list-item-menu.tsx
 
@@ -259,7 +249,6 @@ Generated: 2026-04-12T11:21:33.084Z
 
 ### src/components/voice/voice-detail-screen.tsx
 
-- L103: 포토카드
 - L148: 이미지 준비 중...
 - L148: 포토카드 다운로드
 
