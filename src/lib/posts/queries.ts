@@ -2,7 +2,7 @@ import { unstable_cache } from "next/cache";
 import { cookies } from "next/headers";
 import type { CandidateMessagesPayload } from "../candidates/messages";
 import { loadCandidateMessages } from "../candidates/messages";
-import { loadCandidateReplyHeaderCard } from "../candidates/reply-header-card";
+import { loadCandidateReplyHeaderCardForCandidate } from "../candidates/reply-header-card";
 import type { SelectedCandidateRepliesPayload } from "../../components/candidate/candidate-replies-types";
 import {
   SELECTED_DONG_CODE_COOKIE_KEY,
@@ -129,11 +129,13 @@ async function loadSelectedCandidateReplies(
     return null;
   }
 
-  const initialState = await loadCandidateRepliesFeedRepository({
-    candidateId: candidate.id,
-    limit: 10,
-  });
-  const candidateMessageCard = await loadCandidateReplyHeaderCard(candidate.id);
+  const [initialState, candidateMessageCard] = await Promise.all([
+    loadCandidateRepliesFeedRepository({
+      candidateId: candidate.id,
+      limit: 10,
+    }),
+    loadCandidateReplyHeaderCardForCandidate(candidate),
+  ]);
 
   return {
     candidateId: candidate.id,

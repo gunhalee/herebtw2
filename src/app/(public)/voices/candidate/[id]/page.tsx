@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { CandidateRepliesScreen } from "../../../../../components/candidate/candidate-replies-screen";
-import { loadCandidateReplyHeaderCard } from "../../../../../lib/candidates/reply-header-card";
+import { loadCandidateReplyHeaderCardForCandidate } from "../../../../../lib/candidates/reply-header-card";
 import {
   findCandidateById,
   loadCandidateRepliesFeedRepository,
@@ -26,7 +26,7 @@ export default async function CandidateRepliesPage({ params }: PageProps) {
       candidateId: id,
       limit: 10,
     }),
-    loadCandidateReplyHeaderCard(id),
+    loadCandidateReplyHeaderCardForCandidate(candidate),
   ]);
 
   return (

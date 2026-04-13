@@ -1,6 +1,8 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import {
   type CandidateMessagesPayload,
@@ -8,6 +10,12 @@ import {
   CandidateMessageCard,
 } from "./candidate-messages-view";
 import { useCandidateMessagesSection } from "./use-candidate-messages-section";
+
+const PREFETCH_CANDIDATE_REPLIES_COUNT = 4;
+
+function buildCandidateRepliesPath(candidateId: string) {
+  return `/voices/candidate/${encodeURIComponent(candidateId)}`;
+}
 
 type CandidateMessagesSectionProps = {
   dongCode: string | null;
@@ -22,6 +30,7 @@ export function CandidateMessagesSection({
   initialDongCode = null,
   onSelectCandidate,
 }: CandidateMessagesSectionProps) {
+  const router = useRouter();
   const {
     candidates,
     collapsedCandidates,
@@ -31,6 +40,18 @@ export function CandidateMessagesSection({
     userDistricts,
     visibleCandidates,
   } = useCandidateMessagesSection(dongCode, initialData, initialDongCode);
+
+  useEffect(() => {
+    if (!onSelectCandidate) {
+      return;
+    }
+
+    candidates
+      .slice(0, PREFETCH_CANDIDATE_REPLIES_COUNT)
+      .forEach((candidate) => {
+        router.prefetch(buildCandidateRepliesPath(candidate.id));
+      });
+  }, [candidates, onSelectCandidate, router]);
 
   if (candidates.length === 0) {
     return null;

@@ -1,11 +1,22 @@
 import type { CandidateMessage } from "./messages";
+import type { CandidateRow } from "../posts/repository/types";
 import { findCandidateById, loadFirstMessage } from "../posts/repository";
 
-export async function loadCandidateReplyHeaderCard(
-  candidateId: string,
-): Promise<CandidateMessage | null> {
-  const candidate = await findCandidateById(candidateId);
+type CandidateReplyHeaderCardSource = Pick<
+  CandidateRow,
+  | "id"
+  | "name"
+  | "district"
+  | "photo_url"
+  | "first_message_id"
+  | "metro_council_district"
+  | "local_council_district"
+  | "council_type"
+>;
 
+export async function loadCandidateReplyHeaderCardForCandidate(
+  candidate: CandidateReplyHeaderCardSource | null,
+): Promise<CandidateMessage | null> {
   if (!candidate?.first_message_id) {
     return null;
   }
@@ -28,4 +39,11 @@ export async function loadCandidateReplyHeaderCard(
     councilType: candidate.council_type ?? null,
     matchType: "other",
   };
+}
+
+export async function loadCandidateReplyHeaderCard(
+  candidateId: string,
+): Promise<CandidateMessage | null> {
+  const candidate = await findCandidateById(candidateId);
+  return loadCandidateReplyHeaderCardForCandidate(candidate);
 }

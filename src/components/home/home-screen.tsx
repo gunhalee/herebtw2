@@ -152,7 +152,11 @@ export function HomeScreen({
     setPendingFeedSnapshot,
   });
 
-  function buildCandidateRepliesUrl(candidateId?: string | null) {
+  function buildCandidateRepliesPath(candidateId: string) {
+    return `/voices/candidate/${encodeURIComponent(candidateId)}`;
+  }
+
+  function buildEmbeddedCandidateRepliesUrl(candidateId?: string | null) {
     const nextSearchParams = new URLSearchParams(searchParams.toString());
 
     if (candidateId) {
@@ -167,11 +171,11 @@ export function HomeScreen({
   }
 
   function handleSelectCandidate(candidateId: string) {
-    router.push(buildCandidateRepliesUrl(candidateId), { scroll: false });
+    router.push(buildCandidateRepliesPath(candidateId));
   }
 
   function handleCloseCandidateReplies() {
-    router.replace(buildCandidateRepliesUrl(null), { scroll: false });
+    router.replace(buildEmbeddedCandidateRepliesUrl(null), { scroll: false });
   }
 
   return (
