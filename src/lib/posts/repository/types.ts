@@ -16,6 +16,7 @@ type PostRow = {
 
 type NearbyPostRow = PostRow & {
   distance_meters: number;
+  priority_group?: number;
   agree_count?: number;
   my_agree?: boolean;
   can_report?: boolean;
@@ -124,6 +125,7 @@ type DeviceIdentityRow = {
 };
 
 type PostListCursor = {
+  priorityGroup: number;
   distanceMeters: number;
   createdAt: string;
   postId: string;

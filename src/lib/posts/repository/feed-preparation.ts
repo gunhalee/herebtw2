@@ -27,6 +27,7 @@ async function loadPostsFeedRpc(input: {
         viewer_latitude: input.location?.latitude ?? null,
         viewer_longitude: input.location?.longitude ?? null,
         viewer_anonymous_device_id: input.anonymousDeviceId ?? null,
+        cursor_priority_group: input.cursor?.priorityGroup ?? null,
         cursor_distance_meters: input.cursor?.distanceMeters ?? null,
         cursor_created_at: input.cursor?.createdAt ?? null,
         cursor_post_id: input.cursor?.postId ?? null,

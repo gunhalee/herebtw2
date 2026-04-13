@@ -3,6 +3,10 @@ import type { NearbyPostRow, PostListCursor } from "./types";
 
 function encodePostListCursor(post: NearbyPostRow) {
   const payload: PostListCursor = {
+    priorityGroup:
+      typeof post.priority_group === "number" && Number.isFinite(post.priority_group)
+        ? post.priority_group
+        : 0,
     distanceMeters: post.distance_meters,
     createdAt: post.created_at,
     postId: post.id,
@@ -21,6 +25,8 @@ function decodePostListCursor(cursor: string | undefined) {
     const payload = JSON.parse(decoded) as Partial<PostListCursor>;
 
     if (
+      typeof payload.priorityGroup !== "number" ||
+      !Number.isFinite(payload.priorityGroup) ||
       typeof payload.distanceMeters !== "number" ||
       !Number.isFinite(payload.distanceMeters) ||
       typeof payload.createdAt !== "string" ||
