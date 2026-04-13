@@ -7,7 +7,11 @@ function encodePostListCursor(post: NearbyPostRow) {
       typeof post.priority_group === "number" && Number.isFinite(post.priority_group)
         ? post.priority_group
         : 0,
-    distanceMeters: post.distance_meters,
+    distanceMeters:
+      typeof post.distance_sort_meters === "number" &&
+      Number.isFinite(post.distance_sort_meters)
+        ? post.distance_sort_meters
+        : post.distance_meters,
     createdAt: post.created_at,
     postId: post.id,
   };

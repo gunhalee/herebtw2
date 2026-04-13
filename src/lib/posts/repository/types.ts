@@ -16,6 +16,7 @@ type PostRow = {
 
 type NearbyPostRow = PostRow & {
   distance_meters: number;
+  distance_sort_meters?: number;
   priority_group?: number;
   agree_count?: number;
   my_agree?: boolean;
