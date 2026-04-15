@@ -51,7 +51,7 @@ export const uiSpacing = {
   xxl: "20px",
   xxxl: "24px",
   pageX: "16px",
-  pageY: "20px",
+  pageY: "12px",
 } as const;
 
 export const uiRadius = {
