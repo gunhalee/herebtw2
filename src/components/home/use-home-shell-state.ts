@@ -52,7 +52,7 @@ function applyLocationSessionToHomeShell(
     options.setFeedLocation(null);
     options.setAdministrativeLocationSelection(null, {
       permissionMode: "denied",
-      readOnlyMode: true,
+      readOnlyMode: false,
     });
     return;
   }
