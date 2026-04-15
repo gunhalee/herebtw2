@@ -39,6 +39,8 @@ function StaticHomeHeader({
   currentDongName: string | null;
 }) {
   const composeCta = homeScreenCopy.composeCta(getComposeDongName(currentDongName));
+  const composePrefix = composeCta.prefix.trimEnd();
+  const composeSuffix = composeCta.suffix.trimStart();
 
   return (
     <header
@@ -118,7 +120,7 @@ function StaticHomeHeader({
             width: "100%",
           }}
         >
-          <span>{composeCta.prefix}</span>
+          <span>{composePrefix}</span>
           <span
             style={{
               alignItems: "center",
@@ -138,7 +140,7 @@ function StaticHomeHeader({
           >
             {composeCta.location}
           </span>
-          <span>{composeCta.suffix}</span>
+          <span>{composeSuffix}</span>
         </span>
       </div>
     </header>

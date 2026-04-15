@@ -222,7 +222,7 @@ input {
   flex: 0 0 auto;
   grid-template-areas: "stack";
   justify-items: stretch;
-  margin: 0 0.2em;
+  margin: 0;
   min-width: 5.8em;
   min-height: 1.6em;
   perspective: 900px;

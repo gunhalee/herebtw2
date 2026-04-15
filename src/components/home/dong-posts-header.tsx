@@ -47,6 +47,8 @@ export const DongPostsHeader = memo(function DongPostsHeader({
 }: DongPostsHeaderProps) {
   const [showAnimatedBadge, setShowAnimatedBadge] = useState(false);
   const composeCta = homeScreenCopy.composeCta(currentDongName);
+  const composePrefix = composeCta.prefix.trimEnd();
+  const composeSuffix = composeCta.suffix.trimStart();
 
   useLayoutEffect(() => {
     if (animateComposeDongPlaceholder) {
@@ -172,7 +174,7 @@ export const DongPostsHeader = memo(function DongPostsHeader({
               color: "#000000",
             }}
           >
-            {composeCta.prefix}
+            {composePrefix}
           </span>
           {showAnimatedBadge ? (
             <ComposeDongFlashcard
@@ -188,7 +190,7 @@ export const DongPostsHeader = memo(function DongPostsHeader({
               color: "#000000",
             }}
           >
-            {composeCta.suffix}
+            {composeSuffix}
           </span>
         </span>
       </div>
