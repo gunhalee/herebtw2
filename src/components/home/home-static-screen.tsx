@@ -932,9 +932,10 @@ export function HomeStaticScreen({
                   state={postListState}
                 />
               </div>
-              {shouldObscurePosts ? <VeilOverlay /> : null}
             </div>
           </div>
+
+          {shouldObscurePosts ? <VeilOverlay /> : null}
         </div>
 
         <StaticFloatingComposeButton />

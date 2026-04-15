@@ -168,9 +168,9 @@ export function DongPostsFeed({
             />
           </div>
         </div>
-
-        {shouldRenderVeil ? <VeilOverlay /> : null}
       </div>
+
+      {shouldRenderVeil ? <VeilOverlay /> : null}
     </div>
   );
 }
