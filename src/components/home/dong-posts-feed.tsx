@@ -167,8 +167,9 @@ export function DongPostsFeed({
               onToggleAgree={onToggleAgree}
             />
           </div>
-          {shouldRenderVeil ? <VeilOverlay /> : null}
         </div>
+
+        {shouldRenderVeil ? <VeilOverlay /> : null}
       </div>
     </div>
   );
