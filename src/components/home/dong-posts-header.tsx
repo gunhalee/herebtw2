@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { memo, useLayoutEffect, useRef, useState, type Ref } from "react";
+import { memo, useState, type Ref } from "react";
 import { homeScreenCopy } from "../../lib/content/home-copy";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import { ComposeDongFlashcard } from "./compose-dong-flashcard";
@@ -49,27 +49,8 @@ export const DongPostsHeader = memo(function DongPostsHeader({
   const [showAnimatedBadge, setShowAnimatedBadge] = useState(
     animateComposeDongPlaceholder,
   );
-  const settledLabelRef = useRef(composeCta.location);
   const composePrefix = composeCta.prefix.trimEnd();
   const composeSuffix = composeCta.suffix.trimStart();
-
-  useLayoutEffect(() => {
-    if (!animateComposeDongPlaceholder) {
-      settledLabelRef.current = composeCta.location;
-      if (showAnimatedBadge) {
-        setShowAnimatedBadge(false);
-      }
-      return;
-    }
-
-    if (!showAnimatedBadge && settledLabelRef.current !== composeCta.location) {
-      setShowAnimatedBadge(true);
-    }
-  }, [
-    animateComposeDongPlaceholder,
-    composeCta.location,
-    showAnimatedBadge,
-  ]);
 
   return (
     <header
@@ -195,10 +176,7 @@ export const DongPostsHeader = memo(function DongPostsHeader({
             <ComposeDongFlashcard
               animatePlaceholder
               label={composeCta.location}
-              onAnimationComplete={(finalLabel) => {
-                settledLabelRef.current = finalLabel;
-                setShowAnimatedBadge(false);
-              }}
+              onAnimationComplete={() => setShowAnimatedBadge(false)}
             />
           ) : (
             <StaticComposeDongBadge label={composeCta.location} />
