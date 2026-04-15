@@ -15,4 +15,7 @@ export {
   createReply,
   updateCandidateFirstMessageRepository,
 } from "./candidate-mutations";
-export { loadCandidateRepliesFeedRepository } from "./candidate-replies";
+export {
+  loadCandidateRepliesBootstrapRepository,
+  loadCandidateRepliesFeedRepository,
+} from "./candidate-replies";

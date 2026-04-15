@@ -5,6 +5,7 @@ export {
   findCandidateByAuthUserId,
   findCandidateById,
   loadCandidateDistrictRepository,
+  loadCandidateRepliesBootstrapRepository,
   loadCandidateRepliesFeedRepository,
   loadCandidatePromises,
   loadDashboardStats,
