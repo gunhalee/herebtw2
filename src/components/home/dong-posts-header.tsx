@@ -62,7 +62,7 @@ export const DongPostsHeader = memo(function DongPostsHeader({
         display: "flex",
         flexDirection: "column",
         gap: uiSpacing.md,
-        padding: `calc(env(safe-area-inset-top, 0px) + ${uiSpacing.pageY}) ${uiSpacing.pageX} 0`,
+        padding: `${uiSpacing.pageY} ${uiSpacing.pageX} 0`,
         position: "relative",
         zIndex: 2,
       }}
