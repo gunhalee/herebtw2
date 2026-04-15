@@ -13,9 +13,9 @@ import {
   uiRadius,
   uiSpacing,
 } from "../../lib/ui/tokens";
+import { VeilOverlay } from "../common/veil-overlay";
 import checkmarkIcon from "../checkmark-floating.svg";
 import thumbsUpImage from "../thumbs_up.png";
-import { DongPostsFeedVeil } from "./dong-posts-feed-veil";
 
 const HOME_FALLBACK_DONG_NAME = "우리 동네";
 const LOCAL_COUNCIL_LABEL = "기초의회";
@@ -932,7 +932,7 @@ export function HomeStaticScreen({
                   state={postListState}
                 />
               </div>
-              {shouldObscurePosts ? <DongPostsFeedVeil /> : null}
+              {shouldObscurePosts ? <VeilOverlay /> : null}
             </div>
           </div>
         </div>

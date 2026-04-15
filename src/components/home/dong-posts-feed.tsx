@@ -4,12 +4,12 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import type { RefObject } from "react";
 import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
+import { VeilOverlay } from "../common/veil-overlay";
 import { ErrorState } from "../common/error-state";
 import { LoadingState } from "../common/loading-state";
 import type { PostListState } from "../../types/post";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import { DongPostsFeedContent } from "./dong-posts-feed-content";
-import { DongPostsFeedVeil } from "./dong-posts-feed-veil";
 
 const DeferredCandidateMessagesSection = dynamic(
   () =>
@@ -167,7 +167,7 @@ export function DongPostsFeed({
               onToggleAgree={onToggleAgree}
             />
           </div>
-          {shouldRenderVeil ? <DongPostsFeedVeil /> : null}
+          {shouldRenderVeil ? <VeilOverlay /> : null}
         </div>
       </div>
     </div>
