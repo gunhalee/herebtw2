@@ -1,13 +1,21 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import type { PostListState } from "../../types/post";
 import { DongPostsFeed } from "./dong-posts-feed";
 import { FloatingComposeButton } from "./floating-compose-button";
 import { DongPostsHeader } from "./dong-posts-header";
-import { HomeReportDialogs } from "./home-report-dialogs";
 import { PendingFeedUpdatesButton } from "./pending-feed-updates-button";
+
+const DeferredHomeReportDialogs = dynamic(
+  () => import("./home-report-dialogs").then((module) => module.HomeReportDialogs),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
 type DongPostsScreenProps = {
   currentDongName: string;
@@ -74,6 +82,10 @@ export function DongPostsScreen({
     obscurePosts && !state.loading && !state.errorMessage && !state.empty;
   const shouldShowPendingUpdatesButton =
     pendingNewItemsCount > 0 && !shouldObscurePosts;
+  const shouldRenderReportDialogs =
+    reportDialogOpen ||
+    Boolean(reportErrorMessage) ||
+    Boolean(reportSuccessMessage);
 
   function handleScreenClickCapture(event: React.MouseEvent<HTMLElement>) {
     if (!activeMenuPostId) {
@@ -186,15 +198,17 @@ export function DongPostsScreen({
         onCompose={onCompose}
       />
 
-      <HomeReportDialogs
-        onCloseReportDialog={onCloseReportDialog}
-        onCloseReportSuccessDialog={onCloseReportSuccessDialog}
-        onConfirmReport={onConfirmReport}
-        reportDialogOpen={reportDialogOpen}
-        reportErrorMessage={reportErrorMessage}
-        reportSubmitting={reportSubmitting}
-        reportSuccessMessage={reportSuccessMessage}
-      />
+      {shouldRenderReportDialogs ? (
+        <DeferredHomeReportDialogs
+          onCloseReportDialog={onCloseReportDialog}
+          onCloseReportSuccessDialog={onCloseReportSuccessDialog}
+          onConfirmReport={onConfirmReport}
+          reportDialogOpen={reportDialogOpen}
+          reportErrorMessage={reportErrorMessage}
+          reportSubmitting={reportSubmitting}
+          reportSuccessMessage={reportSuccessMessage}
+        />
+      ) : null}
     </section>
   );
 }

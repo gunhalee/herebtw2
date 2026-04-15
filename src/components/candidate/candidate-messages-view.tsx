@@ -1,5 +1,5 @@
 "use client";
-import { ChevronRight } from "lucide-react";
+
 import { getSupabaseRenderImageUrl } from "../../lib/supabase/storage";
 import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
 import type {
@@ -12,6 +12,26 @@ const CANDIDATE_PHOTO_WIDTH = 57;
 const CANDIDATE_PHOTO_HEIGHT = 76;
 const CANDIDATE_PHOTO_REQUEST_WIDTH = CANDIDATE_PHOTO_WIDTH * 2;
 const CANDIDATE_PHOTO_REQUEST_HEIGHT = CANDIDATE_PHOTO_HEIGHT * 2;
+
+function CandidateChevronIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="26"
+      viewBox="0 0 24 24"
+      width="26"
+    >
+      <path
+        d="M9 5l7 7-7 7"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.25"
+      />
+    </svg>
+  );
+}
 
 export function CandidateDistrictBadge({
   label,
@@ -194,7 +214,7 @@ export function CandidateMessageCard({
             padding: `0 ${uiSpacing.lg} 0 0`,
           }}
         >
-          <ChevronRight size={26} strokeWidth={2.25} />
+          <CandidateChevronIcon />
         </div>
       ) : null}
     </div>

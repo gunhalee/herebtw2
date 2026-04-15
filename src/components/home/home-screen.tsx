@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import { DongPostsScreen } from "./dong-posts-screen";
-import { ComposePermissionDialog } from "./compose-permission-dialog";
 import { type PendingFeedSnapshot } from "./home-feed-state";
 import { useHomeComposeFlow } from "./use-home-compose-flow";
 import { useHomeFeedListActions } from "./use-home-feed-list-actions";
@@ -20,6 +19,17 @@ const DeferredPostComposeExperience = dynamic(
   () =>
     import("../post/post-compose-experience").then(
       (module) => module.PostComposeExperience,
+    ),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+
+const DeferredComposePermissionDialog = dynamic(
+  () =>
+    import("./compose-permission-dialog").then(
+      (module) => module.ComposePermissionDialog,
     ),
   {
     loading: () => null,
@@ -198,7 +208,7 @@ export function HomeScreen({
         />
       ) : null}
       {composePermissionDialogOpen ? (
-        <ComposePermissionDialog
+        <DeferredComposePermissionDialog
           onClose={handleCloseComposePermissionDialog}
           onRetry={handleRetryCompose}
         />

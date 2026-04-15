@@ -75,21 +75,6 @@ export function HomeScreenBootstrap({
   }
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const searchParams = new URLSearchParams(window.location.search);
-    const candidateId = searchParams.get("candidateId")?.trim();
-
-    if (!candidateId) {
-      return;
-    }
-
-    window.location.replace(`/voices/candidate/${encodeURIComponent(candidateId)}`);
-  }, []);
-
-  useEffect(() => {
     if (interactiveHome || typeof window === "undefined") {
       return;
     }

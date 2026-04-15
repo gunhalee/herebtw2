@@ -1,5 +1,3 @@
-import Image from "next/image";
-import Link from "next/link";
 import type {
   CandidateMessage,
   CandidateMessagesPayload,
@@ -56,7 +54,7 @@ function StaticHomeHeader({
         zIndex: 2,
       }}
     >
-      <Link
+      <a
         aria-label="메인 화면으로 이동"
         href="/"
         style={{
@@ -92,7 +90,7 @@ function StaticHomeHeader({
             {homeScreenCopy.titleSuffix}
           </span>
         </h1>
-      </Link>
+      </a>
 
       <div
         style={{
@@ -188,7 +186,7 @@ function StaticCandidateMessageCard({
       : "후보";
 
   return (
-    <Link
+    <a
       href={buildCandidateRepliesPath(candidate.id)}
       style={{
         color: "inherit",
@@ -311,7 +309,7 @@ function StaticCandidateMessageCard({
           </p>
         </div>
       </div>
-    </Link>
+    </a>
   );
 }
 
@@ -469,7 +467,7 @@ function StaticPostListCard({
           }}
           type="button"
         >
-          <Image alt="" src={thumbsUpImage} width={14} height={14} />
+          <img alt="" src={thumbsUpImage.src} width={14} height={14} decoding="async" />
           <span
             style={{
               color: item.myAgree ? uiColors.textStrong : uiColors.textMuted,
@@ -816,12 +814,13 @@ function StaticFloatingComposeButton() {
       >
         글 올리기
       </span>
-      <Image
+      <img
         alt=""
         aria-hidden="true"
-        src={checkmarkIcon}
+        src={checkmarkIcon.src}
         width={18}
         height={18}
+        decoding="async"
         style={{
           filter:
             "drop-shadow(0 0 0.75px rgba(55, 48, 0, 0.55)) drop-shadow(0 2px 6px rgba(17, 24, 39, 0.18))",

@@ -1,8 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect } from "react";
 import type { RefObject } from "react";
-import { CandidateMessagesSection } from "../candidate/candidate-messages-section";
 import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import { ErrorState } from "../common/error-state";
 import { LoadingState } from "../common/loading-state";
@@ -10,6 +10,17 @@ import type { PostListState } from "../../types/post";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import { DongPostsFeedContent } from "./dong-posts-feed-content";
 import { DongPostsFeedVeil } from "./dong-posts-feed-veil";
+
+const DeferredCandidateMessagesSection = dynamic(
+  () =>
+    import("../candidate/candidate-messages-section").then(
+      (module) => module.CandidateMessagesSection,
+    ),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
 type DongPostsFeedProps = {
   activeMenuPostId?: string | null;
@@ -110,7 +121,7 @@ export function DongPostsFeed({
         {state.errorMessage ? <ErrorState message={state.errorMessage} /> : null}
 
         {dongCode ? (
-          <CandidateMessagesSection
+          <DeferredCandidateMessagesSection
             dongCode={dongCode}
             initialData={initialCandidateMessages}
             initialDongCode={initialCandidateMessagesDongCode}

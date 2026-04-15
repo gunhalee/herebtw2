@@ -1,8 +1,5 @@
 "use client";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import {
   type CandidateMessagesPayload,
@@ -11,12 +8,6 @@ import {
 } from "./candidate-messages-view";
 import { useCandidateMessagesSection } from "./use-candidate-messages-section";
 
-const PREFETCH_CANDIDATE_REPLIES_COUNT = 4;
-
-function buildCandidateRepliesPath(candidateId: string) {
-  return `/voices/candidate/${encodeURIComponent(candidateId)}`;
-}
-
 type CandidateMessagesSectionProps = {
   dongCode: string | null;
   initialData?: CandidateMessagesPayload | null;
@@ -24,13 +15,41 @@ type CandidateMessagesSectionProps = {
   onSelectCandidate?: (candidateId: string) => void;
 };
 
+function CandidateMessagesToggleIcon({
+  direction,
+}: {
+  direction: "down" | "up";
+}) {
+  const path =
+    direction === "up"
+      ? "M4.5 14.5L12 7l7.5 7.5"
+      : "M4.5 9.5L12 17l7.5-7.5";
+
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="14"
+      viewBox="0 0 24 24"
+      width="14"
+    >
+      <path
+        d={path}
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.25"
+      />
+    </svg>
+  );
+}
+
 export function CandidateMessagesSection({
   dongCode,
   initialData = null,
   initialDongCode = null,
   onSelectCandidate,
 }: CandidateMessagesSectionProps) {
-  const router = useRouter();
   const {
     candidates,
     collapsedCandidates,
@@ -40,18 +59,6 @@ export function CandidateMessagesSection({
     userDistricts,
     visibleCandidates,
   } = useCandidateMessagesSection(dongCode, initialData, initialDongCode);
-
-  useEffect(() => {
-    if (!onSelectCandidate) {
-      return;
-    }
-
-    candidates
-      .slice(0, PREFETCH_CANDIDATE_REPLIES_COUNT)
-      .forEach((candidate) => {
-        router.prefetch(buildCandidateRepliesPath(candidate.id));
-      });
-  }, [candidates, onSelectCandidate, router]);
 
   if (candidates.length === 0) {
     return null;
@@ -119,7 +126,6 @@ export function CandidateMessagesSection({
       {collapsedCandidates.length > 0 ? (
         <>
           <button
-            type="button"
             onClick={() => setOthersOpen((current) => !current)}
             style={{
               alignItems: "center",
@@ -134,9 +140,10 @@ export function CandidateMessagesSection({
               gap: "4px",
               padding: "2px 0",
             }}
+            type="button"
           >
-            {othersOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            다른 후보들도 살펴보기
+            <CandidateMessagesToggleIcon direction={othersOpen ? "up" : "down"} />
+            다른 후보 더보기
           </button>
 
           {othersOpen

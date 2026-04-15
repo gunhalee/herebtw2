@@ -1,7 +1,7 @@
 export const SHARE_TITLE = "여기 근데";
 export const SHARE_TAGLINE = "한마디 할게요";
 
-export const SITE_URL = "https://herebtw2.vercel.app";
+export const SITE_URL = "https://herebtw.vercel.app";
 
 export const SHARE_IMAGE_WIDTH = 500;
 export const SHARE_IMAGE_HEIGHT = 500;
