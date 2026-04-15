@@ -4,6 +4,7 @@ import {
   getOrCreateBrowserAnonymousDeviceId,
 } from "../../lib/device/browser-device";
 import type { AdministrativeLocationSnapshot } from "../../lib/geo/browser-administrative-location";
+import { readCachedAdministrativeLocation } from "../../lib/geo/browser-administrative-location";
 import {
   ensureBrowserLocationSession,
   primeBrowserLocationSession,
@@ -61,6 +62,7 @@ export async function bootstrapHomeFeed({
   setPostListState,
   setPendingFeedSnapshot,
 }: BootstrapHomeFeedParams) {
+  let appliedCachedNearbyFeed = false;
   const anonymousDeviceId = getOrCreateBrowserAnonymousDeviceId();
 
   if (!anonymousDeviceId) {
@@ -78,6 +80,30 @@ export async function bootstrapHomeFeed({
 
   if (latestCachedNearbyPostList) {
     primeBrowserLocationSession(latestCachedNearbyPostList.location);
+
+    const cachedAdministrativeLocation = readCachedAdministrativeLocation(
+      latestCachedNearbyPostList.location,
+    );
+
+    if (cachedAdministrativeLocation) {
+      appliedCachedNearbyFeed = true;
+
+      startTransition(() => {
+        applyResolvedLocationSelection(
+          cachedAdministrativeLocation,
+          latestCachedNearbyPostList.location,
+        );
+        setFeedSortMode("nearby");
+        setPendingFeedSnapshot(null);
+        setPostListState((current) =>
+          buildReadyPostListState(current, {
+            items: latestCachedNearbyPostList.items,
+            nextCursor: latestCachedNearbyPostList.nextCursor,
+            sort: "distance",
+          }),
+        );
+      });
+    }
   }
 
   const locationSession = await ensureBrowserLocationSession();
@@ -91,11 +117,6 @@ export async function bootstrapHomeFeed({
     locationSession.permissionMode === "granted" && resolvedLocation
       ? locationSession.coordinates
       : null;
-
-  if (!resolvedCoordinates && latestCachedNearbyPostList && hasInitialGlobalFeed) {
-    setFeedSortMode("global");
-    setPostListState(initialPostListState);
-  }
 
   const shouldFetchGlobalFeed = !resolvedCoordinates && !hasInitialGlobalFeed;
   const result =
@@ -117,6 +138,12 @@ export async function bootstrapHomeFeed({
     }
 
     setFeedSortMode(resolvedCoordinates ? "nearby" : "global");
+
+    if (!resolvedCoordinates && hasInitialGlobalFeed && appliedCachedNearbyFeed) {
+      setPendingFeedSnapshot(null);
+      setPostListState(initialPostListState);
+      return;
+    }
 
     if (!result) {
       setPostListState((current) =>

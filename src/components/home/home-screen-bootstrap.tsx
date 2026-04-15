@@ -20,7 +20,7 @@ type InteractiveHomeState = {
 };
 
 const HOME_BOOTSTRAP_API_PATH = "/api/home/bootstrap";
-const HOME_BOOTSTRAP_IDLE_TIMEOUT_MS = 1200;
+const HOME_BOOTSTRAP_IDLE_TIMEOUT_MS = 300;
 
 export function HomeScreenBootstrap({
   children,
