@@ -22,7 +22,7 @@ const COMPOSE_DONG_FLASHCARD_RANDOM_STEP_COUNT = 3;
 type UseComposeDongFlashcardParams = {
   label: string;
   animatePlaceholder: boolean;
-  onIntroComplete?: () => void;
+  onIntroComplete?: (finalLabel: string) => void;
 };
 
 type UseComposeDongFlashcardResult = {
@@ -88,7 +88,7 @@ export function useComposeDongFlashcard({
     }
 
     hasReportedIntroCompleteRef.current = true;
-    onIntroCompleteRef.current?.();
+    onIntroCompleteRef.current?.(finalLabelRef.current);
   }
 
   function resetToFinalLabel() {

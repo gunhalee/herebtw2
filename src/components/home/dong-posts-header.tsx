@@ -195,8 +195,8 @@ export const DongPostsHeader = memo(function DongPostsHeader({
             <ComposeDongFlashcard
               animatePlaceholder
               label={composeCta.location}
-              onAnimationComplete={() => {
-                settledLabelRef.current = composeCta.location;
+              onAnimationComplete={(finalLabel) => {
+                settledLabelRef.current = finalLabel;
                 setShowAnimatedBadge(false);
               }}
             />

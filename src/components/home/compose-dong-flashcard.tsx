@@ -10,7 +10,7 @@ export { COMPOSE_DONG_PLACEHOLDER_LABEL } from "./use-compose-dong-flashcard";
 type ComposeDongFlashcardProps = {
   label: string;
   animatePlaceholder: boolean;
-  onAnimationComplete?: () => void;
+  onAnimationComplete?: (finalLabel: string) => void;
 };
 
 export function ComposeDongFlashcard({
