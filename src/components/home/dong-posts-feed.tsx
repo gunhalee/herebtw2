@@ -57,13 +57,13 @@ export function DongPostsFeed({
   onSelectReport,
   onToggleAgree,
 }: DongPostsFeedProps) {
-  const [pendingCandidateSectionDongCode, setPendingCandidateSectionDongCode] =
-    useState<string | null>(dongCode);
+  const [readyCandidateSectionDongCode, setReadyCandidateSectionDongCode] =
+    useState<string | null>(null);
   const bottomPadding = shouldShowPendingUpdatesButton
     ? "calc(172px + env(safe-area-inset-bottom, 0px))"
     : "calc(108px + env(safe-area-inset-bottom, 0px))";
   const shouldKeepVeilForCandidateSection =
-    pendingCandidateSectionDongCode !== null;
+    Boolean(dongCode) && readyCandidateSectionDongCode !== dongCode;
   const shouldRenderVeil =
     shouldObscurePosts || shouldKeepVeilForCandidateSection;
 
@@ -75,13 +75,13 @@ export function DongPostsFeed({
   }, [dongCode, scrollContainerRef]);
 
   useEffect(() => {
-    setPendingCandidateSectionDongCode(dongCode);
+    if (!dongCode) {
+      setReadyCandidateSectionDongCode(null);
+    }
   }, [dongCode]);
 
   function handleCandidateSectionReady(readyDongCode: string) {
-    setPendingCandidateSectionDongCode((current) =>
-      current === readyDongCode ? null : current,
-    );
+    setReadyCandidateSectionDongCode(readyDongCode);
   }
 
   return (
