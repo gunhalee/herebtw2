@@ -14,6 +14,7 @@ import {
   uiSpacing,
 } from "../../lib/ui/tokens";
 import { VeilOverlay } from "../common/veil-overlay";
+import { FloatingComposeButton } from "./floating-compose-button";
 import checkmarkIcon from "../checkmark-floating.svg";
 import thumbsUpImage from "../thumbs_up.png";
 
@@ -938,7 +939,7 @@ export function HomeStaticScreen({
           {shouldObscurePosts ? <VeilOverlay /> : null}
         </div>
 
-        <StaticFloatingComposeButton />
+        <FloatingComposeButton />
       </section>
     </div>
   );
