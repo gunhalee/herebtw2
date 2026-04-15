@@ -1,6 +1,5 @@
 import { redirect, notFound } from "next/navigation";
 import { getCandidateSession } from "../../../../lib/auth/candidate-session";
-import { findPostByUuidRepository } from "../../../../lib/posts/repository";
 import { ReplyComposeScreen } from "../../../../components/candidate/reply-compose-screen";
 import { supabaseSelect } from "../../../../lib/supabase/rest";
 

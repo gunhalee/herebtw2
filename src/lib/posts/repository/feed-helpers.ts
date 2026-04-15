@@ -14,4 +14,4 @@ export {
   sliceFeedRows,
   sliceNearbyRpcRows,
 } from "./feed-state";
-export { buildPostListItems, buildRpcPostListItems } from "./feed-post-list-items";
+export { buildRpcPostListItems } from "./feed-post-list-items";

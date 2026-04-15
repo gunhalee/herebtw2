@@ -69,14 +69,6 @@ function isValidTokenPayload(
   );
 }
 
-export function createLocationResolutionToken(input: {
-  administrativeDongCode: string | null;
-  formattedAdministrativeAreaName: string;
-  location: PostLocation;
-}) {
-  return createLocationResolutionTokenWithExpiry(input).token;
-}
-
 export function createLocationResolutionTokenWithExpiry(input: {
   administrativeDongCode: string | null;
   formattedAdministrativeAreaName: string;

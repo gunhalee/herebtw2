@@ -23,37 +23,6 @@ function getNearbyPostCacheKey(location: PostLocation) {
   ].join(":");
 }
 
-export function readCachedNearbyPostList(
-  location: PostLocation,
-): CachedNearbyPostListState | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const raw = window.localStorage.getItem(NEARBY_POST_CACHE_STORAGE_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const cached = JSON.parse(raw) as Partial<CachedNearbyPostList>;
-
-    if (
-      cached.cacheKey !== getNearbyPostCacheKey(location) ||
-      typeof cached.cachedAt !== "number" ||
-      Date.now() - cached.cachedAt > NEARBY_POST_CACHE_TTL_MS ||
-      !Array.isArray(cached.items)
-    ) {
-      return null;
-    }
-
-    return getCachedNearbyPostListState(cached);
-  } catch {
-    return null;
-  }
-}
-
 export function readLatestCachedNearbyPostList():
   | (CachedNearbyPostListState & {
       location: PostLocation;

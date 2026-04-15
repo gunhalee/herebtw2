@@ -95,8 +95,8 @@
 ### 4-1. 홈 피드
 
 1. `src/app/(public)/page.tsx`
-2. `getHomePageState()`
-3. `HomeScreen`
+2. `getPublicHomePageShellState()`
+3. `HomeStaticScreen` / `HomeScreenBootstrap`
 4. `useHomeShellState` / `useHomeFeedLifecycle`
 5. `home-feed-api.ts`
 6. `/api/feed/*`

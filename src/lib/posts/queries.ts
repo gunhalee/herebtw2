@@ -43,19 +43,6 @@ function getInitialAppShellState(
   };
 }
 
-export async function getHomePageState(): Promise<HomePageState> {
-  const [appShellState, postListState] = await Promise.all([
-    Promise.resolve(getInitialAppShellState()),
-    loadCachedGlobalPostsList(),
-  ]);
-
-  return {
-    appShellState,
-    candidateMessages: null,
-    postListState,
-  };
-}
-
 export async function getInteractiveHomeBootstrapState(): Promise<HomePageState> {
   const postListState = await loadCachedGlobalPostsList();
 

@@ -83,16 +83,6 @@ export function removeSinglePostItem(
   return items.filter((item) => item.id !== targetPostId);
 }
 
-export function matchesLoadedPostIds(
-  items: PostListState["items"],
-  loadedPostIds: string[],
-) {
-  return (
-    items.length === loadedPostIds.length &&
-    items.every((item, index) => item.id === loadedPostIds[index])
-  );
-}
-
 export function matchesLoadedPostIdWindow(
   items: PostListState["items"],
   loadedPostIds: string[],

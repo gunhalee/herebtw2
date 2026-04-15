@@ -73,12 +73,6 @@ export async function supabaseInsert<T>(path: string, body: unknown) {
   });
 }
 
-export async function supabasePatch<T>(path: string, body: unknown) {
-  return supabaseRestRequest<T>(path, "PATCH", body, {
-    Prefer: "return=representation",
-  });
-}
-
 export async function supabasePatchMinimal(path: string, body: unknown) {
   await supabaseRestRequest<null>(path, "PATCH", body, {
     Prefer: "return=minimal",

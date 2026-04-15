@@ -226,12 +226,6 @@ export function primeBrowserLocationSession(location: PostLocation) {
   return getBrowserLocationSessionSnapshot();
 }
 
-export function hasBrowserLocationResolutionToken(
-  locationSession: BrowserLocationSessionState,
-) {
-  return Boolean(getLocationResolutionTokenFromSession(locationSession));
-}
-
 export function getBrowserLocationResolutionToken(
   locationSession: BrowserLocationSessionState,
 ) {

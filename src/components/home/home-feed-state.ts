@@ -5,7 +5,6 @@ export {
   removeFromPendingFeedSnapshot,
 } from "./home-feed-pending-snapshot";
 export {
-  matchesLoadedPostIds,
   matchesLoadedPostIdWindow,
   mergePostItems,
   patchPostEngagementItems,

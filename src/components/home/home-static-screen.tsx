@@ -15,7 +15,6 @@ import {
 } from "../../lib/ui/tokens";
 import { VeilOverlay } from "../common/veil-overlay";
 import { FloatingComposeButton } from "./floating-compose-button";
-import checkmarkIcon from "../checkmark-floating.svg";
 import thumbsUpImage from "../thumbs_up.png";
 
 const HOME_FALLBACK_DONG_NAME = "우리 동네";
@@ -786,65 +785,6 @@ function StaticHomeFeedContent({
     </div>
   );
 }
-
-function StaticFloatingComposeButton() {
-  return (
-    <button
-      aria-label="글 올리기"
-      style={{
-        alignItems: "center",
-        appearance: "none",
-        backdropFilter: "blur(10px)",
-        background: "linear-gradient(180deg, #fff89a 0%, #ffed00 100%)",
-        border: "1px solid #e7dccd",
-        borderRadius: uiRadius.pill,
-        bottom: `calc(20px + env(safe-area-inset-bottom, 0px))`,
-        boxShadow:
-          "0 18px 34px rgba(116, 94, 62, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.92)",
-        cursor: "pointer",
-        display: "inline-flex",
-        gap: uiSpacing.xs,
-        height: "54px",
-        justifyContent: "center",
-        padding: `0 ${uiSpacing.md} 0 ${uiSpacing.lg}`,
-        position: "absolute",
-        right: uiSpacing.pageX,
-        zIndex: 12,
-      }}
-      type="button"
-    >
-      <span
-        style={{
-          color: uiColors.textStrong,
-          fontSize: "14px",
-          fontWeight: 700,
-          letterSpacing: "-0.02em",
-          lineHeight: 1,
-          position: "relative",
-          whiteSpace: "nowrap",
-          zIndex: 1,
-        }}
-      >
-        글 올리기
-      </span>
-      <img
-        alt=""
-        aria-hidden="true"
-        src={checkmarkIcon.src}
-        width={18}
-        height={18}
-        decoding="async"
-        style={{
-          filter:
-            "drop-shadow(0 0 0.75px rgba(55, 48, 0, 0.55)) drop-shadow(0 2px 6px rgba(17, 24, 39, 0.18))",
-          position: "relative",
-          zIndex: 1,
-        }}
-      />
-    </button>
-  );
-}
-
 export function HomeStaticScreen({
   candidateMessages,
   currentDongName,
