@@ -146,7 +146,7 @@ export function CandidateRepliesScreen({
           <h1
             style={{
               color: uiColors.textStrong,
-              fontSize: "20px",
+              fontSize: "16px",
               fontWeight: 700,
               lineHeight: 1.3,
               margin: 0,
