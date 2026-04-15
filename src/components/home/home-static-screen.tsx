@@ -131,7 +131,7 @@ function StaticHomeHeader({
               height: "1.6em",
               justifyContent: "center",
               lineHeight: 1,
-              minWidth: "fit-content",
+              minWidth: "4.25em",
               padding: "0 0.65em",
               whiteSpace: "nowrap",
             }}

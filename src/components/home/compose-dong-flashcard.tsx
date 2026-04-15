@@ -10,50 +10,40 @@ export { COMPOSE_DONG_PLACEHOLDER_LABEL } from "./use-compose-dong-flashcard";
 type ComposeDongFlashcardProps = {
   label: string;
   animatePlaceholder: boolean;
+  onAnimationComplete?: () => void;
 };
 
 export function ComposeDongFlashcard({
   label,
   animatePlaceholder,
+  onAnimationComplete,
 }: ComposeDongFlashcardProps) {
-  const { cardWidthPx, currentLabel, incomingLabel, measureRef } =
-    useComposeDongFlashcard({
-      label,
-      animatePlaceholder,
-    });
+  const { currentLabel, incomingLabel } = useComposeDongFlashcard({
+    label,
+    animatePlaceholder,
+    onIntroComplete: onAnimationComplete,
+  });
 
   return (
-    <>
+    <span className="compose-dong-flashcard">
       <span
         aria-hidden="true"
-        className="compose-dong-flashcard__card compose-dong-flashcard__card--measure"
-        ref={measureRef}
+        className="compose-dong-flashcard__card compose-dong-flashcard__card--sizer"
       >
-        {COMPOSE_DONG_PLACEHOLDER_LABEL}
+        {incomingLabel ?? currentLabel ?? COMPOSE_DONG_PLACEHOLDER_LABEL}
       </span>
       <span
-        className="compose-dong-flashcard"
-        style={cardWidthPx ? { width: `${cardWidthPx}px` } : undefined}
+        className={`compose-dong-flashcard__card${
+          incomingLabel ? " compose-dong-flashcard__card--leaving" : ""
+        }`}
       >
-        <span
-          aria-hidden="true"
-          className="compose-dong-flashcard__card compose-dong-flashcard__card--sizer"
-        >
-          {COMPOSE_DONG_PLACEHOLDER_LABEL}
-        </span>
-        <span
-          className={`compose-dong-flashcard__card${
-            incomingLabel ? " compose-dong-flashcard__card--leaving" : ""
-          }`}
-        >
-          {currentLabel}
-        </span>
-        {incomingLabel ? (
-          <span className="compose-dong-flashcard__card compose-dong-flashcard__card--entering">
-            {incomingLabel}
-          </span>
-        ) : null}
+        {currentLabel}
       </span>
-    </>
+      {incomingLabel ? (
+        <span className="compose-dong-flashcard__card compose-dong-flashcard__card--entering">
+          {incomingLabel}
+        </span>
+      ) : null}
+    </span>
   );
 }

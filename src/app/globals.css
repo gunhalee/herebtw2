@@ -223,36 +223,30 @@ input {
   grid-template-areas: "stack";
   justify-items: stretch;
   margin: 0 0.2em;
-  min-height: 2em;
+  min-width: 4.25em;
+  min-height: 1.6em;
   perspective: 900px;
-  transition: width 180ms cubic-bezier(0.22, 1, 0.36, 1);
   vertical-align: middle;
 }
 
 .compose-dong-flashcard__card {
   align-items: center;
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: 999px;
   box-sizing: border-box;
   color: #000000;
   display: inline-flex;
   grid-area: stack;
-  height: 2em;
+  height: 1.6em;
   justify-content: center;
+  line-height: 1;
+  min-width: 4.25em;
   overflow: hidden;
-  padding: 0 0.72em;
+  padding: 0 0.65em;
   transform-style: preserve-3d;
   white-space: nowrap;
   will-change: opacity, transform;
   width: 100%;
-}
-
-.compose-dong-flashcard__card--measure {
-  left: -9999px;
-  position: fixed;
-  top: -9999px;
-  visibility: hidden;
-  width: auto;
 }
 
 .compose-dong-flashcard__card--sizer {
