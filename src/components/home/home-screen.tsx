@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import { DongPostsScreen } from "./dong-posts-screen";
 import { type PendingFeedSnapshot } from "./home-feed-state";
@@ -57,9 +57,7 @@ export function HomeScreen({
   const postListStateRef = useLatestRef(postListState);
   const syncInFlightRef = useRef(false);
   const engagementSyncInFlightRef = useRef(false);
-  const [shouldAnimateComposeDongPlaceholder, setShouldAnimateComposeDongPlaceholder] =
-    useState(false);
-  const hasTriggeredComposeDongAnimationRef = useRef(false);
+  const shouldAnimateComposeDongPlaceholder = true;
 
   const {
     appShellStateRef,
@@ -156,15 +154,6 @@ export function HomeScreen({
     setPostListState,
     setPendingFeedSnapshot,
   });
-
-  useLayoutEffect(() => {
-    if (!selectedDongCode || hasTriggeredComposeDongAnimationRef.current) {
-      return;
-    }
-
-    hasTriggeredComposeDongAnimationRef.current = true;
-    setShouldAnimateComposeDongPlaceholder(true);
-  }, [selectedDongCode]);
 
   function handleSelectCandidate(candidateId: string) {
     router.push(`/voices/candidate/${encodeURIComponent(candidateId)}`);

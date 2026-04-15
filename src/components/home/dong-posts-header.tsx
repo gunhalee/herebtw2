@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { memo, useLayoutEffect, useState, type Ref } from "react";
+import { memo, useLayoutEffect, useRef, useState, type Ref } from "react";
 import { homeScreenCopy } from "../../lib/content/home-copy";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import { ComposeDongFlashcard } from "./compose-dong-flashcard";
@@ -45,16 +45,31 @@ export const DongPostsHeader = memo(function DongPostsHeader({
   titleLineRef,
   shrinkTitleToIntrinsicWidth = false,
 }: DongPostsHeaderProps) {
-  const [showAnimatedBadge, setShowAnimatedBadge] = useState(false);
   const composeCta = homeScreenCopy.composeCta(currentDongName);
+  const [showAnimatedBadge, setShowAnimatedBadge] = useState(
+    animateComposeDongPlaceholder,
+  );
+  const settledLabelRef = useRef(composeCta.location);
   const composePrefix = composeCta.prefix.trimEnd();
   const composeSuffix = composeCta.suffix.trimStart();
 
   useLayoutEffect(() => {
-    if (animateComposeDongPlaceholder) {
+    if (!animateComposeDongPlaceholder) {
+      settledLabelRef.current = composeCta.location;
+      if (showAnimatedBadge) {
+        setShowAnimatedBadge(false);
+      }
+      return;
+    }
+
+    if (!showAnimatedBadge && settledLabelRef.current !== composeCta.location) {
       setShowAnimatedBadge(true);
     }
-  }, [animateComposeDongPlaceholder]);
+  }, [
+    animateComposeDongPlaceholder,
+    composeCta.location,
+    showAnimatedBadge,
+  ]);
 
   return (
     <header
@@ -180,7 +195,10 @@ export const DongPostsHeader = memo(function DongPostsHeader({
             <ComposeDongFlashcard
               animatePlaceholder
               label={composeCta.location}
-              onAnimationComplete={() => setShowAnimatedBadge(false)}
+              onAnimationComplete={() => {
+                settledLabelRef.current = composeCta.location;
+                setShowAnimatedBadge(false);
+              }}
             />
           ) : (
             <StaticComposeDongBadge label={composeCta.location} />
