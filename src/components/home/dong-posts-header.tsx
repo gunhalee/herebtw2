@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { memo, useEffect, useState, type Ref } from "react";
+import { memo, useLayoutEffect, useState, type Ref } from "react";
 import { homeScreenCopy } from "../../lib/content/home-copy";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import { ComposeDongFlashcard } from "./compose-dong-flashcard";
@@ -48,7 +48,7 @@ export const DongPostsHeader = memo(function DongPostsHeader({
   const [showAnimatedBadge, setShowAnimatedBadge] = useState(false);
   const composeCta = homeScreenCopy.composeCta(currentDongName);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (animateComposeDongPlaceholder) {
       setShowAnimatedBadge(true);
     }

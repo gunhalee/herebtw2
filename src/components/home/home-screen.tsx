@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import { DongPostsScreen } from "./dong-posts-screen";
 import { type PendingFeedSnapshot } from "./home-feed-state";
@@ -157,7 +157,7 @@ export function HomeScreen({
     setPendingFeedSnapshot,
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!selectedDongCode || hasTriggeredComposeDongAnimationRef.current) {
       return;
     }

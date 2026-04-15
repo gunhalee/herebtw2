@@ -30,7 +30,9 @@ export function useComposeDongFlashcard({
   animatePlaceholder,
   onIntroComplete,
 }: UseComposeDongFlashcardParams): UseComposeDongFlashcardResult {
-  const [currentLabel, setCurrentLabel] = useState(label);
+  const [currentLabel, setCurrentLabel] = useState(
+    animatePlaceholder ? COMPOSE_DONG_PLACEHOLDER_LABEL : label,
+  );
   const [incomingLabel, setIncomingLabel] = useState<string | null>(null);
   const [introRequested, setIntroRequested] = useState(animatePlaceholder);
   const finalLabelRef = useRef(label);
