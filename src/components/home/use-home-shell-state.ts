@@ -1,23 +1,10 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
-import {
-  buildReadyPostListState,
-  type PendingFeedSnapshot,
-} from "./home-feed-state";
+import { useState } from "react";
 import {
   ensureRegisteredBrowserDevice,
   readBrowserAnonymousDeviceId,
 } from "../../lib/device/browser-device";
-import {
-  useBrowserLocationSession,
-  type BrowserLocationSessionState,
-} from "../../lib/geo/browser-location-session";
 import { syncAdministrativeLocationCookie } from "../../lib/geo/administrative-location-cookie";
 import type { AdministrativeLocationSnapshot } from "../../lib/geo/browser-administrative-location";
 import { useDocumentScrollLock } from "../../lib/hooks/use-document-scroll-lock";
@@ -31,44 +18,11 @@ const COMPOSE_PLACEHOLDER_DONG_NAME = "우리 동네";
 type UseHomeShellStateParams = {
   initialAppShellState: AppShellState;
   initialPostListState: PostListState;
-  setPostListState: Dispatch<SetStateAction<PostListState>>;
-  setPendingFeedSnapshot: Dispatch<SetStateAction<PendingFeedSnapshot | null>>;
 };
-
-function applyLocationSessionToHomeShell(
-  locationSession: BrowserLocationSessionState,
-  options: {
-    setFeedLocation: Dispatch<SetStateAction<PostLocation | null>>;
-    setAdministrativeLocationSelection: (
-      location: AdministrativeLocationSnapshot | null,
-      state: {
-        permissionMode: AppShellState["permissionMode"];
-        readOnlyMode: boolean;
-      },
-    ) => void;
-  },
-) {
-  if (locationSession.permissionMode === "denied") {
-    options.setFeedLocation(null);
-    options.setAdministrativeLocationSelection(null, {
-      permissionMode: "denied",
-      readOnlyMode: false,
-    });
-    return;
-  }
-
-  options.setFeedLocation(locationSession.coordinates);
-  options.setAdministrativeLocationSelection(locationSession.resolvedLocation, {
-    permissionMode: locationSession.permissionMode,
-    readOnlyMode: false,
-  });
-}
 
 export function useHomeShellState({
   initialAppShellState,
   initialPostListState,
-  setPostListState,
-  setPendingFeedSnapshot,
 }: UseHomeShellStateParams) {
   const [appShellState, setAppShellState] = useState(initialAppShellState);
   const [feedLocation, setFeedLocation] = useState<PostLocation | null>(null);
@@ -77,7 +31,6 @@ export function useHomeShellState({
       ? "global"
       : "nearby",
   );
-  const locationSession = useBrowserLocationSession();
   const isMountedRef = useMountedRef();
   const appShellStateRef = useLatestRef(appShellState);
   const feedLocationRef = useLatestRef(feedLocation);
@@ -110,25 +63,23 @@ export function useHomeShellState({
     );
   }
 
-  useEffect(() => {
-    applyLocationSessionToHomeShell(locationSession, {
-      setFeedLocation,
-      setAdministrativeLocationSelection,
-    });
-  }, [locationSession]);
-
-  function applyCachedNearbyPostListState(
-    input: Pick<PostListState, "items" | "nextCursor">,
+  function applyResolvedLocationSelection(
+    location: AdministrativeLocationSnapshot,
+    coordinates: PostLocation,
   ) {
-    setPendingFeedSnapshot(null);
-    setFeedSortMode("nearby");
-    setPostListState((current) =>
-      buildReadyPostListState(current, {
-        items: input.items,
-        nextCursor: input.nextCursor,
-        sort: "distance",
-      }),
-    );
+    setFeedLocation(coordinates);
+    setAdministrativeLocationSelection(location, {
+      permissionMode: "granted",
+      readOnlyMode: false,
+    });
+  }
+
+  function applyDeniedLocationMode() {
+    setFeedLocation(null);
+    setAdministrativeLocationSelection(null, {
+      permissionMode: "denied",
+      readOnlyMode: false,
+    });
   }
 
   async function ensureDeviceReady() {
@@ -165,14 +116,14 @@ export function useHomeShellState({
 
   return {
     appShellStateRef,
-    applyCachedNearbyPostListState,
+    applyDeniedLocationMode,
+    applyResolvedLocationSelection,
     currentDongName:
       appShellState.selectedDongName ?? COMPOSE_PLACEHOLDER_DONG_NAME,
     selectedDongCode: appShellState.selectedDongCode,
     ensureDeviceReady,
     feedLocation,
     feedLocationRef,
-    locationSessionCoordinates: locationSession.coordinates,
     feedSortMode,
     hasInitialGlobalFeed,
     isMountedRef,

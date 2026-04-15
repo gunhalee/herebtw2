@@ -1,11 +1,8 @@
 import Link from "next/link";
-import type { Ref } from "react";
+import { memo, type Ref } from "react";
 import { homeScreenCopy } from "../../lib/content/home-copy";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
-import {
-  COMPOSE_DONG_PLACEHOLDER_LABEL,
-  ComposeDongFlashcard,
-} from "./compose-dong-flashcard";
+import { ComposeDongFlashcard } from "./compose-dong-flashcard";
 
 type DongPostsHeaderProps = {
   currentDongName: string;
@@ -14,16 +11,41 @@ type DongPostsHeaderProps = {
   shrinkTitleToIntrinsicWidth?: boolean;
 };
 
-export function DongPostsHeader({
+function StaticComposeDongBadge({
+  label,
+}: {
+  label: string;
+}) {
+  return (
+    <span
+      style={{
+        background: "#ffffff",
+        boxSizing: "border-box",
+        borderRadius: "999px",
+        color: uiColors.textStrong,
+        display: "inline-flex",
+        alignItems: "center",
+        flexShrink: 0,
+        height: "1.6em",
+        justifyContent: "center",
+        lineHeight: 1,
+        minWidth: "4.25em",
+        padding: "0 0.65em",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+export const DongPostsHeader = memo(function DongPostsHeader({
   currentDongName,
   animateComposeDongPlaceholder = false,
   titleLineRef,
   shrinkTitleToIntrinsicWidth = false,
 }: DongPostsHeaderProps) {
   const composeCta = homeScreenCopy.composeCta(currentDongName);
-  const shouldAnimatePlaceholderDong =
-    animateComposeDongPlaceholder ||
-    composeCta.location === COMPOSE_DONG_PLACEHOLDER_LABEL;
 
   return (
     <header
@@ -41,7 +63,7 @@ export function DongPostsHeader({
       }}
     >
       <Link
-        aria-label="메인 화면으로 이동"
+        aria-label="Go home"
         href="/"
         style={{
           alignItems: "center",
@@ -145,10 +167,14 @@ export function DongPostsHeader({
           >
             {composeCta.prefix}
           </span>
-          <ComposeDongFlashcard
-            animatePlaceholder={shouldAnimatePlaceholderDong}
-            label={composeCta.location}
-          />
+          {animateComposeDongPlaceholder ? (
+            <ComposeDongFlashcard
+              animatePlaceholder
+              label={composeCta.location}
+            />
+          ) : (
+            <StaticComposeDongBadge label={composeCta.location} />
+          )}
           <span
             style={{
               color: "#000000",
@@ -160,4 +186,4 @@ export function DongPostsHeader({
       </div>
     </header>
   );
-}
+});

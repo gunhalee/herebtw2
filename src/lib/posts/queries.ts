@@ -114,6 +114,21 @@ export async function getHomePageState(): Promise<HomePageState> {
   };
 }
 
+export async function getInteractiveHomeBootstrapState(): Promise<HomePageState> {
+  const [anonymousDeviceId, postListState] = await Promise.all([
+    readDeviceCookie(),
+    loadCachedGlobalPostsList(),
+  ]);
+
+  return {
+    appShellState: getInitialAppShellState({
+      anonymousDeviceId,
+    }),
+    candidateMessages: null,
+    postListState,
+  };
+}
+
 export async function getPublicHomePageShellState(): Promise<PublicHomePageShellState> {
   const postListState = await loadCachedGlobalPostsList();
   return {

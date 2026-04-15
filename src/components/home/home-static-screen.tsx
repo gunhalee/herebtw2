@@ -121,13 +121,19 @@ function StaticHomeHeader({
           <span>{composeCta.prefix}</span>
           <span
             style={{
+              alignItems: "center",
               background: "#ffffff",
+              boxSizing: "border-box",
               borderRadius: "999px",
               color: uiColors.textStrong,
               display: "inline-flex",
+              flexShrink: 0,
+              height: "1.6em",
               justifyContent: "center",
+              lineHeight: 1,
               minWidth: "fit-content",
-              padding: "0.05em 0.65em",
+              padding: "0 0.65em",
+              whiteSpace: "nowrap",
             }}
           >
             {composeCta.location}

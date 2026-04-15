@@ -11,6 +11,7 @@ import { applyBootstrapError, bootstrapHomeFeed } from "./home-feed-bootstrap";
 import { syncHomePostEngagement, syncNearbyHomeFeed } from "./home-feed-sync";
 import { type PendingFeedSnapshot } from "./home-feed-state";
 import { useVisiblePolling } from "../../lib/hooks/use-visible-polling";
+import type { AdministrativeLocationSnapshot } from "../../lib/geo/browser-administrative-location";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 
@@ -37,8 +38,10 @@ type UseHomeFeedLifecycleParams = {
   agreePendingPostIdsRef: MutableRefObject<string[]>;
   syncInFlightRef: MutableRefObject<boolean>;
   engagementSyncInFlightRef: MutableRefObject<boolean>;
-  applyCachedNearbyPostListState: (
-    input: Pick<PostListState, "items" | "nextCursor">,
+  applyDeniedLocationMode: () => void;
+  applyResolvedLocationSelection: (
+    location: AdministrativeLocationSnapshot,
+    coordinates: PostLocation,
   ) => void;
   setAppShellState: Dispatch<SetStateAction<AppShellState>>;
   setFeedSortMode: Dispatch<SetStateAction<"nearby" | "global">>;
@@ -57,7 +60,8 @@ export function useHomeFeedLifecycle({
   agreePendingPostIdsRef,
   syncInFlightRef,
   engagementSyncInFlightRef,
-  applyCachedNearbyPostListState,
+  applyDeniedLocationMode,
+  applyResolvedLocationSelection,
   setAppShellState,
   setFeedSortMode,
   setPostListState,
@@ -78,11 +82,12 @@ export function useHomeFeedLifecycle({
       hasInitialGlobalFeed: hasInitialGlobalFeedRef.current,
       initialPostListState: initialPostListStateRef.current,
       isCancelled: () => cancelled,
+      applyDeniedLocationMode,
+      applyResolvedLocationSelection,
       setAppShellState,
       setFeedSortMode,
       setPostListState,
       setPendingFeedSnapshot,
-      applyCachedNearbyPostListState,
     }).then(() => {
       if (!cancelled) {
         bootstrapCompletedRef.current = true;

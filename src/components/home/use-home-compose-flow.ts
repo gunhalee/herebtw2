@@ -20,7 +20,6 @@ type UseHomeComposeFlowParams = {
   isMountedRef: MutableRefObject<boolean>;
   appShellStateRef: MutableRefObject<AppShellState>;
   feedLocationRef: MutableRefObject<PostLocation | null>;
-  locationSessionCoordinates: PostLocation | null;
   setFeedSortMode: Dispatch<SetStateAction<"nearby" | "global">>;
   setPostListState: Dispatch<SetStateAction<PostListState>>;
   setPendingFeedSnapshot: Dispatch<SetStateAction<PendingFeedSnapshot | null>>;
@@ -31,7 +30,6 @@ export function useHomeComposeFlow({
   isMountedRef,
   appShellStateRef,
   feedLocationRef,
-  locationSessionCoordinates,
   setFeedSortMode,
   setPostListState,
   setPendingFeedSnapshot,
@@ -44,7 +42,7 @@ export function useHomeComposeFlow({
   async function handleCompose() {
     closeMenu();
     setComposePermissionDialogOpen(false);
-    const composeLocation = feedLocationRef.current ?? locationSessionCoordinates;
+    const composeLocation = feedLocationRef.current;
 
     if (!composeLocation) {
       const locationSession = await ensureBrowserLocationCoordinates();

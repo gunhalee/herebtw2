@@ -1,8 +1,8 @@
 import { ok } from "../../../../lib/api/response";
-import { getHomePageState } from "../../../../lib/posts/queries";
+import { getInteractiveHomeBootstrapState } from "../../../../lib/posts/queries";
 
 export async function GET() {
-  const data = await getHomePageState();
+  const data = await getInteractiveHomeBootstrapState();
 
   return ok(data, {
     headers: {

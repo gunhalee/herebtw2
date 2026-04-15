@@ -57,17 +57,17 @@ export function HomeScreen({
   const postListStateRef = useLatestRef(postListState);
   const syncInFlightRef = useRef(false);
   const engagementSyncInFlightRef = useRef(false);
-  const shouldAnimateComposeDongPlaceholder = true;
+  const shouldAnimateComposeDongPlaceholder = false;
 
   const {
     appShellStateRef,
-    applyCachedNearbyPostListState,
+    applyDeniedLocationMode,
+    applyResolvedLocationSelection,
     currentDongName,
     selectedDongCode,
     ensureDeviceReady,
     feedLocation,
     feedLocationRef,
-    locationSessionCoordinates,
     feedSortMode,
     hasInitialGlobalFeed,
     isMountedRef,
@@ -77,8 +77,6 @@ export function HomeScreen({
   } = useHomeShellState({
     initialAppShellState,
     initialPostListState,
-    setPostListState,
-    setPendingFeedSnapshot,
   });
 
   const {
@@ -132,7 +130,6 @@ export function HomeScreen({
     isMountedRef,
     appShellStateRef,
     feedLocationRef,
-    locationSessionCoordinates,
     setFeedSortMode,
     setPostListState,
     setPendingFeedSnapshot,
@@ -150,7 +147,8 @@ export function HomeScreen({
     agreePendingPostIdsRef,
     syncInFlightRef,
     engagementSyncInFlightRef,
-    applyCachedNearbyPostListState,
+    applyDeniedLocationMode,
+    applyResolvedLocationSelection,
     setAppShellState,
     setFeedSortMode,
     setPostListState,
