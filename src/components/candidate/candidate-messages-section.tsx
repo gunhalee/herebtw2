@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutEffect } from "react";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
 import {
   type CandidateMessagesPayload,
@@ -13,6 +14,7 @@ type CandidateMessagesSectionProps = {
   initialData?: CandidateMessagesPayload | null;
   initialDongCode?: string | null;
   onSelectCandidate?: (candidateId: string) => void;
+  onReady?: (dongCode: string) => void;
 };
 
 function CandidateMessagesToggleIcon({
@@ -49,16 +51,32 @@ export function CandidateMessagesSection({
   initialData = null,
   initialDongCode = null,
   onSelectCandidate,
+  onReady,
 }: CandidateMessagesSectionProps) {
   const {
     candidates,
     collapsedCandidates,
+    isResolved,
     othersOpen,
     primaryCandidates,
     setOthersOpen,
     userDistricts,
     visibleCandidates,
   } = useCandidateMessagesSection(dongCode, initialData, initialDongCode);
+
+  useLayoutEffect(() => {
+    if (!dongCode || !isResolved || !onReady) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      onReady(dongCode);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [dongCode, isResolved, onReady]);
 
   if (candidates.length === 0) {
     return null;

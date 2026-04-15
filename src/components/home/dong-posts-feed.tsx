@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { RefObject } from "react";
 import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import { ErrorState } from "../common/error-state";
@@ -57,9 +57,15 @@ export function DongPostsFeed({
   onSelectReport,
   onToggleAgree,
 }: DongPostsFeedProps) {
+  const [pendingCandidateSectionDongCode, setPendingCandidateSectionDongCode] =
+    useState<string | null>(dongCode);
   const bottomPadding = shouldShowPendingUpdatesButton
     ? "calc(172px + env(safe-area-inset-bottom, 0px))"
     : "calc(108px + env(safe-area-inset-bottom, 0px))";
+  const shouldKeepVeilForCandidateSection =
+    pendingCandidateSectionDongCode !== null;
+  const shouldRenderVeil =
+    shouldObscurePosts || shouldKeepVeilForCandidateSection;
 
   useEffect(() => {
     scrollContainerRef.current?.scrollTo({
@@ -67,6 +73,16 @@ export function DongPostsFeed({
       behavior: "auto",
     });
   }, [dongCode, scrollContainerRef]);
+
+  useEffect(() => {
+    setPendingCandidateSectionDongCode(dongCode);
+  }, [dongCode]);
+
+  function handleCandidateSectionReady(readyDongCode: string) {
+    setPendingCandidateSectionDongCode((current) =>
+      current === readyDongCode ? null : current,
+    );
+  }
 
   return (
     <div
@@ -125,23 +141,24 @@ export function DongPostsFeed({
             dongCode={dongCode}
             initialData={initialCandidateMessages}
             initialDongCode={initialCandidateMessagesDongCode}
+            onReady={handleCandidateSectionReady}
             onSelectCandidate={onSelectCandidate}
           />
         ) : null}
 
         <div
           className="global-feed-preview"
-          data-obscured={shouldObscurePosts ? "true" : undefined}
+          data-obscured={shouldRenderVeil ? "true" : undefined}
           style={{
             position: "relative",
           }}
         >
           <div
-            className={shouldObscurePosts ? "global-feed-preview__content" : undefined}
+            className={shouldRenderVeil ? "global-feed-preview__content" : undefined}
           >
             <DongPostsFeedContent
               activeMenuPostId={activeMenuPostId}
-              shouldObscurePosts={shouldObscurePosts}
+              shouldObscurePosts={shouldRenderVeil}
               state={state}
               onCloseMenu={onCloseMenu}
               onLoadMore={onLoadMore}
@@ -150,7 +167,7 @@ export function DongPostsFeed({
               onToggleAgree={onToggleAgree}
             />
           </div>
-          {shouldObscurePosts ? <DongPostsFeedVeil /> : null}
+          {shouldRenderVeil ? <DongPostsFeedVeil /> : null}
         </div>
       </div>
     </div>

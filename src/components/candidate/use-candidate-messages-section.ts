@@ -70,12 +70,16 @@ export function useCandidateMessagesSection(
   const [userDistricts, setUserDistricts] = useState<UserDistricts>(
     matchedInitialData?.userDistricts ?? null,
   );
+  const [isResolved, setIsResolved] = useState(
+    !dongCode || Boolean(matchedInitialData),
+  );
   const [othersOpen, setOthersOpen] = useState(false);
 
   useLayoutEffect(() => {
     if (!dongCode) {
       setCandidates([]);
       setUserDistricts(null);
+      setIsResolved(true);
       setOthersOpen(false);
       return;
     }
@@ -85,6 +89,7 @@ export function useCandidateMessagesSection(
       setCandidates,
       setUserDistricts,
     });
+    setIsResolved(Boolean(cached ?? matchedInitialData));
     setOthersOpen(false);
   }, [dongCode, matchedInitialData]);
 
@@ -106,6 +111,7 @@ export function useCandidateMessagesSection(
 
         setCandidates(nextCandidates);
         setUserDistricts(nextUserDistricts);
+        setIsResolved(true);
 
         writeCache({
           candidates: nextCandidates,
@@ -115,6 +121,9 @@ export function useCandidateMessagesSection(
       })
       .catch((error) => {
         console.warn("[CandidateMessagesSection] fetch failed:", error);
+        if (!cancelled) {
+          setIsResolved(true);
+        }
       });
 
     return () => {
@@ -140,5 +149,6 @@ export function useCandidateMessagesSection(
     userDistricts,
     visibleCandidates:
       primaryCandidates.length > 0 ? primaryCandidates : candidates,
+    isResolved,
   };
 }
