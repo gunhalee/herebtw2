@@ -7,7 +7,6 @@ import {
   readCachedAdministrativeLocation,
   writeCachedAdministrativeLocation,
 } from "./browser-administrative-location";
-import { syncAdministrativeLocationCookie } from "./administrative-location-cookie";
 import {
   getBrowserLocationPermissionMode,
   resolveAdministrativeLocation,
@@ -314,7 +313,6 @@ function beginBrowserLocationSessionRefresh() {
         phase: "error",
         error,
       });
-      syncAdministrativeLocationCookie(null);
       }
 
       return getBrowserLocationSessionSnapshot();
@@ -381,9 +379,6 @@ function beginBrowserLocationSessionRefresh() {
             ? "coordinates_ready"
             : "error",
       }));
-      if (!getBrowserLocationSessionSnapshot().resolvedLocation) {
-        syncAdministrativeLocationCookie(null);
-      }
     } finally {
       if (currentRefreshSequence === refreshSequence) {
         coordinatesRefreshPromise = null;

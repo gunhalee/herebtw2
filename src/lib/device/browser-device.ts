@@ -1,10 +1,8 @@
 import { createJsonPostRequestInit, fetchClientApiData } from "../api/client";
 
 const ANONYMOUS_DEVICE_STORAGE_KEY = "shout.anonymousDeviceId";
-const ANONYMOUS_DEVICE_COOKIE_KEY = "shout_anonymous_device_id";
 const DEVICE_REGISTERED_AT_STORAGE_KEY = "shout.deviceRegisteredAt";
 const DEVICE_REGISTER_TTL_MS = 1000 * 60 * 60 * 24;
-const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;
 
 type RegisterDeviceResponse = {
   device: {
@@ -28,9 +26,6 @@ function persistAnonymousDeviceId(anonymousDeviceId: string) {
     ANONYMOUS_DEVICE_STORAGE_KEY,
     anonymousDeviceId,
   );
-  document.cookie =
-     `${ANONYMOUS_DEVICE_COOKIE_KEY}=${encodeURIComponent(anonymousDeviceId)}; ` +
-     `Max-Age=${ONE_YEAR_IN_SECONDS}; Path=/; SameSite=Lax`;
 }
 
 function markBrowserDeviceRegistered() {

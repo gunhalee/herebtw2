@@ -5,7 +5,6 @@ import {
   ensureRegisteredBrowserDevice,
   readBrowserAnonymousDeviceId,
 } from "../../lib/device/browser-device";
-import { syncAdministrativeLocationCookie } from "../../lib/geo/administrative-location-cookie";
 import type { AdministrativeLocationSnapshot } from "../../lib/geo/browser-administrative-location";
 import { useDocumentScrollLock } from "../../lib/hooks/use-document-scroll-lock";
 import { useLatestRef } from "../../lib/hooks/use-latest-ref";
@@ -53,14 +52,6 @@ export function useHomeShellState({
       selectedDongCode: location?.administrativeDongCode ?? null,
       selectedDongName: location?.administrativeDongName ?? null,
     }));
-    syncAdministrativeLocationCookie(
-      location
-        ? {
-            administrativeDongCode: location.administrativeDongCode,
-            administrativeDongName: location.administrativeDongName,
-          }
-        : null,
-    );
   }
 
   function applyResolvedLocationSelection(
