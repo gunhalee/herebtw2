@@ -37,7 +37,7 @@ function getInitialAppShellState(
     anonymousDeviceId: options?.anonymousDeviceId ?? null,
     deviceReady: Boolean(options?.anonymousDeviceId),
     permissionMode: "unknown",
-    readOnlyMode: false,
+    readOnlyMode: true,
     selectedDongCode: null,
     selectedDongName: null,
   };

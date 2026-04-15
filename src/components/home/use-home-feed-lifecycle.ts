@@ -94,7 +94,7 @@ export function useHomeFeedLifecycle({
       }
     }).catch((error) => {
       if (!cancelled) {
-        applyBootstrapError(setPostListState, error);
+        applyBootstrapError(setAppShellState, setPostListState, error);
       }
     });
 

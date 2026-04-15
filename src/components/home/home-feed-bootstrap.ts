@@ -34,6 +34,19 @@ type BootstrapHomeFeedParams = {
   setPendingFeedSnapshot: Dispatch<SetStateAction<PendingFeedSnapshot | null>>;
 };
 
+function releaseReadOnlyMode(
+  setAppShellState: Dispatch<SetStateAction<AppShellState>>,
+) {
+  setAppShellState((current) =>
+    current.readOnlyMode
+      ? {
+          ...current,
+          readOnlyMode: false,
+        }
+      : current,
+  );
+}
+
 function markDeviceReady(
   setAppShellState: Dispatch<SetStateAction<AppShellState>>,
   anonymousDeviceId: string,
@@ -135,6 +148,8 @@ export async function bootstrapHomeFeed({
       applyDeniedLocationMode();
     } else if (resolvedCoordinates && resolvedLocation) {
       applyResolvedLocationSelection(resolvedLocation, resolvedCoordinates);
+    } else {
+      releaseReadOnlyMode(setAppShellState);
     }
 
     setFeedSortMode(resolvedCoordinates ? "nearby" : "global");
@@ -168,9 +183,11 @@ export async function bootstrapHomeFeed({
 }
 
 export function applyBootstrapError(
+  setAppShellState: Dispatch<SetStateAction<AppShellState>>,
   setPostListState: Dispatch<SetStateAction<PostListState>>,
   error: unknown,
 ) {
+  releaseReadOnlyMode(setAppShellState);
   setPostListState((current) =>
     current.items.length > 0
       ? buildReadyPostListState(current, {

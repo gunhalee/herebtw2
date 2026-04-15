@@ -15,6 +15,7 @@ import {
 } from "../../lib/ui/tokens";
 import checkmarkIcon from "../checkmark-floating.svg";
 import thumbsUpImage from "../thumbs_up.png";
+import { DongPostsFeedVeil } from "./dong-posts-feed-veil";
 
 const HOME_FALLBACK_DONG_NAME = "우리 동네";
 const LOCAL_COUNCIL_LABEL = "기초의회";
@@ -716,8 +717,10 @@ function StaticPostListCard({
 
 function StaticHomeFeedContent({
   state,
+  shouldObscurePosts,
 }: {
   state: PostListState;
+  shouldObscurePosts: boolean;
 }) {
   if (state.empty) {
     return (
@@ -770,6 +773,7 @@ function StaticHomeFeedContent({
         <div
           data-post-id={item.id}
           key={item.id}
+          className={shouldObscurePosts ? "global-feed-preview__card" : undefined}
           style={{
             position: "relative",
           }}
@@ -851,6 +855,12 @@ export function HomeStaticScreen({
   postListState: PostListState;
   selectedDongCode: string | null;
 }) {
+  const shouldObscurePosts =
+    postListState.sort === "latest" &&
+    !postListState.loading &&
+    !postListState.errorMessage &&
+    !postListState.empty;
+
   return (
     <div
       style={{
@@ -905,7 +915,25 @@ export function HomeStaticScreen({
               dongCode={selectedDongCode}
               initialData={candidateMessages}
             />
-            <StaticHomeFeedContent state={postListState} />
+            <div
+              className="global-feed-preview"
+              data-obscured={shouldObscurePosts ? "true" : undefined}
+              style={{
+                position: "relative",
+              }}
+            >
+              <div
+                className={
+                  shouldObscurePosts ? "global-feed-preview__content" : undefined
+                }
+              >
+                <StaticHomeFeedContent
+                  shouldObscurePosts={shouldObscurePosts}
+                  state={postListState}
+                />
+              </div>
+              {shouldObscurePosts ? <DongPostsFeedVeil /> : null}
+            </div>
           </div>
         </div>
 
