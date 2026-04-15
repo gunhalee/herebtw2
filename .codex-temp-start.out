@@ -1,0 +1,34 @@
+
+> herebtw-mvp@0.1.0 start
+> next start -p 3110
+
+   ▲ Next.js 15.5.14
+   - Local:        http://localhost:3110
+   - Network:      http://172.20.10.3:3110
+
+ ✓ Starting...
+ ✓ Ready in 1277ms
+[posts-feed] load_posts_list {
+  scope: 'global',
+  limit: 5,
+  hasCursor: false,
+  hasViewerLocation: false,
+  hasAnonymousDeviceId: false,
+  path: 'rpc',
+  itemCount: 5,
+  hasMore: true,
+  rpcDurationMs: 256,
+  totalDurationMs: 257
+}
+[posts-feed] load_posts_list {
+  scope: 'global',
+  limit: 5,
+  hasCursor: false,
+  hasViewerLocation: false,
+  hasAnonymousDeviceId: false,
+  path: 'rpc',
+  itemCount: 5,
+  hasMore: true,
+  rpcDurationMs: 212,
+  totalDurationMs: 213
+}

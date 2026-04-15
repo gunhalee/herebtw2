@@ -1,7 +1,31 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+function redirectLegacyCandidateHomeRequest(request: NextRequest) {
+  if (request.nextUrl.pathname !== "/") {
+    return null;
+  }
+
+  const candidateId = request.nextUrl.searchParams.get("candidateId")?.trim();
+
+  if (!candidateId) {
+    return null;
+  }
+
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = `/voices/candidate/${encodeURIComponent(candidateId)}`;
+  redirectUrl.searchParams.delete("candidateId");
+
+  return NextResponse.redirect(redirectUrl);
+}
+
 export async function middleware(request: NextRequest) {
+  const legacyCandidateRedirect = redirectLegacyCandidateHomeRequest(request);
+
+  if (legacyCandidateRedirect) {
+    return legacyCandidateRedirect;
+  }
+
   const { pathname } = request.nextUrl;
 
   if (!pathname.startsWith("/candidate")) {
@@ -45,5 +69,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/candidate/:path*"],
+  matcher: ["/", "/candidate/:path*"],
 };

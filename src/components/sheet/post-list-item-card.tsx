@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { formatAdministrativeAreaNameForHomeDisplay } from "../../lib/geo/format-administrative-area";
 import { formatBucketedDistance } from "../../lib/geo/format-bucketed-distance";
+import { getSupabaseRenderImageUrl } from "../../lib/supabase/storage";
 import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
 import thumbsUpImage from "../thumbs_up.png";
 
@@ -27,6 +28,11 @@ type PostListItemCardProps = {
   onOpenMenu?: () => void;
   onToggleAgree?: () => void;
 };
+
+const REPLY_CANDIDATE_PHOTO_WIDTH = 57;
+const REPLY_CANDIDATE_PHOTO_HEIGHT = 76;
+const REPLY_CANDIDATE_PHOTO_REQUEST_WIDTH = REPLY_CANDIDATE_PHOTO_WIDTH * 2;
+const REPLY_CANDIDATE_PHOTO_REQUEST_HEIGHT = REPLY_CANDIDATE_PHOTO_HEIGHT * 2;
 
 export function PostListItemCard({
   menuPostId,
@@ -58,6 +64,12 @@ export function PostListItemCard({
   const hasReply = replyStatus === "replied" && Boolean(replyContent);
   const replyNameLabel = replyCandidateName?.trim() ?? "";
   const replyDistrictLabel = replyCandidateLocalCouncilDistrict?.trim() ?? "";
+  const replyCandidatePortraitUrl = getSupabaseRenderImageUrl(replyCandidatePhotoUrl, {
+    width: REPLY_CANDIDATE_PHOTO_REQUEST_WIDTH,
+    height: REPLY_CANDIDATE_PHOTO_REQUEST_HEIGHT,
+    quality: 70,
+    resize: "cover",
+  });
   const replyCouncilBadge =
     replyCandidateCouncilType ?? (replyDistrictLabel ? "구·시·군의회" : null);
 
@@ -218,13 +230,17 @@ export function PostListItemCard({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 alt={`${replyCandidateName ?? ""} 후보`}
-                src={replyCandidatePhotoUrl}
+                decoding="async"
+                height={REPLY_CANDIDATE_PHOTO_HEIGHT}
+                src={replyCandidatePortraitUrl ?? replyCandidatePhotoUrl}
+                width={REPLY_CANDIDATE_PHOTO_WIDTH}
                 style={{
                   alignSelf: "flex-end",
                   display: "block",
                   flexShrink: 0,
-                  height: "76px",
-                  width: "auto",
+                  height: `${REPLY_CANDIDATE_PHOTO_HEIGHT}px`,
+                  objectFit: "cover",
+                  width: `${REPLY_CANDIDATE_PHOTO_WIDTH}px`,
                 }}
               />
             ) : (

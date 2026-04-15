@@ -3,8 +3,6 @@
 import { useEffect } from "react";
 import type { RefObject } from "react";
 import { CandidateMessagesSection } from "../candidate/candidate-messages-section";
-import { CandidateRepliesScreen } from "../candidate/candidate-replies-screen";
-import type { SelectedCandidateRepliesPayload } from "../candidate/candidate-replies-types";
 import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import { ErrorState } from "../common/error-state";
 import { LoadingState } from "../common/loading-state";
@@ -19,12 +17,10 @@ type DongPostsFeedProps = {
   interactionLocked?: boolean;
   initialCandidateMessages?: CandidateMessagesPayload | null;
   initialCandidateMessagesDongCode?: string | null;
-  selectedCandidateReplies?: SelectedCandidateRepliesPayload | null;
   scrollContainerRef: RefObject<HTMLDivElement | null>;
   shouldObscurePosts: boolean;
   shouldShowPendingUpdatesButton: boolean;
   state: PostListState;
-  onCloseCandidateReplies?: () => void;
   onCloseMenu?: () => void;
   onLoadMore?: () => void;
   onOpenMenu?: (postId: string) => void;
@@ -39,12 +35,10 @@ export function DongPostsFeed({
   interactionLocked = false,
   initialCandidateMessages = null,
   initialCandidateMessagesDongCode = null,
-  selectedCandidateReplies = null,
   scrollContainerRef,
   shouldObscurePosts,
   shouldShowPendingUpdatesButton,
   state,
-  onCloseCandidateReplies,
   onCloseMenu,
   onLoadMore,
   onOpenMenu,
@@ -52,19 +46,16 @@ export function DongPostsFeed({
   onSelectReport,
   onToggleAgree,
 }: DongPostsFeedProps) {
-  const embeddedRepliesOpen = Boolean(selectedCandidateReplies);
-  const bottomPadding = embeddedRepliesOpen
-    ? `calc(${uiSpacing.xxl} + env(safe-area-inset-bottom, 0px))`
-    : shouldShowPendingUpdatesButton
-      ? "calc(172px + env(safe-area-inset-bottom, 0px))"
-      : "calc(108px + env(safe-area-inset-bottom, 0px))";
+  const bottomPadding = shouldShowPendingUpdatesButton
+    ? "calc(172px + env(safe-area-inset-bottom, 0px))"
+    : "calc(108px + env(safe-area-inset-bottom, 0px))";
 
   useEffect(() => {
     scrollContainerRef.current?.scrollTo({
       top: 0,
       behavior: "auto",
     });
-  }, [scrollContainerRef, selectedCandidateReplies?.candidateId]);
+  }, [dongCode, scrollContainerRef]);
 
   return (
     <div
@@ -115,26 +106,10 @@ export function DongPostsFeed({
           />
         ) : null}
 
-        {!selectedCandidateReplies && state.loading ? (
-          <LoadingState label="Loading posts" />
-        ) : null}
-        {!selectedCandidateReplies && state.errorMessage ? (
-          <ErrorState message={state.errorMessage} />
-        ) : null}
+        {state.loading ? <LoadingState label="Loading posts" /> : null}
+        {state.errorMessage ? <ErrorState message={state.errorMessage} /> : null}
 
-        {selectedCandidateReplies ? (
-          <CandidateRepliesScreen
-            key={selectedCandidateReplies.candidateId}
-            candidateId={selectedCandidateReplies.candidateId}
-            candidateMessageCard={selectedCandidateReplies.candidateMessageCard}
-            candidateName={selectedCandidateReplies.candidateName}
-            initialState={selectedCandidateReplies.initialState}
-            layout="embedded"
-            onBack={onCloseCandidateReplies}
-          />
-        ) : null}
-
-        {!selectedCandidateReplies && dongCode ? (
+        {dongCode ? (
           <CandidateMessagesSection
             dongCode={dongCode}
             initialData={initialCandidateMessages}
@@ -143,33 +118,29 @@ export function DongPostsFeed({
           />
         ) : null}
 
-        {!selectedCandidateReplies ? (
+        <div
+          className="global-feed-preview"
+          data-obscured={shouldObscurePosts ? "true" : undefined}
+          style={{
+            position: "relative",
+          }}
+        >
           <div
-            className="global-feed-preview"
-            data-obscured={shouldObscurePosts ? "true" : undefined}
-            style={{
-              position: "relative",
-            }}
+            className={shouldObscurePosts ? "global-feed-preview__content" : undefined}
           >
-            <div
-              className={
-                shouldObscurePosts ? "global-feed-preview__content" : undefined
-              }
-            >
-              <DongPostsFeedContent
-                activeMenuPostId={activeMenuPostId}
-                shouldObscurePosts={shouldObscurePosts}
-                state={state}
-                onCloseMenu={onCloseMenu}
-                onLoadMore={onLoadMore}
-                onOpenMenu={onOpenMenu}
-                onSelectReport={onSelectReport}
-                onToggleAgree={onToggleAgree}
-              />
-            </div>
-            {shouldObscurePosts ? <DongPostsFeedVeil /> : null}
+            <DongPostsFeedContent
+              activeMenuPostId={activeMenuPostId}
+              shouldObscurePosts={shouldObscurePosts}
+              state={state}
+              onCloseMenu={onCloseMenu}
+              onLoadMore={onLoadMore}
+              onOpenMenu={onOpenMenu}
+              onSelectReport={onSelectReport}
+              onToggleAgree={onToggleAgree}
+            />
           </div>
-        ) : null}
+          {shouldObscurePosts ? <DongPostsFeedVeil /> : null}
+        </div>
       </div>
     </div>
   );

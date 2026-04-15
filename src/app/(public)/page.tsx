@@ -1,35 +1,21 @@
-import { HomeScreen } from "../../components/home/home-screen";
-import { getHomePageState } from "../../lib/posts/queries";
+import { HomeScreenBootstrap } from "../../components/home/home-screen-bootstrap";
+import { HomeStaticScreen } from "../../components/home/home-static-screen";
+import { getPublicHomePageShellState } from "../../lib/posts/queries";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 10;
 
-type PageProps = {
-  searchParams?: Promise<{
-    candidateId?: string | string[];
-  }>;
-};
-
-export default async function HomePage({ searchParams }: PageProps) {
-  const resolvedSearchParams = (await searchParams) ?? {};
-  const rawCandidateId = resolvedSearchParams.candidateId;
-  const candidateId = Array.isArray(rawCandidateId)
-    ? rawCandidateId[0] ?? null
-    : rawCandidateId ?? null;
-  const {
-    appShellState,
-    candidateMessages,
-    postListState,
-    selectedCandidateReplies,
-  } = await getHomePageState({
-    candidateId,
-  });
+export default async function HomePage() {
+  const { currentDongName, selectedDongCode, candidateMessages, postListState } =
+    await getPublicHomePageShellState();
 
   return (
-    <HomeScreen
-      initialAppShellState={appShellState}
-      initialCandidateMessages={candidateMessages}
-      initialPostListState={postListState}
-      selectedCandidateReplies={selectedCandidateReplies}
-    />
+    <HomeScreenBootstrap>
+      <HomeStaticScreen
+        candidateMessages={candidateMessages}
+        currentDongName={currentDongName}
+        postListState={postListState}
+        selectedDongCode={selectedDongCode}
+      />
+    </HomeScreenBootstrap>
   );
 }

@@ -2,30 +2,38 @@ import { unstable_cache } from "next/cache";
 import { cookies } from "next/headers";
 import type { CandidateMessagesPayload } from "../candidates/messages";
 import { loadCandidateMessages } from "../candidates/messages";
-import { loadCandidateReplyHeaderCardForCandidate } from "../candidates/reply-header-card";
-import type { SelectedCandidateRepliesPayload } from "../../components/candidate/candidate-replies-types";
 import {
   SELECTED_DONG_CODE_COOKIE_KEY,
   SELECTED_DONG_NAME_COOKIE_KEY,
 } from "../geo/administrative-location-cookie";
 import type { AppShellState } from "../../types/device";
 import type { PostListState } from "../../types/post";
-import {
-  findCandidateById,
-  loadGlobalPostsListRepository,
-  loadCandidateRepliesFeedRepository,
-} from "./repository";
+import { loadGlobalPostsListRepository } from "./repository";
 
 const ANONYMOUS_DEVICE_COOKIE_KEY = "shout_anonymous_device_id";
+const HOME_SHELL_FEED_LIMIT = 5;
 
 const loadCachedGlobalPostsList = unstable_cache(
-  async () => loadGlobalPostsListRepository({ limit: 10 }),
+  async () => loadGlobalPostsListRepository({ limit: HOME_SHELL_FEED_LIMIT }),
   ["posts-global-feed"],
   {
     revalidate: 10,
     tags: ["posts-global-feed"],
   },
 );
+
+export type HomePageState = {
+  appShellState: AppShellState;
+  candidateMessages: CandidateMessagesPayload | null;
+  postListState: PostListState;
+};
+
+export type PublicHomePageShellState = {
+  currentDongName: string | null;
+  selectedDongCode: string | null;
+  candidateMessages: CandidateMessagesPayload | null;
+  postListState: PostListState;
+};
 
 function getInitialAppShellState(
   options?: {
@@ -80,14 +88,7 @@ async function readAdministrativeLocationCookies(): Promise<{
   }
 }
 
-export async function getHomePageState(options?: {
-  candidateId?: string | null;
-}): Promise<{
-  appShellState: AppShellState;
-  candidateMessages: CandidateMessagesPayload | null;
-  postListState: PostListState;
-  selectedCandidateReplies: SelectedCandidateRepliesPayload | null;
-}> {
+export async function getHomePageState(): Promise<HomePageState> {
   const [anonymousDeviceId, administrativeLocation] = await Promise.all([
     readDeviceCookie(),
     readAdministrativeLocationCookies(),
@@ -97,50 +98,28 @@ export async function getHomePageState(options?: {
     selectedDongCode: administrativeLocation.selectedDongCode,
     selectedDongName: administrativeLocation.selectedDongName,
   });
-  const [postListState, candidateMessages, selectedCandidateReplies] =
-    await Promise.all([
-      loadCachedGlobalPostsList(),
-      administrativeLocation.selectedDongCode
-        ? loadCandidateMessages(administrativeLocation.selectedDongCode).catch(
-            () => null,
-          )
-        : Promise.resolve(null),
-      loadSelectedCandidateReplies(options?.candidateId ?? null),
+  const [postListState, candidateMessages] = await Promise.all([
+    loadCachedGlobalPostsList(),
+    administrativeLocation.selectedDongCode
+      ? loadCandidateMessages(administrativeLocation.selectedDongCode).catch(
+          () => null,
+        )
+      : Promise.resolve(null),
   ]);
 
   return {
     appShellState,
     candidateMessages,
     postListState,
-    selectedCandidateReplies,
   };
 }
 
-async function loadSelectedCandidateReplies(
-  candidateId: string | null,
-): Promise<SelectedCandidateRepliesPayload | null> {
-  if (!candidateId) {
-    return null;
-  }
-
-  const candidate = await findCandidateById(candidateId);
-
-  if (!candidate) {
-    return null;
-  }
-
-  const [initialState, candidateMessageCard] = await Promise.all([
-    loadCandidateRepliesFeedRepository({
-      candidateId: candidate.id,
-      limit: 10,
-    }),
-    loadCandidateReplyHeaderCardForCandidate(candidate),
-  ]);
-
+export async function getPublicHomePageShellState(): Promise<PublicHomePageShellState> {
+  const postListState = await loadCachedGlobalPostsList();
   return {
-    candidateId: candidate.id,
-    candidateName: candidate.name,
-    candidateMessageCard,
-    initialState,
+    currentDongName: null,
+    selectedDongCode: null,
+    candidateMessages: null,
+    postListState,
   };
 }

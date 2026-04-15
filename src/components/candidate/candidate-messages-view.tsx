@@ -1,5 +1,6 @@
 "use client";
 import { ChevronRight } from "lucide-react";
+import { getSupabaseRenderImageUrl } from "../../lib/supabase/storage";
 import { uiBrandYellow, uiColors, uiSpacing } from "../../lib/ui/tokens";
 import type {
   CandidateMessage,
@@ -7,6 +8,10 @@ import type {
 } from "../../lib/candidates/messages";
 
 const PHOTO_FALLBACK_WIDTH = 72;
+const CANDIDATE_PHOTO_WIDTH = 57;
+const CANDIDATE_PHOTO_HEIGHT = 76;
+const CANDIDATE_PHOTO_REQUEST_WIDTH = CANDIDATE_PHOTO_WIDTH * 2;
+const CANDIDATE_PHOTO_REQUEST_HEIGHT = CANDIDATE_PHOTO_HEIGHT * 2;
 
 export function CandidateDistrictBadge({
   label,
@@ -48,6 +53,12 @@ export function CandidateMessageCard({
     candidate.localCouncilDistrict ??
     candidate.metroCouncilDistrict ??
     candidate.district;
+  const candidatePhotoUrl = getSupabaseRenderImageUrl(candidate.photoUrl, {
+    width: CANDIDATE_PHOTO_REQUEST_WIDTH,
+    height: CANDIDATE_PHOTO_REQUEST_HEIGHT,
+    quality: 70,
+    resize: "cover",
+  });
   const councilBadge =
     candidate.councilType ??
     (candidate.localCouncilDistrict
@@ -85,14 +96,16 @@ export function CandidateMessageCard({
         <img
           alt={`${candidate.name} 후보`}
           decoding="async"
-          loading="lazy"
-          src={candidate.photoUrl}
+          height={CANDIDATE_PHOTO_HEIGHT}
+          src={candidatePhotoUrl ?? candidate.photoUrl}
+          width={CANDIDATE_PHOTO_WIDTH}
           style={{
             alignSelf: "flex-end",
             display: "block",
             flexShrink: 0,
-            height: "76px",
-            width: "auto",
+            height: `${CANDIDATE_PHOTO_HEIGHT}px`,
+            objectFit: "cover",
+            width: `${CANDIDATE_PHOTO_WIDTH}px`,
           }}
         />
       ) : (
