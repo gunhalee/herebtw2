@@ -28,7 +28,7 @@ export async function sendReplyNotification(
     return { sent: false };
   }
 
-  const cardImageUrl = `https://herebtw2.vercel.app/api/card/${input.publicUuid}?type=voter`;
+  const cardImageUrl = `https://herebtw.vercel.app/api/card/${input.publicUuid}?type=voter`;
   const cardDownloadUrl = `${cardImageUrl}&download=1`;
   const cardFileName = `voice-${input.publicUuid}.png`;
   const previewText =
