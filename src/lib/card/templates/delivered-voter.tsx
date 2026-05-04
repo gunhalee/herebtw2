@@ -47,7 +47,7 @@ function CardHeader({ dongName }: { dongName: string }) {
             whiteSpace: "nowrap",
           }}
         >
-          후보님 여기
+          여기
         </span>
         <span
           style={{
