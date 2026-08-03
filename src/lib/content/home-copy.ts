@@ -12,7 +12,7 @@ function getAdministrativeDongLabel(currentDongName: string) {
 
 export const homeScreenCopy = {
   eyebrow: null,
-  title: "여기 근데",
+  title: "김윤기 화이팅!",
   titleSuffix: "한마디 할게요",
   subtitle: null,
   emptyTitle: "이 곳에 첫 한마디를 남겨주세요.",
