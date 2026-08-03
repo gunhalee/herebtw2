@@ -5,6 +5,7 @@ import {
   ensureBrowserLocationResolutionToken,
   ensureBrowserLocationCoordinates,
   getBrowserLocationResolutionToken,
+  hasFreshBrowserLocationCoordinates,
   useBrowserLocationSession,
 } from "../../lib/geo/browser-location-session";
 import type { PostComposeState, PostLocation } from "../../types/post";
@@ -16,15 +17,11 @@ type UseComposeLocationParams = {
 function toSubmitLocation(
   locationSession: ReturnType<typeof useBrowserLocationSession>,
 ): PostLocation | null {
-  if (locationSession.coordinates) {
+  if (
+    locationSession.coordinates &&
+    hasFreshBrowserLocationCoordinates(locationSession)
+  ) {
     return locationSession.coordinates;
-  }
-
-  if (locationSession.resolvedLocation) {
-    return {
-      latitude: locationSession.resolvedLocation.latitude,
-      longitude: locationSession.resolvedLocation.longitude,
-    };
   }
 
   return null;

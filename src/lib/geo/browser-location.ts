@@ -3,6 +3,11 @@ type BrowserCoordinates = {
   longitude: number;
 };
 
+type BrowserLocationRequestOptions = {
+  maximumAgeMs?: number;
+  timeoutMs?: number;
+};
+
 function makeGeolocationError(code: string) {
   return new Error(code);
 }
@@ -12,11 +17,13 @@ function canUseBrowserGeolocation() {
 }
 
 export function getCurrentBrowserCoordinates(
-  timeoutMs = 10000,
+  options: BrowserLocationRequestOptions = {},
 ): Promise<BrowserCoordinates> {
   if (!canUseBrowserGeolocation()) {
     return Promise.reject(makeGeolocationError("GEOLOCATION_UNAVAILABLE"));
   }
+
+  const { maximumAgeMs = 60000, timeoutMs = 10000 } = options;
 
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
@@ -46,7 +53,7 @@ export function getCurrentBrowserCoordinates(
       },
       {
         enableHighAccuracy: false,
-        maximumAge: 60000,
+        maximumAge: maximumAgeMs,
         timeout: timeoutMs,
       },
     );

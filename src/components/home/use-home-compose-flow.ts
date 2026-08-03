@@ -12,7 +12,7 @@ import {
   buildReadyPostListState,
   type PendingFeedSnapshot,
 } from "./home-feed-state";
-import { ensureBrowserLocationCoordinates } from "../../lib/geo/browser-location-session";
+import { refreshFreshBrowserLocationCoordinates } from "../../lib/geo/browser-location-session";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 
@@ -42,18 +42,19 @@ export function useHomeComposeFlow({
   async function handleCompose() {
     closeMenu();
     setComposePermissionDialogOpen(false);
-    const composeLocation = feedLocationRef.current;
+    const locationRequestedAt = Date.now();
+    const locationSession = await refreshFreshBrowserLocationCoordinates();
 
-    if (!composeLocation) {
-      const locationSession = await ensureBrowserLocationCoordinates();
-
-      if (!locationSession.coordinates) {
-        if (isMountedRef.current) {
-          setComposePermissionDialogOpen(true);
-        }
-
-        return;
+    if (
+      !locationSession.coordinates ||
+      !locationSession.lastCoordinatesAt ||
+      locationSession.lastCoordinatesAt < locationRequestedAt
+    ) {
+      if (isMountedRef.current) {
+        setComposePermissionDialogOpen(true);
       }
+
+      return;
     }
 
     if (isMountedRef.current) {

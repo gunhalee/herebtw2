@@ -37,6 +37,10 @@ type EnsureBrowserLocationResolutionTokenOptions = {
   triggerRefresh?: boolean;
 };
 
+type BrowserLocationRefreshOptions = {
+  forceCoordinates?: boolean;
+};
+
 const BROWSER_LOCATION_SESSION_FRESHNESS_TTL_MS = 1000 * 60 * 3;
 const LOCATION_RESOLUTION_TOKEN_MIN_REMAINING_MS = 1000 * 20;
 
@@ -215,6 +219,10 @@ export function primeBrowserLocationSession(location: PostLocation) {
     return browserLocationSessionState;
   }
 
+  if (browserLocationSessionState.phase !== "idle") {
+    return getBrowserLocationSessionSnapshot();
+  }
+
   const nextState = buildLocationStateFromCoordinates(location, "unknown");
 
   setBrowserLocationSessionState({
@@ -253,7 +261,9 @@ export function hasFreshBrowserLocationCoordinates(
   );
 }
 
-function beginBrowserLocationSessionRefresh() {
+function beginBrowserLocationSessionRefresh(
+  options: BrowserLocationRefreshOptions = {},
+) {
   if (coordinatesRefreshPromise && refreshPromise) {
     return {
       coordinatesRefreshPromise,
@@ -263,9 +273,9 @@ function beginBrowserLocationSessionRefresh() {
 
   const currentRefreshSequence = refreshSequence + 1;
   refreshSequence = currentRefreshSequence;
-  const canReuseFreshCoordinates = hasFreshBrowserLocationCoordinates(
-    browserLocationSessionState,
-  );
+  const canReuseFreshCoordinates =
+    !options.forceCoordinates &&
+    hasFreshBrowserLocationCoordinates(browserLocationSessionState);
   const freshCoordinates = canReuseFreshCoordinates
     ? browserLocationSessionState.coordinates
     : null;
@@ -284,7 +294,9 @@ function beginBrowserLocationSessionRefresh() {
   } else {
     coordinatesRefreshPromise = (async () => {
       try {
-        const coordinates = await getCurrentBrowserCoordinates();
+        const coordinates = await getCurrentBrowserCoordinates({
+          maximumAgeMs: options.forceCoordinates ? 0 : undefined,
+        });
         const lastCoordinatesAt = Date.now();
 
         if (currentRefreshSequence !== refreshSequence) {
@@ -395,6 +407,21 @@ export async function refreshBrowserLocationCoordinates() {
   }
 
   return beginBrowserLocationSessionRefresh().coordinatesRefreshPromise;
+}
+
+export async function refreshFreshBrowserLocationCoordinates() {
+  if (typeof window === "undefined") {
+    return getBrowserLocationSessionSnapshot();
+  }
+
+  const activeRefresh = refreshPromise ?? coordinatesRefreshPromise;
+  if (activeRefresh) {
+    await activeRefresh.catch(() => getBrowserLocationSessionSnapshot());
+  }
+
+  return beginBrowserLocationSessionRefresh({
+    forceCoordinates: true,
+  }).coordinatesRefreshPromise;
 }
 
 export async function refreshBrowserLocationSession() {
