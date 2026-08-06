@@ -80,7 +80,6 @@ export function useHomeFeedLifecycle({
 
     void bootstrapHomeFeed({
       hasInitialGlobalFeed: hasInitialGlobalFeedRef.current,
-      initialPostListState: initialPostListStateRef.current,
       isCancelled: () => cancelled,
       applyDeniedLocationMode,
       applyResolvedLocationSelection,

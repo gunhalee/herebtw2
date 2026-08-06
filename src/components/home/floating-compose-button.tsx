@@ -5,16 +5,18 @@ import checkmarkIcon from "../checkmark-floating.svg";
 type FloatingComposeButtonProps = {
   elevated?: boolean;
   disabled?: boolean;
+  locating?: boolean;
   onCompose?: () => void;
 };
 
 export function FloatingComposeButton({
   elevated = false,
   disabled = false,
+  locating = false,
   onCompose,
 }: FloatingComposeButtonProps) {
   const baseBottomOffset = elevated ? "92px" : "20px";
-  const label = "\uAE00 \uB0A8\uAE30\uAE30";
+  const label = locating ? "위치 확인 중..." : "\uAE00 \uB0A8\uAE30\uAE30";
 
   return (
     <button
@@ -58,20 +60,22 @@ export function FloatingComposeButton({
       >
         {label}
       </span>
-      <Image
-        alt=""
-        aria-hidden="true"
-        src={checkmarkIcon}
-        width={18}
-        height={18}
-        style={{
-          filter: disabled
-            ? "grayscale(0.18) opacity(0.72)"
-            : "drop-shadow(0 0 0.75px rgba(55, 48, 0, 0.55)) drop-shadow(0 2px 6px rgba(17, 24, 39, 0.18))",
-          position: "relative",
-          zIndex: 1,
-        }}
-      />
+      {!locating ? (
+        <Image
+          alt=""
+          aria-hidden="true"
+          src={checkmarkIcon}
+          width={18}
+          height={18}
+          style={{
+            filter: disabled
+              ? "grayscale(0.18) opacity(0.72)"
+              : "drop-shadow(0 0 0.75px rgba(55, 48, 0, 0.55)) drop-shadow(0 2px 6px rgba(17, 24, 39, 0.18))",
+            position: "relative",
+            zIndex: 1,
+          }}
+        />
+      ) : null}
     </button>
   );
 }

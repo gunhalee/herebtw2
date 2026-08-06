@@ -11,6 +11,13 @@ export type ReverseGeocodeResult = {
   countryCode: string | null;
 };
 
+function getDirectAdministrativeDongCode(
+  payload: ReverseGeocodeProviderPayload,
+) {
+  const code = payload.directAdministrativeDongCode?.trim() ?? "";
+  return /^\d{10}$/.test(code) ? code : null;
+}
+
 function pickAdministrativeDongName(...values: Array<string | null | undefined>) {
   const normalizedValues = values
     .map((value) => (value ? normalizeAdministrativeDongName(value) : null))
@@ -47,6 +54,7 @@ export function buildReverseGeocodeResult(
     candidateNames: payload.administrativeDongCandidateNames,
   });
   const administrativeDongName =
+    pickAdministrativeDongName(payload.directAdministrativeDongName) ??
     mappedAdministrativeDong?.administrativeDongName ??
     pickAdministrativeDongName(...payload.administrativeDongCandidateNames) ??
     pickAdministrativeDongName(...payload.overseasAdministrativeDongFallbackNames);
@@ -58,6 +66,7 @@ export function buildReverseGeocodeResult(
   return {
     administrativeDongName,
     administrativeDongCode:
+      getDirectAdministrativeDongCode(payload) ??
       mappedAdministrativeDong?.administrativeDongCode ??
       findKnownDongCode(administrativeDongName) ??
       createSyntheticDongCode({

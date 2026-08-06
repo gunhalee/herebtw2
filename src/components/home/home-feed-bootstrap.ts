@@ -4,12 +4,8 @@ import {
   getOrCreateBrowserAnonymousDeviceId,
 } from "../../lib/device/browser-device";
 import type { AdministrativeLocationSnapshot } from "../../lib/geo/browser-administrative-location";
-import { readCachedAdministrativeLocation } from "../../lib/geo/browser-administrative-location";
-import {
-  ensureBrowserLocationSession,
-  primeBrowserLocationSession,
-} from "../../lib/geo/browser-location-session";
-import { readLatestCachedNearbyPostList } from "../../lib/posts/browser-nearby-post-cache";
+import { ensureBrowserLocationSession } from "../../lib/geo/browser-location-session";
+import { readCachedNearbyPostList } from "../../lib/posts/browser-nearby-post-cache";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 import { fetchActiveHomeFeedPage } from "./home-feed-api";
@@ -21,7 +17,6 @@ import {
 
 type BootstrapHomeFeedParams = {
   hasInitialGlobalFeed: boolean;
-  initialPostListState: PostListState;
   isCancelled: () => boolean;
   applyDeniedLocationMode: () => void;
   applyResolvedLocationSelection: (
@@ -66,7 +61,6 @@ function markDeviceReady(
 
 export async function bootstrapHomeFeed({
   hasInitialGlobalFeed,
-  initialPostListState,
   isCancelled,
   applyDeniedLocationMode,
   applyResolvedLocationSelection,
@@ -75,7 +69,6 @@ export async function bootstrapHomeFeed({
   setPostListState,
   setPendingFeedSnapshot,
 }: BootstrapHomeFeedParams) {
-  let appliedCachedNearbyFeed = false;
   const anonymousDeviceId = getOrCreateBrowserAnonymousDeviceId();
 
   if (!anonymousDeviceId) {
@@ -89,36 +82,6 @@ export async function bootstrapHomeFeed({
   markDeviceReady(setAppShellState, anonymousDeviceId);
   void ensureRegisteredBrowserDevice().catch(() => undefined);
 
-  const latestCachedNearbyPostList = readLatestCachedNearbyPostList();
-
-  if (latestCachedNearbyPostList) {
-    primeBrowserLocationSession(latestCachedNearbyPostList.location);
-
-    const cachedAdministrativeLocation = readCachedAdministrativeLocation(
-      latestCachedNearbyPostList.location,
-    );
-
-    if (cachedAdministrativeLocation) {
-      appliedCachedNearbyFeed = true;
-
-      startTransition(() => {
-        applyResolvedLocationSelection(
-          cachedAdministrativeLocation,
-          latestCachedNearbyPostList.location,
-        );
-        setFeedSortMode("nearby");
-        setPendingFeedSnapshot(null);
-        setPostListState((current) =>
-          buildReadyPostListState(current, {
-            items: latestCachedNearbyPostList.items,
-            nextCursor: latestCachedNearbyPostList.nextCursor,
-            sort: "distance",
-          }),
-        );
-      });
-    }
-  }
-
   const locationSession = await ensureBrowserLocationSession();
 
   if (isCancelled()) {
@@ -130,6 +93,24 @@ export async function bootstrapHomeFeed({
     locationSession.permissionMode === "granted" && resolvedLocation
       ? locationSession.coordinates
       : null;
+  const cachedNearbyPostList = resolvedCoordinates
+    ? readCachedNearbyPostList(resolvedCoordinates)
+    : null;
+
+  if (cachedNearbyPostList && resolvedLocation && resolvedCoordinates) {
+    startTransition(() => {
+      applyResolvedLocationSelection(resolvedLocation, resolvedCoordinates);
+      setFeedSortMode("nearby");
+      setPendingFeedSnapshot(null);
+      setPostListState((current) =>
+        buildReadyPostListState(current, {
+          items: cachedNearbyPostList.items,
+          nextCursor: cachedNearbyPostList.nextCursor,
+          sort: "distance",
+        }),
+      );
+    });
+  }
 
   const shouldFetchGlobalFeed = !resolvedCoordinates && !hasInitialGlobalFeed;
   const result =
@@ -153,12 +134,6 @@ export async function bootstrapHomeFeed({
     }
 
     setFeedSortMode(resolvedCoordinates ? "nearby" : "global");
-
-    if (!resolvedCoordinates && hasInitialGlobalFeed && appliedCachedNearbyFeed) {
-      setPendingFeedSnapshot(null);
-      setPostListState(initialPostListState);
-      return;
-    }
 
     if (!result) {
       setPostListState((current) =>

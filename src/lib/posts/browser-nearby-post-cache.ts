@@ -1,8 +1,9 @@
 import type { PostListState, PostLocation } from "../../types/post";
 import { quantizeLocationTo100MeterGrid } from "../geo/location-buckets";
+import { LOCATION_POLICY } from "../geo/location-policy";
 
 const NEARBY_POST_CACHE_STORAGE_KEY = "herebtw.cachedNearbyPosts";
-const NEARBY_POST_CACHE_TTL_MS = 1000 * 60 * 3;
+const NEARBY_POST_CACHE_TTL_MS = LOCATION_POLICY.nearbyFeedCacheMs;
 
 type CachedNearbyPostList = {
   cacheKey: string;
@@ -23,7 +24,9 @@ function getNearbyPostCacheKey(location: PostLocation) {
   ].join(":");
 }
 
-export function readLatestCachedNearbyPostList():
+export function readCachedNearbyPostList(
+  location: PostLocation,
+):
   | (CachedNearbyPostListState & {
       location: PostLocation;
     })
@@ -40,8 +43,10 @@ export function readLatestCachedNearbyPostList():
 
   try {
     const cached = JSON.parse(raw) as Partial<CachedNearbyPostList>;
+    const currentCacheKey = getNearbyPostCacheKey(location);
 
     if (
+      cached.cacheKey !== currentCacheKey ||
       typeof cached.cachedAt !== "number" ||
       Date.now() - cached.cachedAt > NEARBY_POST_CACHE_TTL_MS ||
       !Array.isArray(cached.items) ||

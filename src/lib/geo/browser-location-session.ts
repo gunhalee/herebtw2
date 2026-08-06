@@ -12,7 +12,12 @@ import {
   resolveAdministrativeLocation,
   type ResolvedAdministrativeLocation,
 } from "./browser-administrative-location-resolver";
-import { getCurrentBrowserCoordinates } from "./browser-location";
+import {
+  getAccurateBrowserCoordinates,
+  getCurrentBrowserCoordinates,
+  type BrowserLocationMeasurement,
+} from "./browser-location";
+import { LOCATION_POLICY } from "./location-policy";
 
 export type BrowserLocationSessionPhase =
   | "idle"
@@ -24,6 +29,7 @@ export type BrowserLocationSessionPhase =
   | "error";
 
 export type BrowserLocationSessionState = {
+  accuracyMeters: number | null;
   coordinates: PostLocation | null;
   resolvedLocation: ResolvedAdministrativeLocation | null;
   lastCoordinatesAt: number | null;
@@ -39,12 +45,18 @@ type EnsureBrowserLocationResolutionTokenOptions = {
 
 type BrowserLocationRefreshOptions = {
   forceCoordinates?: boolean;
+  intent?: "home" | "compose";
+  useAccurateCoordinates?: boolean;
 };
 
-const BROWSER_LOCATION_SESSION_FRESHNESS_TTL_MS = 1000 * 60 * 3;
+const BROWSER_LOCATION_SESSION_FRESHNESS_TTL_MS =
+  LOCATION_POLICY.sessionFreshnessMs;
+const MAX_POST_LOCATION_ACCURACY_METERS =
+  LOCATION_POLICY.submitBlockAboveMeters;
 const LOCATION_RESOLUTION_TOKEN_MIN_REMAINING_MS = 1000 * 20;
 
 const INITIAL_BROWSER_LOCATION_SESSION_STATE: BrowserLocationSessionState = {
+  accuracyMeters: null,
   coordinates: null,
   resolvedLocation: null,
   lastCoordinatesAt: null,
@@ -57,6 +69,8 @@ let browserLocationSessionState = INITIAL_BROWSER_LOCATION_SESSION_STATE;
 let coordinatesRefreshPromise: Promise<BrowserLocationSessionState> | null =
   null;
 let refreshPromise: Promise<BrowserLocationSessionState> | null = null;
+let activeRefreshAbortController: AbortController | null = null;
+let activeRefreshIntent: "home" | "compose" | null = null;
 let refreshSequence = 0;
 
 const browserLocationSessionListeners = new Set<() => void>();
@@ -121,7 +135,7 @@ function createCachedResolvedLocation(
     ...administrativeLocation,
     countryCode: null,
     formattedAdministrativeAreaName:
-      administrativeLocation.administrativeDongName,
+      administrativeLocation.formattedAdministrativeAreaName,
   };
 }
 
@@ -129,12 +143,14 @@ function buildLocationStateFromCoordinates(
   location: PostLocation,
   permissionMode: AppShellState["permissionMode"],
   options?: {
+    accuracyMeters?: number | null;
     lastCoordinatesAt?: number | null;
   },
 ) {
   const cachedAdministrativeLocation = readCachedAdministrativeLocation(location);
 
   return {
+    accuracyMeters: options?.accuracyMeters ?? null,
     coordinates: location,
     lastCoordinatesAt: options?.lastCoordinatesAt ?? null,
     resolvedLocation: cachedAdministrativeLocation
@@ -152,12 +168,22 @@ function applyCoordinatesToBrowserLocationSession(
   location: PostLocation,
   permissionMode: AppShellState["permissionMode"],
   options?: {
+    accuracyMeters?: number | null;
     lastCoordinatesAt?: number | null;
   },
 ) {
   setBrowserLocationSessionState(
     buildLocationStateFromCoordinates(location, permissionMode, options),
   );
+}
+
+function toPostLocation(
+  measurement: BrowserLocationMeasurement,
+): PostLocation {
+  return {
+    latitude: measurement.latitude,
+    longitude: measurement.longitude,
+  };
 }
 
 function subscribeBrowserLocationSession(listener: () => void) {
@@ -214,26 +240,6 @@ export function useBrowserLocationSession() {
   );
 }
 
-export function primeBrowserLocationSession(location: PostLocation) {
-  if (typeof window === "undefined") {
-    return browserLocationSessionState;
-  }
-
-  if (browserLocationSessionState.phase !== "idle") {
-    return getBrowserLocationSessionSnapshot();
-  }
-
-  const nextState = buildLocationStateFromCoordinates(location, "unknown");
-
-  setBrowserLocationSessionState({
-    ...nextState,
-    phase:
-      nextState.phase === "administrative_cached" ? nextState.phase : "primed",
-  });
-
-  return getBrowserLocationSessionSnapshot();
-}
-
 export function getBrowserLocationResolutionToken(
   locationSession: BrowserLocationSessionState,
 ) {
@@ -245,7 +251,7 @@ export function isBrowserLocationSessionFresh(
 ) {
   return Boolean(
     hasFreshBrowserLocationCoordinates(locationSession) &&
-      locationSession.resolvedLocation,
+      hasUsableLocationResolutionToken(locationSession.resolvedLocation),
   );
 }
 
@@ -261,18 +267,42 @@ export function hasFreshBrowserLocationCoordinates(
   );
 }
 
+export function isBrowserLocationAccurateForPost(
+  locationSession: BrowserLocationSessionState,
+) {
+  return Boolean(
+    hasFreshBrowserLocationCoordinates(locationSession) &&
+      locationSession.accuracyMeters !== null &&
+      locationSession.accuracyMeters <= MAX_POST_LOCATION_ACCURACY_METERS,
+  );
+}
+
 function beginBrowserLocationSessionRefresh(
   options: BrowserLocationRefreshOptions = {},
 ) {
+  const requestedIntent = options.intent ?? "home";
+
   if (coordinatesRefreshPromise && refreshPromise) {
-    return {
-      coordinatesRefreshPromise,
-      refreshPromise,
-    };
+    const shouldSupersedeHomeRefresh =
+      requestedIntent === "compose" && activeRefreshIntent === "home";
+
+    if (!shouldSupersedeHomeRefresh) {
+      return {
+        coordinatesRefreshPromise,
+        refreshPromise,
+      };
+    }
+
+    activeRefreshAbortController?.abort();
+    coordinatesRefreshPromise = null;
+    refreshPromise = null;
   }
 
   const currentRefreshSequence = refreshSequence + 1;
   refreshSequence = currentRefreshSequence;
+  const abortController = new AbortController();
+  activeRefreshAbortController = abortController;
+  activeRefreshIntent = requestedIntent;
   const canReuseFreshCoordinates =
     !options.forceCoordinates &&
     hasFreshBrowserLocationCoordinates(browserLocationSessionState);
@@ -281,6 +311,9 @@ function beginBrowserLocationSessionRefresh(
     : null;
   const freshCoordinatesCapturedAt = canReuseFreshCoordinates
     ? browserLocationSessionState.lastCoordinatesAt
+    : null;
+  const freshCoordinatesAccuracy = canReuseFreshCoordinates
+    ? browserLocationSessionState.accuracyMeters
     : null;
 
   setBrowserLocationSessionState((currentState) => ({
@@ -294,31 +327,48 @@ function beginBrowserLocationSessionRefresh(
   } else {
     coordinatesRefreshPromise = (async () => {
       try {
-        const coordinates = await getCurrentBrowserCoordinates({
-          maximumAgeMs: options.forceCoordinates ? 0 : undefined,
-        });
-        const lastCoordinatesAt = Date.now();
+        const measurement = options.useAccurateCoordinates
+          ? await getAccurateBrowserCoordinates({
+              onProgress(progressMeasurement) {
+                if (currentRefreshSequence !== refreshSequence) {
+                  return;
+                }
+
+                setBrowserLocationSessionState((currentState) => ({
+                  ...currentState,
+                  accuracyMeters: progressMeasurement.accuracy,
+                }));
+              },
+              signal: abortController.signal,
+            })
+          : await getCurrentBrowserCoordinates({
+              maximumAgeMs: options.forceCoordinates ? 0 : undefined,
+              signal: abortController.signal,
+            });
+        const coordinates = toPostLocation(measurement);
 
         if (currentRefreshSequence !== refreshSequence) {
           return getBrowserLocationSessionSnapshot();
         }
 
         applyCoordinatesToBrowserLocationSession(coordinates, "granted", {
-          lastCoordinatesAt,
+          accuracyMeters: measurement.accuracy,
+          lastCoordinatesAt: measurement.measuredAt,
         });
       } catch (error) {
         if (currentRefreshSequence !== refreshSequence) {
           return getBrowserLocationSessionSnapshot();
         }
 
-      setBrowserLocationSessionState({
-        coordinates: null,
-        resolvedLocation: null,
-        lastCoordinatesAt: null,
-        permissionMode: getBrowserLocationPermissionMode(error),
-        phase: "error",
-        error,
-      });
+        setBrowserLocationSessionState({
+          accuracyMeters: null,
+          coordinates: null,
+          resolvedLocation: null,
+          lastCoordinatesAt: null,
+          permissionMode: getBrowserLocationPermissionMode(error),
+          phase: "error",
+          error,
+        });
       }
 
       return getBrowserLocationSessionSnapshot();
@@ -340,6 +390,8 @@ function beginBrowserLocationSessionRefresh(
       const coordinates = freshCoordinates ?? locationSession.coordinates;
       const lastCoordinatesAt =
         freshCoordinatesCapturedAt ?? locationSession.lastCoordinatesAt;
+      const accuracyMeters =
+        freshCoordinatesAccuracy ?? locationSession.accuracyMeters;
 
       if (!coordinates || !lastCoordinatesAt) {
         return getBrowserLocationSessionSnapshot();
@@ -354,12 +406,15 @@ function beginBrowserLocationSessionRefresh(
       writeCachedAdministrativeLocation(coordinates, {
         administrativeDongName: resolvedLocation.administrativeDongName,
         administrativeDongCode: resolvedLocation.administrativeDongCode,
+        formattedAdministrativeAreaName:
+          resolvedLocation.formattedAdministrativeAreaName,
         locationResolutionToken: resolvedLocation.locationResolutionToken,
         locationResolutionTokenExpiresAt:
           resolvedLocation.locationResolutionTokenExpiresAt,
       });
 
       setBrowserLocationSessionState({
+        accuracyMeters,
         coordinates,
         lastCoordinatesAt,
         resolvedLocation,
@@ -387,6 +442,8 @@ function beginBrowserLocationSessionRefresh(
       }));
     } finally {
       if (currentRefreshSequence === refreshSequence) {
+        activeRefreshAbortController = null;
+        activeRefreshIntent = null;
         coordinatesRefreshPromise = null;
         refreshPromise = null;
       }
@@ -414,14 +471,23 @@ export async function refreshFreshBrowserLocationCoordinates() {
     return getBrowserLocationSessionSnapshot();
   }
 
-  const activeRefresh = refreshPromise ?? coordinatesRefreshPromise;
-  if (activeRefresh) {
-    await activeRefresh.catch(() => getBrowserLocationSessionSnapshot());
+  return beginBrowserLocationSessionRefresh({
+    forceCoordinates: true,
+    intent: "compose",
+    useAccurateCoordinates: true,
+  }).coordinatesRefreshPromise;
+}
+
+export async function refreshFreshBrowserLocationSession() {
+  if (typeof window === "undefined") {
+    return getBrowserLocationSessionSnapshot();
   }
 
   return beginBrowserLocationSessionRefresh({
     forceCoordinates: true,
-  }).coordinatesRefreshPromise;
+    intent: "compose",
+    useAccurateCoordinates: true,
+  }).refreshPromise;
 }
 
 export async function refreshBrowserLocationSession() {
@@ -430,6 +496,29 @@ export async function refreshBrowserLocationSession() {
   }
 
   return beginBrowserLocationSessionRefresh().refreshPromise;
+}
+
+export function abortActiveBrowserLocationRequest() {
+  if (!activeRefreshAbortController) {
+    return;
+  }
+
+  refreshSequence += 1;
+  activeRefreshAbortController.abort();
+  activeRefreshAbortController = null;
+  activeRefreshIntent = null;
+  coordinatesRefreshPromise = null;
+  refreshPromise = null;
+  setBrowserLocationSessionState((currentState) => ({
+    ...currentState,
+    phase: currentState.resolvedLocation
+      ? hasUsableLocationResolutionToken(currentState.resolvedLocation)
+        ? "administrative_verified"
+        : "administrative_cached"
+      : currentState.coordinates
+        ? "coordinates_ready"
+        : "idle",
+  }));
 }
 
 export async function ensureBrowserLocationCoordinates() {

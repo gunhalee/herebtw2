@@ -8,9 +8,10 @@
     "start": "next start",
     "typegen": "next typegen",
     "typecheck": "next typegen && tsc --noEmit",
+    "test:location": "vitest run src/lib/geo src/lib/posts/browser-nearby-post-cache.test.ts",
     "smoke:api": "node scripts/run-api-smoke-tests.mjs",
     "guard:architecture": "node scripts/check-architecture-rules.mjs",
-    "verify": "npm run typecheck && npm run build && npm run smoke:api && npm run guard:architecture",
+    "verify": "npm run typecheck && npm run test:location && npm run build && npm run smoke:api && npm run guard:architecture",
     "generate:administrative-dong-map": "node scripts/generate-administrative-dong-map.js",
     "generate:local-election-9-dong-mapping": "node scripts/generate-local-election-9-dong-mapping.js",
     "generate:copy-review": "node scripts/generate-copy-review.js"
@@ -43,6 +44,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "pg": "^8.20.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10"
   }
 }

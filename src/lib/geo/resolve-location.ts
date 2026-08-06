@@ -1,4 +1,5 @@
 import { reverseGeocode } from "./reverse-geocode";
+import { LocationResolutionError } from "./location-resolution-error";
 
 type CoordinateInput = {
   latitude: number;
@@ -12,6 +13,15 @@ type ResolvedLocation = CoordinateInput & {
   sigunguName: string | null;
   countryCode: string | null;
 };
+
+export function isWithinSouthKoreaServiceBounds(location: CoordinateInput) {
+  return (
+    location.latitude >= 33 &&
+    location.latitude <= 39 &&
+    location.longitude >= 124 &&
+    location.longitude <= 132
+  );
+}
 
 export function isValidCoordinateInput(
   location: CoordinateInput | null | undefined,
@@ -34,13 +44,33 @@ export async function resolveLocationFromCoordinates(
   location: CoordinateInput,
 ): Promise<ResolvedLocation> {
   if (!isValidCoordinateInput(location)) {
-    throw new Error("INVALID_COORDINATES");
+    throw new LocationResolutionError(
+      "INVALID_COORDINATES",
+      "Coordinates are invalid.",
+    );
+  }
+
+  if (!isWithinSouthKoreaServiceBounds(location)) {
+    throw new LocationResolutionError(
+      "OUTSIDE_SERVICE_AREA",
+      "Coordinates are outside the South Korea service area.",
+    );
   }
 
   const geocodeResult = await reverseGeocode(
     location.latitude,
     location.longitude,
   );
+
+  if (
+    geocodeResult.countryCode?.toLowerCase() !== "kr" ||
+    !/^\d{10}$/.test(geocodeResult.administrativeDongCode)
+  ) {
+    throw new LocationResolutionError(
+      "OUTSIDE_SERVICE_AREA",
+      "No South Korean administrative dong was found.",
+    );
+  }
 
   return {
     latitude: location.latitude,

@@ -6,6 +6,18 @@ const cwd = process.cwd();
 const SRC_COMPONENTS_DIR = fileURLToPath(new URL("../src/components/", import.meta.url));
 const SRC_LIB_DIR = fileURLToPath(new URL("../src/lib/", import.meta.url));
 const SRC_APP_API_DIR = fileURLToPath(new URL("../src/app/api/", import.meta.url));
+const LOCATION_SESSION_FILE = fileURLToPath(
+  new URL("../src/lib/geo/browser-location-session.ts", import.meta.url),
+);
+const LOCATION_TOKEN_FILE = fileURLToPath(
+  new URL("../src/lib/geo/location-resolution-token.ts", import.meta.url),
+);
+const NEARBY_CACHE_FILE = fileURLToPath(
+  new URL("../src/lib/posts/browser-nearby-post-cache.ts", import.meta.url),
+);
+const REVERSE_GEOCODE_PROVIDER_FILE = fileURLToPath(
+  new URL("../src/lib/geo/reverse-geocode-provider.ts", import.meta.url),
+);
 const COMPONENT_EXTENSIONS = new Set([".ts", ".tsx"]);
 const LINE_LIMIT = 300;
 
@@ -15,6 +27,7 @@ const ROUTE_SECRET_PATTERN =
 const SUPABASE_REST_PATTERN = /rest\/v1\//;
 
 const ALLOWED_OVERSIZED_FILES = new Set([
+  "src/components/home/home-static-screen.tsx",
   "src/components/home/use-compose-dong-flashcard.ts",
   "src/components/sheet/post-list-item-card.tsx",
   "src/lib/geo/browser-location-session.ts",
@@ -94,6 +107,49 @@ async function main() {
     }
   }
   notes.push(`[ok] checked ${routeFiles.length} route handlers for Supabase access leaks`);
+
+  const locationSessionContents = await readFile(LOCATION_SESSION_FILE, "utf8");
+  const locationTokenContents = await readFile(LOCATION_TOKEN_FILE, "utf8");
+  const nearbyCacheContents = await readFile(NEARBY_CACHE_FILE, "utf8");
+  const reverseGeocodeProviderContents = await readFile(
+    REVERSE_GEOCODE_PROVIDER_FILE,
+    "utf8",
+  );
+
+  if (locationSessionContents.includes("primeBrowserLocationSession")) {
+    violations.push("Nearby feed data must not prime the browser location session");
+  }
+
+  if (
+    !locationTokenContents.includes("quantizeLocationTo20MeterGrid") ||
+    !locationTokenContents.includes("quantizeLocationTo100MeterGrid") ||
+    !locationTokenContents.includes("LOCATION_RESOLUTION_TOKEN_VERSION = 2")
+  ) {
+    violations.push("Location token v2 must bind both 20m and 100m cells");
+  }
+
+  if (
+    locationTokenContents.includes("getSupabaseConfig") ||
+    locationTokenContents.includes("SUPABASE_SECRET")
+  ) {
+    violations.push("Location tokens must use only their dedicated HMAC secret");
+  }
+
+  if (
+    !/readCachedNearbyPostList\s*\(\s*location:\s*PostLocation/.test(
+      nearbyCacheContents,
+    )
+  ) {
+    violations.push("Nearby feed cache reads must require current coordinates");
+  }
+
+  if (
+    /nominatim|openstreetmap/i.test(reverseGeocodeProviderContents) ||
+    !reverseGeocodeProviderContents.includes("dapi.kakao.com")
+  ) {
+    violations.push("Kakao must be the only reverse geocoding provider");
+  }
+  notes.push("[ok] checked location grid, token, cache, and provider invariants");
 
   const sizeCheckFiles = [
     ...(await collectFiles(SRC_COMPONENTS_DIR, COMPONENT_EXTENSIONS)),

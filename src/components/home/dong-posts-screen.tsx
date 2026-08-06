@@ -24,6 +24,7 @@ type DongPostsScreenProps = {
   initialCandidateMessages?: CandidateMessagesPayload | null;
   initialCandidateMessagesDongCode?: string | null;
   interactionLocked?: boolean;
+  composeLocating?: boolean;
   scrollTargetPostId?: string | null;
   state: PostListState;
   reportErrorMessage?: string | null;
@@ -54,6 +55,7 @@ export function DongPostsScreen({
   initialCandidateMessages = null,
   initialCandidateMessagesDongCode = null,
   interactionLocked = false,
+  composeLocating = false,
   scrollTargetPostId,
   state,
   reportErrorMessage = null,
@@ -195,6 +197,7 @@ export function DongPostsScreen({
       <FloatingComposeButton
         disabled={interactionLocked}
         elevated={shouldShowPendingUpdatesButton}
+        locating={composeLocating}
         onCompose={onCompose}
       />
 

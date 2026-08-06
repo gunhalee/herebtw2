@@ -38,6 +38,7 @@ export function useComposeSubmit({
   submitLocation,
 }: UseComposeSubmitParams) {
   const deviceRegistrationPromiseRef = useRef<Promise<string> | null>(null);
+  const submittingRef = useRef(false);
 
   function ensureDeviceRegistrationStarted() {
     if (!deviceRegistrationPromiseRef.current) {
@@ -69,6 +70,10 @@ export function useComposeSubmit({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (submittingRef.current) {
+      return;
+    }
+
     if (!submitLocation || !locationReadyForSubmit) {
       setComposeState((current) => ({
         ...current,
@@ -77,6 +82,7 @@ export function useComposeSubmit({
       return;
     }
 
+    submittingRef.current = true;
     setComposeState((current) => ({
       ...current,
       submitting: true,
@@ -128,6 +134,8 @@ export function useComposeSubmit({
         errorMessage:
           error instanceof Error ? error.message : "죄송합니다. 저장을 실패하였습니다.",
       }));
+    } finally {
+      submittingRef.current = false;
     }
   }
 

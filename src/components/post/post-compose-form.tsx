@@ -6,21 +6,27 @@ import type { PostComposeState } from "../../types/post";
 
 type PostComposeFormProps = {
   composeState: PostComposeState;
+  locationAccuracyWarning: string | null;
+  locationRefreshing: boolean;
   notificationEmail: string;
   submitDisabled: boolean;
   onChangeContent: (value: string) => void;
   onChangeNotificationEmail: (value: string) => void;
   onDismiss?: () => void;
+  onRetryLocation: () => void | Promise<void>;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
 };
 
 export function PostComposeForm({
   composeState,
+  locationAccuracyWarning,
+  locationRefreshing,
   notificationEmail,
   submitDisabled,
   onChangeContent,
   onChangeNotificationEmail,
   onDismiss,
+  onRetryLocation,
   onSubmit,
 }: PostComposeFormProps) {
   return (
@@ -195,6 +201,47 @@ export function PostComposeForm({
           이메일은 답변 알림 용도로만 사용되며, 다른 목적으로 쓰지 않습니다.
         </p>
       </div>
+
+      {locationAccuracyWarning ? (
+        <div
+          style={{
+            alignItems: "center",
+            alignSelf: "stretch",
+            display: "flex",
+            gap: uiSpacing.sm,
+            justifyContent: "space-between",
+          }}
+        >
+          <p
+            style={{
+              color: uiColors.textMuted,
+              fontSize: uiTypography.meta.fontSize,
+              lineHeight: 1.4,
+              margin: 0,
+            }}
+          >
+            {locationAccuracyWarning}
+          </p>
+          <button
+            disabled={locationRefreshing}
+            onClick={() => void onRetryLocation()}
+            style={{
+              background: "#ffffff",
+              border: `1px solid ${uiColors.border}`,
+              borderRadius: "999px",
+              color: uiColors.textStrong,
+              cursor: locationRefreshing ? "default" : "pointer",
+              flexShrink: 0,
+              fontSize: uiTypography.meta.fontSize,
+              fontWeight: 600,
+              padding: `${uiSpacing.xs} ${uiSpacing.sm}`,
+            }}
+            type="button"
+          >
+            {locationRefreshing ? "확인 중..." : "위치 재확인"}
+          </button>
+        </div>
+      ) : null}
 
       {composeState.errorMessage ? (
         <p

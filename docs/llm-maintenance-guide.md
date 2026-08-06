@@ -53,6 +53,9 @@
 - `src/lib/api/client.ts`
 - `src/lib/api/response.ts`
 - `src/lib/geo/resolve-location.ts`
+- `src/lib/geo/reverse-geocode.ts`
+- `src/lib/geo/reverse-geocode-provider.ts`
+- `src/lib/geo/reverse-geocode-result.ts`
 - `src/lib/geo/location-resolution-token.ts`
 - `src/lib/posts/engagement-snapshot-token.ts`
 
@@ -128,10 +131,17 @@
 - 클라이언트는 `/api/location/resolve`에서 받은 `locationResolutionToken`을 `/api/posts`에 함께 보낸다.
 - 서버는 토큰이 유효하면 reverse geocode를 다시 하지 않는다.
 - 토큰이 없거나 검증이 실패하면 기존 fallback으로 다시 위치를 해석한다.
+- 한국 좌표의 행정동 해석은 카카오 `coord2regioncode` API를 사용하고 `region_type === "H"` 결과만 채택한다.
+- 카카오가 반환한 10자리 행정동 코드는 이름 기반 매핑보다 우선한다.
+- 역지오코딩은 전용 20m 격자를 사용하지만 DB 저장과 위치 토큰 검증은 기존 100m 격자를 유지한다.
+- 외부 provider를 바꿀 때는 `reverse-geocode.ts`의 cache namespace도 함께 변경해야 한다.
 
 관련 파일:
 
 - `src/lib/geo/location-resolution-token.ts`
+- `src/lib/geo/reverse-geocode.ts`
+- `src/lib/geo/reverse-geocode-provider.ts`
+- `src/lib/geo/reverse-geocode-result.ts`
 - `src/app/api/location/resolve/route.ts`
 - `src/app/api/posts/route.ts`
 

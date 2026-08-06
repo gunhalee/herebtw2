@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, type Dispatch, type SetStateAction } from "react";
 import {
+  useEffect,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import {
+  abortActiveBrowserLocationRequest,
   ensureBrowserLocationResolutionToken,
   ensureBrowserLocationCoordinates,
   getBrowserLocationResolutionToken,
-  hasFreshBrowserLocationCoordinates,
+  isBrowserLocationAccurateForPost,
+  refreshFreshBrowserLocationSession,
   useBrowserLocationSession,
 } from "../../lib/geo/browser-location-session";
 import type { PostComposeState, PostLocation } from "../../types/post";
@@ -19,7 +26,7 @@ function toSubmitLocation(
 ): PostLocation | null {
   if (
     locationSession.coordinates &&
-    hasFreshBrowserLocationCoordinates(locationSession)
+    isBrowserLocationAccurateForPost(locationSession)
   ) {
     return locationSession.coordinates;
   }
@@ -30,6 +37,7 @@ function toSubmitLocation(
 export function useComposeLocation({
   setComposeState,
 }: UseComposeLocationParams) {
+  const [locationRefreshing, setLocationRefreshing] = useState(false);
   const locationSession = useBrowserLocationSession();
   const submitLocation = toSubmitLocation(locationSession);
   const locationResolutionToken = getBrowserLocationResolutionToken(locationSession);
@@ -39,7 +47,35 @@ export function useComposeLocation({
       locationSession.permissionMode !== "denied",
   );
   const locationReadyForSubmit =
-    locationSession.permissionMode !== "denied" && submitLocation !== null;
+    !locationRefreshing &&
+    locationSession.permissionMode !== "denied" &&
+    submitLocation !== null &&
+    locationResolutionToken !== null;
+  const locationAccuracyWarning =
+    locationSession.accuracyMeters !== null &&
+    locationSession.accuracyMeters > 500
+      ? "정확한 위치를 확인할 수 없습니다. 브라우저의 정확한 위치 권한을 켠 뒤 다시 시도해 주세요."
+      : locationSession.accuracyMeters !== null &&
+          locationSession.accuracyMeters > 100
+        ? `현재 위치 정확도가 약 ${Math.round(locationSession.accuracyMeters)}m입니다. 위치가 다르면 다시 확인해 주세요.`
+        : null;
+
+  async function retryLocation() {
+    setLocationRefreshing(true);
+
+    try {
+      await refreshFreshBrowserLocationSession();
+    } finally {
+      setLocationRefreshing(false);
+    }
+  }
+
+  useEffect(
+    () => () => {
+      abortActiveBrowserLocationRequest();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (submitLocation) {
@@ -55,7 +91,6 @@ export function useComposeLocation({
     }
 
     void ensureBrowserLocationResolutionToken({
-      maxWaitMs: 0,
       triggerRefresh: true,
     }).catch(() => undefined);
   }, [locationResolutionTokenPending]);
@@ -72,9 +107,12 @@ export function useComposeLocation({
   }, [locationReadyForSubmit, setComposeState]);
 
   return {
+    locationAccuracyWarning,
+    locationRefreshing,
     locationReadyForSubmit,
     locationResolutionTokenPending,
     locationResolutionToken,
+    retryLocation,
     submitLocation,
   };
 }

@@ -6,11 +6,13 @@ import {
 } from "../../lib/ui/tokens";
 
 type ComposePermissionDialogProps = {
+  message: string;
   onClose: () => void;
   onRetry: () => void;
 };
 
 export function ComposePermissionDialog({
+  message,
   onClose,
   onRetry,
 }: ComposePermissionDialogProps) {
@@ -52,7 +54,7 @@ export function ComposePermissionDialog({
             textAlign: "center",
           }}
         >
-          글을 작성하려면 위치 권한 허용이 필요해요.
+          {message}
         </p>
         <div
           style={{

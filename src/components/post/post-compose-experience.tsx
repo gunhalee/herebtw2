@@ -37,10 +37,16 @@ export function PostComposeExperience({
   const [composeState, setComposeState] = useState(createInitialComposeState);
   const [notificationEmail, setNotificationEmail] = useState("");
   const [successData, setSuccessData] = useState<ComposeSuccessData | null>(null);
-  const { locationReadyForSubmit, locationResolutionToken, submitLocation } =
-    useComposeLocation({
-      setComposeState,
-    });
+  const {
+    locationAccuracyWarning,
+    locationRefreshing,
+    locationReadyForSubmit,
+    locationResolutionToken,
+    retryLocation,
+    submitLocation,
+  } = useComposeLocation({
+    setComposeState,
+  });
   const { sheetPortalReady, sheetViewportLayout } = useComposeSheetLayout({
     onDismiss,
   });
@@ -103,11 +109,14 @@ export function PostComposeExperience({
       ) : (
         <PostComposeForm
           composeState={composeState}
+          locationAccuracyWarning={locationAccuracyWarning}
+          locationRefreshing={locationRefreshing}
           notificationEmail={notificationEmail}
           submitDisabled={submitDisabled}
           onChangeContent={handleChangeContent}
           onChangeNotificationEmail={setNotificationEmail}
           onDismiss={onDismiss}
+          onRetryLocation={retryLocation}
           onSubmit={handleSubmit}
         />
       )}

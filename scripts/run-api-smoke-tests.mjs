@@ -40,8 +40,11 @@ function quantizeLocationTo100MeterGrid(location) {
   const latitudeBucket100m = Math.round(
     (location.latitude * METERS_PER_DEGREE_LATITUDE) / LOCATION_BUCKET_SIZE_METERS,
   );
+  const snappedLatitude =
+    (latitudeBucket100m * LOCATION_BUCKET_SIZE_METERS) /
+    METERS_PER_DEGREE_LATITUDE;
   const longitudeBucket100m = Math.round(
-    (location.longitude * getMetersPerDegreeLongitude(location.latitude)) /
+    (location.longitude * getMetersPerDegreeLongitude(snappedLatitude)) /
       LOCATION_BUCKET_SIZE_METERS,
   );
 
@@ -295,6 +298,56 @@ async function runSmokeTests(baseUrl) {
     "INVALID_LOCATION",
   );
   results.push("POST /api/location/resolve (invalid) -> 400");
+
+  const validLocationResolve = await request(baseUrl, "/api/location/resolve", {
+    body: JSON.stringify({ location: SEOUL_CITY_HALL }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+  expectJsonSuccess(validLocationResolve.body, "valid location resolve");
+  assert.equal(
+    validLocationResolve.response.status,
+    200,
+    "valid location resolve should return 200.",
+  );
+  assert.match(
+    validLocationResolve.body.data.location.administrativeDongCode,
+    /^\d{10}$/,
+    "location resolve should return a ten-digit administrative dong code.",
+  );
+  assert.equal(
+    typeof validLocationResolve.body.data.location.locationResolutionToken,
+    "string",
+    "location resolve should return a v2 token.",
+  );
+  results.push("POST /api/location/resolve (Kakao) -> 200");
+
+  const outsideLocationResolve = await request(
+    baseUrl,
+    "/api/location/resolve",
+    {
+      body: JSON.stringify({
+        location: { latitude: 35.6762, longitude: 139.6503 },
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+  assert.equal(
+    outsideLocationResolve.response.status,
+    422,
+    "outside location resolve should return 422.",
+  );
+  expectJsonFailure(
+    outsideLocationResolve.body,
+    "outside location resolve",
+    "LOCATION_OUTSIDE_SERVICE_AREA",
+  );
+  results.push("POST /api/location/resolve (outside Korea) -> 422");
 
   const malformedPostCreate = await request(baseUrl, "/api/posts", {
     body: "{",

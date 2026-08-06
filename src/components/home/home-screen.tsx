@@ -119,8 +119,10 @@ export function HomeScreen({
   });
 
   const {
+    composeLocating,
     composePanelOpen,
     composePermissionDialogOpen,
+    composePermissionDialogMessage,
     handleCloseComposePanel,
     handleCloseComposePermissionDialog,
     handleCompose,
@@ -175,10 +177,15 @@ export function HomeScreen({
         activeReportPostId={activeReportPostId}
         animateComposeDongPlaceholder={shouldAnimateComposeDongPlaceholder}
         currentDongName={currentDongName}
+        composeLocating={composeLocating}
         dongCode={selectedDongCode}
         initialCandidateMessages={initialCandidateMessages}
         initialCandidateMessagesDongCode={initialAppShellState.selectedDongCode}
-        interactionLocked={composePanelOpen || composePermissionDialogOpen}
+        interactionLocked={
+          composeLocating ||
+          composePanelOpen ||
+          composePermissionDialogOpen
+        }
         obscurePosts={obscureGlobalFallbackList}
         onApplyPendingUpdates={handleApplyPendingFeedSnapshot}
         onCloseMenu={handleCloseMenu}
@@ -207,6 +214,7 @@ export function HomeScreen({
       ) : null}
       {composePermissionDialogOpen ? (
         <DeferredComposePermissionDialog
+          message={composePermissionDialogMessage ?? ""}
           onClose={handleCloseComposePermissionDialog}
           onRetry={handleRetryCompose}
         />

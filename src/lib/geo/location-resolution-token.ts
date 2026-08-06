@@ -1,34 +1,46 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { PostLocation } from "../../types/post";
-import { getSupabaseConfig } from "../supabase/config";
-import { quantizeLocationTo100MeterGrid } from "./location-buckets";
+import {
+  quantizeLocationTo20MeterGrid,
+  quantizeLocationTo100MeterGrid,
+} from "./location-buckets";
+import { LOCATION_POLICY } from "./location-policy";
 
-export const LOCATION_RESOLUTION_TOKEN_TTL_MS = 1000 * 60 * 10;
+export const LOCATION_RESOLUTION_TOKEN_TTL_MS =
+  LOCATION_POLICY.resolutionTokenTtlMs;
+const LOCATION_RESOLUTION_TOKEN_VERSION = 2;
 
 type LocationResolutionTokenPayload = {
-  administrativeDongCode: string | null;
+  version: typeof LOCATION_RESOLUTION_TOKEN_VERSION;
+  administrativeDongCode: string;
   formattedAdministrativeAreaName: string;
   expiresAt: number;
+  latitudeBucket20m: number;
+  longitudeBucket20m: number;
   latitudeBucket100m: number;
   longitudeBucket100m: number;
 };
 
 type VerifiedLocationResolution = {
-  administrativeDongCode: string | null;
+  administrativeDongCode: string;
   formattedAdministrativeAreaName: string;
 };
 
 type CreatedLocationResolutionToken = {
-  token: string | null;
-  expiresAt: number | null;
+  token: string;
+  expiresAt: number;
 };
 
 function getLocationResolutionTokenSecret() {
-  return (
-    process.env.LOCATION_RESOLUTION_TOKEN_SECRET ??
-    getSupabaseConfig().secretKey ??
-    null
-  );
+  const secret = process.env.LOCATION_RESOLUTION_TOKEN_SECRET?.trim();
+
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "LOCATION_RESOLUTION_TOKEN_SECRET must contain at least 32 characters.",
+    );
+  }
+
+  return secret;
 }
 
 function encodeTokenPayload(payload: LocationResolutionTokenPayload) {
@@ -56,12 +68,17 @@ function isValidTokenPayload(
 ): payload is LocationResolutionTokenPayload {
   return Boolean(
     payload &&
-      (typeof payload.administrativeDongCode === "string" ||
-        payload.administrativeDongCode === null) &&
+      payload.version === LOCATION_RESOLUTION_TOKEN_VERSION &&
+      typeof payload.administrativeDongCode === "string" &&
+      /^\d{10}$/.test(payload.administrativeDongCode) &&
       typeof payload.formattedAdministrativeAreaName === "string" &&
       payload.formattedAdministrativeAreaName.trim() &&
       typeof payload.expiresAt === "number" &&
       Number.isFinite(payload.expiresAt) &&
+      typeof payload.latitudeBucket20m === "number" &&
+      Number.isFinite(payload.latitudeBucket20m) &&
+      typeof payload.longitudeBucket20m === "number" &&
+      Number.isFinite(payload.longitudeBucket20m) &&
       typeof payload.latitudeBucket100m === "number" &&
       Number.isFinite(payload.latitudeBucket100m) &&
       typeof payload.longitudeBucket100m === "number" &&
@@ -70,28 +87,32 @@ function isValidTokenPayload(
 }
 
 export function createLocationResolutionTokenWithExpiry(input: {
-  administrativeDongCode: string | null;
+  administrativeDongCode: string;
   formattedAdministrativeAreaName: string;
   location: PostLocation;
 }): CreatedLocationResolutionToken {
   const secret = getLocationResolutionTokenSecret();
 
-  if (!secret || !input.formattedAdministrativeAreaName.trim()) {
-    return {
-      token: null,
-      expiresAt: null,
-    };
+  if (
+    !/^\d{10}$/.test(input.administrativeDongCode) ||
+    !input.formattedAdministrativeAreaName.trim()
+  ) {
+    throw new Error("INVALID_LOCATION_RESOLUTION_TOKEN_INPUT");
   }
 
-  const quantizedLocation = quantizeLocationTo100MeterGrid(input.location);
+  const lookupCell = quantizeLocationTo20MeterGrid(input.location);
+  const storageCell = quantizeLocationTo100MeterGrid(input.location);
   const expiresAt = Date.now() + LOCATION_RESOLUTION_TOKEN_TTL_MS;
   const tokenPayload = encodeTokenPayload({
+    version: LOCATION_RESOLUTION_TOKEN_VERSION,
     administrativeDongCode: input.administrativeDongCode,
     formattedAdministrativeAreaName:
       input.formattedAdministrativeAreaName.trim(),
     expiresAt,
-    latitudeBucket100m: quantizedLocation.latitudeBucket100m,
-    longitudeBucket100m: quantizedLocation.longitudeBucket100m,
+    latitudeBucket20m: lookupCell.latitudeBucket20m,
+    longitudeBucket20m: lookupCell.longitudeBucket20m,
+    latitudeBucket100m: storageCell.latitudeBucket100m,
+    longitudeBucket100m: storageCell.longitudeBucket100m,
   });
 
   return {
@@ -106,7 +127,7 @@ export function verifyLocationResolutionToken(
 ): VerifiedLocationResolution | null {
   const secret = getLocationResolutionTokenSecret();
 
-  if (!secret || !token?.trim()) {
+  if (!token?.trim()) {
     return null;
   }
 
@@ -133,11 +154,14 @@ export function verifyLocationResolutionToken(
     return null;
   }
 
-  const quantizedLocation = quantizeLocationTo100MeterGrid(location);
+  const lookupCell = quantizeLocationTo20MeterGrid(location);
+  const storageCell = quantizeLocationTo100MeterGrid(location);
 
   if (
-    payload.latitudeBucket100m !== quantizedLocation.latitudeBucket100m ||
-    payload.longitudeBucket100m !== quantizedLocation.longitudeBucket100m
+    payload.latitudeBucket20m !== lookupCell.latitudeBucket20m ||
+    payload.longitudeBucket20m !== lookupCell.longitudeBucket20m ||
+    payload.latitudeBucket100m !== storageCell.latitudeBucket100m ||
+    payload.longitudeBucket100m !== storageCell.longitudeBucket100m
   ) {
     return null;
   }
