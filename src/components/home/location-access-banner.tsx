@@ -1,4 +1,8 @@
-import type { BrowserLocationGuidance } from "../../lib/geo/browser-location-guidance";
+import type {
+  BrowserLocationContinuationAction,
+  BrowserLocationGuidance,
+} from "../../lib/geo/browser-location-guidance";
+import { runBrowserLocationRetryAction } from "../../lib/geo/browser-location-recovery";
 import {
   uiBrandYellow,
   uiColors,
@@ -10,14 +14,29 @@ import {
 type LocationAccessBannerProps = {
   guidance: BrowserLocationGuidance;
   locating: boolean;
-  onRequest: () => void;
+  onManualSearch?: () => void;
+  onRequest: (action: BrowserLocationContinuationAction) => void;
 };
 
 export function LocationAccessBanner({
   guidance,
   locating,
+  onManualSearch,
   onRequest,
 }: LocationAccessBannerProps) {
+  const actionLabel = guidance.retryAvailable
+    ? guidance.retryLabel
+    : "지역 직접 선택";
+
+  function handleAction() {
+    if (!guidance.retryAvailable && onManualSearch) {
+      onManualSearch();
+      return;
+    }
+
+    runBrowserLocationRetryAction(guidance.retryAction, onRequest);
+  }
+
   return (
     <aside
       aria-live="polite"
@@ -56,7 +75,7 @@ export function LocationAccessBanner({
       </div>
       <button
         disabled={locating}
-        onClick={onRequest}
+        onClick={handleAction}
         style={{
           appearance: "none",
           background: "#ffffff",
@@ -73,7 +92,7 @@ export function LocationAccessBanner({
         }}
         type="button"
       >
-        {locating ? "위치 확인 중..." : guidance.retryLabel}
+        {locating ? "위치 확인 중..." : actionLabel}
       </button>
     </aside>
   );

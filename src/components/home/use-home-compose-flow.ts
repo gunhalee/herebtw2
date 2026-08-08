@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type MutableRefObject,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { fetchActiveHomeFeedPage } from "./home-feed-api";
 import {
   buildPostListErrorState,
@@ -17,12 +10,11 @@ import {
 import {
   abortActiveBrowserLocationRequest,
   isBrowserLocationAccurateForPost,
+  refreshBrowserLocationSession,
   refreshFreshBrowserLocationSession,
 } from "../../lib/geo/browser-location-session";
-import {
-  getBrowserLocationGuidance,
-  type BrowserLocationGuidance,
-} from "../../lib/geo/browser-location-guidance";
+import { getBrowserLocationGuidance, type BrowserLocationContinuationAction, type BrowserLocationGuidance } from "../../lib/geo/browser-location-guidance";
+import { clearBrowserLocationRecoveryAttempt, hasBrowserLocationRecoveryAttempt } from "../../lib/geo/browser-location-recovery";
 import { LOCATION_POLICY } from "../../lib/geo/location-policy";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
@@ -42,7 +34,6 @@ type UseHomeComposeFlowParams = {
   setPendingFeedSnapshot: Dispatch<SetStateAction<PendingFeedSnapshot | null>>;
   closeMenu: () => void;
 };
-
 export function useHomeComposeFlow({
   isMountedRef,
   appShellStateRef,
@@ -76,6 +67,8 @@ export function useHomeComposeFlow({
   async function handleCompose(options?: {
     accuracyRetry?: boolean;
     forceDeniedRetry?: boolean;
+    recoveryAction?: BrowserLocationContinuationAction;
+    transientRetryCompleted?: boolean;
   }) {
     if (composeLocatingRef.current) {
       return;
@@ -86,6 +79,7 @@ export function useHomeComposeFlow({
         manualLocationSelection.locationResolutionTokenExpiresAt >
           Date.now() + 20000,
     );
+    const recoveryAttemptCompleted = hasBrowserLocationRecoveryAttempt();
 
     if (
       appShellStateRef.current.permissionMode === "denied" &&
@@ -104,7 +98,10 @@ export function useHomeComposeFlow({
       }
 
       setComposeLocationGuidance(
-        getBrowserLocationGuidance({ permissionMode: "denied" }),
+        getBrowserLocationGuidance({
+          permissionMode: "denied",
+          recoveryAttemptCompleted,
+        }),
       );
       return;
     }
@@ -122,7 +119,10 @@ export function useHomeComposeFlow({
     const locationRequestedAt = Date.now();
 
     try {
-      const locationSession = await refreshFreshBrowserLocationSession();
+      const locationSession =
+        options?.recoveryAction === "resolve-location"
+          ? await refreshBrowserLocationSession()
+          : await refreshFreshBrowserLocationSession();
 
       if (
         !locationSession.coordinates ||
@@ -133,8 +133,11 @@ export function useHomeComposeFlow({
         if (isMountedRef.current) {
           setComposeLocationGuidance(
             getBrowserLocationGuidance({
+              coordinatesAvailable: Boolean(locationSession.coordinates),
               error: locationSession.error,
               permissionMode: locationSession.permissionMode,
+              recoveryAttemptCompleted,
+              transientRetryCompleted: options?.transientRetryCompleted,
             }),
           );
         }
@@ -175,10 +178,13 @@ export function useHomeComposeFlow({
       if (!locationSession.resolvedLocation?.locationResolutionToken) {
         if (isMountedRef.current) {
           setComposeLocationGuidance(
-            getBrowserLocationGuidance({
-              error: locationSession.error,
-              permissionMode: locationSession.permissionMode,
-            }),
+              getBrowserLocationGuidance({
+                coordinatesAvailable: true,
+                error: locationSession.error,
+                permissionMode: locationSession.permissionMode,
+                recoveryAttemptCompleted,
+                transientRetryCompleted: options?.transientRetryCompleted,
+              }),
           );
         }
 
@@ -186,6 +192,7 @@ export function useHomeComposeFlow({
       }
 
       if (isMountedRef.current) {
+        clearBrowserLocationRecoveryAttempt();
         applyResolvedLocationSelection(
           locationSession.resolvedLocation,
           locationSession.coordinates,
@@ -209,11 +216,16 @@ export function useHomeComposeFlow({
     setComposeLocationGuidance(null);
   }
 
-  function handleRetryCompose() {
+  function handleRetryCompose(action: BrowserLocationContinuationAction) {
     setComposeLocationGuidance(null);
     const accuracyRetry = accuracyRetryPendingRef.current;
     accuracyRetryPendingRef.current = false;
-    void handleCompose({ accuracyRetry, forceDeniedRetry: true });
+    void handleCompose({
+      accuracyRetry,
+      forceDeniedRetry: true,
+      recoveryAction: accuracyRetry ? "fresh-location" : action,
+      transientRetryCompleted: !accuracyRetry,
+    });
   }
 
   function handleOpenManualLocationSearch() {

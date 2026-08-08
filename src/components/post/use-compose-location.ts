@@ -18,6 +18,7 @@ import {
 import type { PostComposeState, PostLocation } from "../../types/post";
 import type { ManualAdministrativeLocationSelection } from "../../lib/geo/administrative-dong-search";
 import { LOCATION_POLICY } from "../../lib/geo/location-policy";
+import { getComposeLocationDisplayName } from "../../lib/geo/compose-location-presentation";
 
 type UseComposeLocationParams = {
   manualLocationSelection?: ManualAdministrativeLocationSelection | null;
@@ -128,10 +129,12 @@ export function useComposeLocation({
 
   return {
     locationAccuracyWarning,
-    locationDisplayName:
-      manualLocationSelection?.formattedAdministrativeAreaName ??
-      locationSession.resolvedLocation?.formattedAdministrativeAreaName ??
-      null,
+    locationDisplayName: getComposeLocationDisplayName({
+      browserAdministrativeDongName:
+        locationSession.resolvedLocation?.administrativeDongName,
+      manualAdministrativeAreaName:
+        manualLocationSelection?.administrativeAreaName,
+    }),
     locationRefreshing,
     locationReadyForSubmit,
     locationResolutionTokenPending,

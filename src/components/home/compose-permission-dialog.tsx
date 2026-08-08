@@ -4,14 +4,17 @@ import {
   uiSpacing,
   uiTypography,
 } from "../../lib/ui/tokens";
-import type { BrowserLocationGuidance } from "../../lib/geo/browser-location-guidance";
-import { openCurrentPageInAndroidChrome } from "../../lib/geo/browser-external-navigation";
+import type {
+  BrowserLocationContinuationAction,
+  BrowserLocationGuidance,
+} from "../../lib/geo/browser-location-guidance";
+import { runBrowserLocationRetryAction } from "../../lib/geo/browser-location-recovery";
 
 type ComposePermissionDialogProps = {
   guidance: BrowserLocationGuidance;
   onClose: () => void;
   onManualSearch?: () => void;
-  onRetry: () => void;
+  onRetry: (action: BrowserLocationContinuationAction) => void;
 };
 
 export function ComposePermissionDialog({
@@ -20,13 +23,19 @@ export function ComposePermissionDialog({
   onManualSearch,
   onRetry,
 }: ComposePermissionDialogProps) {
+  const manualSearchIsPrimary = guidance.primaryAction === "manual";
+  const retryIsPrimary = guidance.primaryAction === "retry";
   const manualSearchButton =
     guidance.manualSearchAvailable && onManualSearch ? (
       <button
         onClick={onManualSearch}
         style={{
-          background: "linear-gradient(180deg, #fff89a 0%, #ffed00 100%)",
-          border: "1px solid #e7dccd",
+          background: manualSearchIsPrimary
+            ? "linear-gradient(180deg, #fff89a 0%, #ffed00 100%)"
+            : "#ffffff",
+          border: `1px solid ${
+            manualSearchIsPrimary ? "#e7dccd" : uiColors.border
+          }`,
           borderRadius: uiRadius.pill,
           color: uiColors.textStrong,
           cursor: "pointer",
@@ -45,16 +54,15 @@ export function ComposePermissionDialog({
   const retryButton = guidance.retryAvailable ? (
     <button
       onClick={() => {
-        if (guidance.retryAction === "external-browser") {
-          openCurrentPageInAndroidChrome();
-          return;
-        }
-
-        onRetry();
+        runBrowserLocationRetryAction(guidance.retryAction, onRetry);
       }}
       style={{
-        background: "#ffffff",
-        border: `1px solid ${uiColors.border}`,
+        background: retryIsPrimary
+          ? "linear-gradient(180deg, #fff89a 0%, #ffed00 100%)"
+          : "#ffffff",
+        border: `1px solid ${
+          retryIsPrimary ? "#e7dccd" : uiColors.border
+        }`,
         borderRadius: uiRadius.pill,
         color: uiColors.textStrong,
         cursor: "pointer",

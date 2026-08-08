@@ -14,8 +14,13 @@ import {
 } from "../../lib/geo/browser-location-support";
 import {
   getBrowserLocationGuidance,
+  type BrowserLocationContinuationAction,
   type BrowserLocationGuidance,
 } from "../../lib/geo/browser-location-guidance";
+import {
+  clearBrowserLocationRecoveryAttempt,
+  hasBrowserLocationRecoveryAttempt,
+} from "../../lib/geo/browser-location-recovery";
 import {
   refreshBrowserLocationSession,
   useBrowserLocationSession,
@@ -42,6 +47,10 @@ type UseHomeLocationAccessParams = {
   setPostListState: Dispatch<SetStateAction<PostListState>>;
 };
 
+type LocationAccessRequestOptions = {
+  transientRetryCompleted?: boolean;
+};
+
 export function useHomeLocationAccess({
   appShellStateRef,
   applyDeniedLocationMode,
@@ -55,6 +64,8 @@ export function useHomeLocationAccess({
     useState<BrowserLocationGuidance | null>(null);
   const [locationAccessRequesting, setLocationAccessRequesting] =
     useState(false);
+  const [recoveryAttemptCompleted, setRecoveryAttemptCompleted] =
+    useState(false);
   const requestInFlightRef = useRef(false);
   const requestLocationAccessRef = useRef<() => void>(() => undefined);
   const locationAvailableRef = useRef(false);
@@ -64,12 +75,16 @@ export function useHomeLocationAccess({
       locationSession.resolvedLocation,
   );
   const bannerGuidance = getBrowserLocationGuidance({
+    coordinatesAvailable: Boolean(locationSession.coordinates),
     error: locationSession.error,
     permissionMode: locationSession.permissionMode,
+    recoveryAttemptCompleted,
   });
   locationAvailableRef.current = locationAvailable;
 
-  async function handleRequestLocationAccess() {
+  async function requestLocationAccess(
+    options: LocationAccessRequestOptions = {},
+  ) {
     if (requestInFlightRef.current) {
       return;
     }
@@ -93,14 +108,19 @@ export function useHomeLocationAccess({
 
         setLocationAccessGuidance(
           getBrowserLocationGuidance({
+            coordinatesAvailable: Boolean(coordinates),
             error: refreshedSession.error,
             permissionMode: refreshedSession.permissionMode,
+            recoveryAttemptCompleted,
+            transientRetryCompleted: options.transientRetryCompleted,
           }),
         );
         return;
       }
 
       applyResolvedLocationSelection(resolvedLocation, coordinates);
+      clearBrowserLocationRecoveryAttempt();
+      setRecoveryAttemptCompleted(false);
       const result = await fetchActiveHomeFeedPage(coordinates, {
         anonymousDeviceId:
           appShellStateRef.current.anonymousDeviceId ?? undefined,
@@ -133,17 +153,23 @@ export function useHomeLocationAccess({
   }
 
   requestLocationAccessRef.current = () => {
-    void handleRequestLocationAccess();
+    void requestLocationAccess();
   };
 
   useEffect(() => {
     let disposed = false;
     let removePermissionListener: () => void = () => undefined;
 
+    setRecoveryAttemptCompleted(hasBrowserLocationRecoveryAttempt());
+
     const refreshAfterPermissionGrant = (
       state: PermissionState | "unsupported",
     ) => {
-      if (state === "granted" && !locationAvailableRef.current) {
+      if (
+        !disposed &&
+        state === "granted" &&
+        !locationAvailableRef.current
+      ) {
         requestLocationAccessRef.current();
       }
     };
@@ -159,8 +185,13 @@ export function useHomeLocationAccess({
       },
     );
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible" || locationAvailableRef.current) {
+    const checkPermissionAfterPageReturn = () => {
+      setRecoveryAttemptCompleted(hasBrowserLocationRecoveryAttempt());
+
+      if (
+        document.visibilityState !== "visible" ||
+        locationAvailableRef.current
+      ) {
         return;
       }
 
@@ -169,12 +200,22 @@ export function useHomeLocationAccess({
       );
     };
 
+    const handleVisibilityChange = () => {
+      checkPermissionAfterPageReturn();
+    };
+
+    const handlePageShow = () => {
+      checkPermissionAfterPageReturn();
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pageshow", handlePageShow);
 
     return () => {
       disposed = true;
       removePermissionListener();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pageshow", handlePageShow);
     };
   }, []);
 
@@ -182,9 +223,17 @@ export function useHomeLocationAccess({
     setLocationAccessGuidance(null);
   }
 
-  function handleRetryLocationAccess() {
+  function handleRequestLocationAccess(
+    _action: BrowserLocationContinuationAction,
+  ) {
+    void requestLocationAccess();
+  }
+
+  function handleRetryLocationAccess(
+    _action: BrowserLocationContinuationAction,
+  ) {
     setLocationAccessGuidance(null);
-    void handleRequestLocationAccess();
+    void requestLocationAccess({ transientRetryCompleted: true });
   }
 
   return {

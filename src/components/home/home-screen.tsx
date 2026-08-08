@@ -244,6 +244,7 @@ export function HomeScreen({
         onRequestLocationAccess={handleRequestLocationAccess}
         onConfirmReport={handleReport}
         onLoadMore={handleLoadMore}
+        onManualLocationSearch={handleOpenManualLocationSearch}
         onOpenMenu={handleOpenMenu}
         onScrollTargetApplied={() => setPendingAppliedScrollTargetPostId(null)}
         onSelectCandidate={handleSelectCandidate}

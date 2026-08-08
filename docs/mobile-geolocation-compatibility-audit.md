@@ -40,6 +40,11 @@
   Permissions API는 자동 요청 여부를 정하는 힌트로만 사용하고, 최종 상태는
   실제 Geolocation 성공·오류 콜백으로 판단해야 한다.
   [WebKit bug 275950](https://bugs.webkit.org/show_bug.cgi?id=275950)
+- WebKit은 `PermissionStatus.change` 이벤트가 권한 변경을 즉시 알리지 않을
+  수 있다. 따라서 이벤트 하나에 의존하지 않고 `visibilitychange`와
+  `pageshow`에서 권한을 다시 조회하며, 사용자가 설정을 바꾼 뒤에는
+  `설정 후 새로고침`으로 새 문서를 시작할 수 있게 한다.
+  [WebKit bug 275268](https://bugs.webkit.org/show_bug.cgi?id=275268)
 - Android에서는 기기 위치, 브라우저 앱 권한, 사이트 권한이 모두 허용돼야
   한다. Android 12 이상에서는 앱에 대략적 위치만 줄 수도 있다.
   [Google Android 위치 권한 안내](https://support.google.com/android/answer/179386)
@@ -59,7 +64,7 @@
 | 높음 | 홈 hydration 직후 두 경로에서 위치를 자동 요청 | 설명 없이 권한 팝업이 떠 모바일 거부율 증가, 중복 호출 가능 | 첫 방문은 권한 상태만 읽고 서비스 내 CTA 이후 실제 요청 |
 | 높음 | `navigator.geolocation` 존재 여부만 확인 | HTTP, iframe policy, WebView host 차단을 모두 일반 실패로 표시 | insecure context, policy, API 부재, native 오류를 별도 코드로 분류 |
 | 높음 | 정밀 `watchPosition` 전체 제한 8초 | 첫 권한 선택과 GPS 첫 fix가 같은 8초를 소비 | 첫 fix 최대 30초, 첫 결과 이후 개선 구간 8초로 분리 |
-| 높음 | 홈에서 거부 후 복구 상태를 감시하지 않음 | 설정에서 허용해도 탭이 이전 `denied` 상태에 머무름 | Permissions API `change`와 foreground 복귀 시 granted를 감지해 재측위 |
+| 높음 | 홈에서 거부 후 복구 상태를 감시하지 않음 | 설정에서 허용해도 탭이 이전 `denied` 상태에 머무름 | Permissions API `change`, `visibilitychange`, `pageshow`로 복귀를 감지하고 설정 후 새로고침 제공 |
 | 중간 | `Permissions API` 미지원·오동작 전략 부재 | Safari/구형 브라우저에서 잘못된 선판단 가능 | API 미지원은 `unknown`, 실제 사용자 요청 결과를 최종 판정으로 사용 |
 | 중간 | `watchPosition`이 없는 부분 구현 WebView | 객체는 있으나 정밀 측위 호출 실패 | `getCurrentPosition({enableHighAccuracy:true})`로 폴백 |
 | 중간 | 오래되거나 범위를 벗어난 좌표 검증 부족 | stale/비정상 좌표가 세션으로 들어갈 수 있음 | timestamp, 위·경도 범위, accuracy 유효성 검증 |
@@ -111,19 +116,45 @@ flowchart TD
 작성자의 실제 거리처럼 오해하지 않도록 공개 카드에서는 정확한 거리 대신
 `거리 미확인`을 표시하며, 수동 선택 여부 자체는 별도로 노출하지 않는다.
 
+복구 버튼은 오류 원인에 따라 다음처럼 동작한다.
+
+- 권한 거부: 일반 브라우저는 `설정 후 새로고침`, Android 인앱 브라우저는
+  `Chrome에서 열기`
+- 비보안 문서: 같은 URL의 HTTPS 주소로 전환
+- iframe policy 차단: 현재 URL을 최상위 새 창으로 열기
+- 센서 unavailable/timeout/invalid: 좌표를 한 번만 새로 측정
+- 좌표 성공 후 행정구역 확인 실패: GPS를 다시 요청하지 않고 기존 좌표로
+  역지오코딩만 한 번 재시도
+- 일시 오류가 한 번 더 실패: 반복 재시도 대신 지역 직접 선택을 기본 경로로
+  전환
+
+작성 화면은 위치 출처에 따라 조작 요소를 다르게 노출한다.
+
+- GPS 위치: `{행정동}에 남기기`만 제목에 표시하고 지역 변경 버튼은 숨긴다.
+- 직접 선택 위치: `{선택 지역}에 남기기` 옆에 `지역 변경`을 표시한다.
+- 별도 위치 행은 사용하지 않는다. 제목과 위치 정보를 합쳐 작성 맥락을 한
+  번만 전달한다.
+
+지역 직접 선택은 첫 오류부터 병렬 선택지로 노출하지 않는다. 센서·네트워크·
+역지오코딩 오류는 한 번 복구를 시도한 뒤 다시 실패했을 때만 공개한다.
+권한 거부와 구조적 브라우저 오류는 새로고침·외부 브라우저·HTTPS·새 창
+열기를 먼저 제공하고, 해당 복구 시도를 한 뒤 돌아온 경우에만 직접 선택을
+공개한다. 같은 탭 새로고침에서도 단계를 유지하도록 복구 시도 시각을
+`sessionStorage`와 history state에 최대 10분간 보존한다.
+
 ## 5. 오류별 사용자 복구 경로
 
 | 오류 | 판정 근거 | 사용자 안내 |
 | --- | --- | --- |
-| insecure context | `window.isSecureContext === false` | HTTPS 주소로 다시 접속 |
-| policy blocked | `document.permissionsPolicy/featurePolicy` | iframe을 벗어나 Safari/Chrome에서 직접 열기 |
-| API unavailable | 메서드 없음 | 최신 외부 브라우저에서 열기 |
-| permission denied | native `PERMISSION_DENIED`, `SecurityError` | iOS/Android별 사이트·앱·기기 설정 안내 |
-| position unavailable | native `POSITION_UNAVAILABLE` | 위치 서비스·Wi-Fi 확인, 창가/실외에서 재시도 |
-| timeout | native/자체 deadline | 화면을 켠 채 최대 30초 재시도 |
-| invalid position | 좌표 범위·accuracy·timestamp 검증 실패 | 새 위치 재확인 |
+| insecure context | `window.isSecureContext === false` | `HTTPS로 다시 열기` 또는 지역 직접 선택 |
+| policy blocked | `document.permissionsPolicy/featurePolicy` | `새 창에서 열기` 또는 지역 직접 선택 |
+| API unavailable | 메서드 없음 | Android 인앱은 Chrome에서 열기, 그 외는 지역 직접 선택 |
+| permission denied | native `PERMISSION_DENIED`, `SecurityError` | 먼저 `설정 후 새로고침`; Android 인앱은 Chrome에서 열기, 복구 후에도 실패하면 직접 선택 |
+| position unavailable | native `POSITION_UNAVAILABLE` | 위치 서비스·Wi-Fi 확인 후 한 번 재시도, 다시 실패하면 직접 선택 |
+| timeout | native/자체 deadline | 화면을 켠 채 한 번 재시도, 다시 실패하면 직접 선택 |
+| invalid position | 좌표 범위·accuracy·timestamp 검증 실패 | 한 번 새 위치 재확인, 다시 실패하면 직접 선택 |
 | low accuracy | 첫 측정 `accuracy > 500m` | 한 번 재시도; 2km 이내 허용, 초과 시 지역 직접 선택 |
-| resolve failure | 행정동 API 실패 | 인터넷 확인 후 재시도; 서버는 provider 분류 로그 기록 |
+| resolve failure | 좌표는 있으나 행정동 API 실패 | 기존 좌표로 역지오코딩만 한 번 재시도 후 직접 선택 |
 | blocked/manual fallback | 권한·API·iframe·반복 정확도 실패 | 전국 지역 검색에서 동·읍·면/시·군·구/시·도 선택 |
 
 ## 6. 실기기 QA 매트릭스
@@ -152,6 +183,7 @@ flowchart TD
 - 카카오톡·네이버·LINE 등 WebView/Custom Tab
 - Android 인앱 브라우저의 `Chrome에서 열기` intent와 미설치 fallback
 - 배터리 절약 모드와 백그라운드 후 foreground 복귀
+- 설정 화면·다른 탭에서 돌아올 때 `visibilitychange`, `pageshow`, BFCache 복원
 
 ### 공통
 
@@ -160,6 +192,9 @@ flowchart TD
 - same-origin top level, cross-origin iframe
 - localStorage 차단과 quota exceeded
 - 권한 요청 중 빠른 화면 전환/닫기와 글쓰기 연타
+- GPS 작성 제목에 행정동만 표시되고 지역 변경 버튼이 없는지 확인
+- 직접 선택 작성 제목에 선택 지역과 지역 변경 버튼이 함께 표시되는지 확인
+- 첫 위치 실패에는 직접 선택이 없고 두 번째 실패에서만 나타나는지 확인
 
 ## 7. 운영 관측 기준
 
