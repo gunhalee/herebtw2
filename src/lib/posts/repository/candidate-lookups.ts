@@ -56,9 +56,10 @@ async function loadReplyNotificationPostRepository(postId: string) {
       public_uuid: string;
       content: string;
       notification_email: string | null;
+      notification_email_verified_at: string | null;
     }>
   >(
-    `posts?select=id,public_uuid,content,notification_email&id=eq.${postId}&limit=1`,
+    `posts?select=id,public_uuid,content,notification_email,notification_email_verified_at&id=eq.${postId}&notification_email_verified_at=not.is.null&limit=1`,
   );
 
   return rows?.[0] ?? null;

@@ -24,10 +24,14 @@ type VoicePost = {
 };
 
 type VoiceDetailScreenProps = {
+  emailVerificationStatus?: "failed" | "success";
   post: VoicePost;
 };
 
-export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
+export function VoiceDetailScreen({
+  emailVerificationStatus,
+  post,
+}: VoiceDetailScreenProps) {
   const [savingCardImage, setSavingCardImage] = useState(false);
   const cardImageUrl = `/api/card/${post.publicUuid}?type=voter`;
 
@@ -81,6 +85,25 @@ export function VoiceDetailScreen({ post }: VoiceDetailScreenProps) {
             width: "100%",
           }}
         >
+          {emailVerificationStatus ? (
+            <p
+              role="status"
+              style={{
+                background: uiBrandYellow.surfaceSoft,
+                border: `1px solid ${uiBrandYellow.borderSoft}`,
+                borderRadius: uiRadius.md,
+                color: "#4b3d2a",
+                fontSize: "14px",
+                lineHeight: 1.5,
+                margin: `${uiSpacing.lg} 0 0`,
+                padding: `${uiSpacing.sm} ${uiSpacing.md}`,
+              }}
+            >
+              {emailVerificationStatus === "success"
+                ? "이메일 확인이 완료됐어요. 후보자가 답변하면 알려드릴게요."
+                : "확인 링크가 만료됐거나 올바르지 않아요."}
+            </p>
+          ) : null}
           <div
             style={{
               display: "flex",

@@ -13,6 +13,14 @@ Required values:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SECRET_KEY`
+- `LOCATION_RESOLUTION_TOKEN_SECRET`
+- `ABUSE_DEVICE_TOKEN_SECRET` (32자 이상의 독립 난수)
+- `ABUSE_NETWORK_HASH_SECRET_CURRENT` (32자 이상의 독립 난수)
+
+선택 값:
+
+- `ABUSE_SUBJECT_HASH_SECRET` (생략하면 `ABUSE_DEVICE_TOKEN_SECRET` 사용)
+- `BOTID_ENFORCEMENT_MODE` (`enforce`, `shadow`, `off`; Vercel 기본값 `enforce`)
 
 ## Database migrations
 
@@ -42,11 +50,14 @@ Expected result:
 
 ## Vercel deployment
 
-Set the same three Supabase variables in Vercel for both `Preview` and `Production`:
+Set the Supabase and abuse-protection variables in Vercel for both `Preview` and `Production`:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SECRET_KEY`
+- `LOCATION_RESOLUTION_TOKEN_SECRET`
+- `ABUSE_DEVICE_TOKEN_SECRET`
+- `ABUSE_NETWORK_HASH_SECRET_CURRENT`
 
 After changing environment variables, trigger a new deployment.
 

@@ -124,7 +124,7 @@ export async function createCandidateReply(
   try {
     const post = await loadReplyNotificationPostRepository(input.postId);
 
-    if (post?.notification_email) {
+    if (post?.notification_email && post.notification_email_verified_at) {
       await sendReplyNotification({
         toEmail: post.notification_email,
         postContent: post.content,

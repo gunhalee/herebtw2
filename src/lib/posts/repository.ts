@@ -24,6 +24,9 @@ export {
 } from "./repository/feed";
 export {
   createPostRepository,
+  findPostByClientRequestIdRepository,
+  findPostByFingerprintRepository,
+  findSimilarRecentPostsRepository,
   reportPostRepository,
   syncDeviceRepository,
   toggleAgreeRepository,

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createElement } from "react";
+import { getNetworkRateLimitResponse } from "../../../../lib/abuse/network-guard";
+import { ABUSE_POLICY } from "../../../../lib/abuse/policy";
 import { generateCardPng } from "../../../../lib/card/generate";
 import { DeliveredVoterCard } from "../../../../lib/card/templates/delivered-voter";
 import { RepliedCandidateCard } from "../../../../lib/card/templates/replied-candidate";
@@ -47,7 +49,17 @@ function buildReplyCandidateTagline(input: {
 export async function GET(request: Request, context: RouteContext) {
   const { uuid } = await context.params;
   const { searchParams } = new URL(request.url);
-  const cardType = searchParams.get("type") ?? "voter";
+  const requestedCardType = searchParams.get("type");
+  const cardType = requestedCardType === "candidate" ? "candidate" : "voter";
+  const rateLimitResponse = await getNetworkRateLimitResponse({
+    action: "card.render",
+    budgets: ABUSE_POLICY.cardRender.networkBudgets,
+    request,
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
   const post = await findPostByUuidRepository(uuid);
 

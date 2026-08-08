@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { escapeHtml, normalizeNotificationEmail } from "./validation";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = "여기 근데 한마디 할게요 <onboarding@resend.dev>";
@@ -22,6 +23,12 @@ export async function sendReplyNotification(
   input: SendReplyNotificationInput,
 ): Promise<{ sent: boolean }> {
   const resend = getResendClient();
+  const validatedEmail = normalizeNotificationEmail(input.toEmail);
+
+  if (!validatedEmail.ok || !validatedEmail.value) {
+    console.warn("[email] Invalid notification recipient, skipping notification");
+    return { sent: false };
+  }
 
   if (!resend) {
     console.warn("[email] RESEND_API_KEY not configured, skipping notification");
@@ -35,6 +42,8 @@ export async function sendReplyNotification(
     input.postContent.length > 50
       ? input.postContent.slice(0, 50) + "..."
       : input.postContent;
+  const safeCandidateName = escapeHtml(input.candidateName);
+  const safePreviewText = escapeHtml(previewText);
 
   try {
     let cardInlineSrc = cardImageUrl;
@@ -73,13 +82,13 @@ export async function sendReplyNotification(
 
     await resend.emails.send({
       from: FROM_EMAIL,
-      to: input.toEmail,
+      to: validatedEmail.value,
       subject: "당신의 목소리에 후보자가 답했습니다!",
       attachments: cardAttachment ? [cardAttachment] : undefined,
       html: `
         <div style="font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; max-width: 520px; margin: 0 auto; padding: 28px 16px;">
           <h1 style="font-size: 20px; color: #111827; margin: 0 0 8px;">
-            당신의 목소리에 ${input.candidateName} 후보가 답했습니다!
+            당신의 목소리에 ${safeCandidateName} 후보가 답했습니다!
           </h1>
           <p style="font-size: 14px; color: #6b7280; margin: 0 0 24px; line-height: 1.5;">
             소중한 의견 감사합니다. 항상 민의를 중심 삼는 정치인이 되겠습니다.
@@ -87,7 +96,7 @@ export async function sendReplyNotification(
 
           <div style="background: #f7f4ec; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
             <p style="font-size: 14px; color: #374151; margin: 0; line-height: 1.6;">
-              "${previewText}"
+              &quot;${safePreviewText}&quot;
             </p>
           </div>
 

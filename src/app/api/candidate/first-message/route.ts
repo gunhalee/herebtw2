@@ -1,6 +1,10 @@
 import { readJsonBody } from "../../../../lib/api/request";
 import { fail, ok } from "../../../../lib/api/response";
 import { getCandidateSession } from "../../../../lib/auth/candidate-session";
+import { getBotRejectionResponse } from "../../../../lib/abuse/bot-verification";
+import { getAccountRateLimitResponse } from "../../../../lib/abuse/account-guard";
+import { ABUSE_POLICY } from "../../../../lib/abuse/policy";
+import { evaluateContentSafety } from "../../../../lib/abuse/content-safety";
 import {
   createCandidateFirstMessage,
   updateCandidateFirstMessage,
@@ -15,6 +19,26 @@ export async function PATCH(request: Request) {
 
   if (!session) {
     return fail({ code: "UNAUTHORIZED", message: "인증이 필요합니다." }, 401);
+  }
+
+  if (!session.isActive) {
+    return fail({ code: "CANDIDATE_INACTIVE", message: "활성화된 후보자만 작성할 수 있습니다." }, 403);
+  }
+
+  const botRejection = await getBotRejectionResponse("candidate.first_message");
+
+  if (botRejection) {
+    return botRejection;
+  }
+
+  const rateLimitResponse = await getAccountRateLimitResponse({
+    accountId: session.authUserId,
+    action: "candidate.first_message",
+    budgets: ABUSE_POLICY.candidateWrite.accountBudgets,
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   if (!session.firstMessageId) {
@@ -35,6 +59,12 @@ export async function PATCH(request: Request) {
     );
   }
 
+  const safety = evaluateContentSafety(trimmedContent);
+
+  if (!safety.allowed) {
+    return fail({ code: "UNSAFE_CONTENT", message: safety.message }, 422);
+  }
+
   await updateCandidateFirstMessage({
     postId: session.firstMessageId,
     content: trimmedContent,
@@ -52,6 +82,26 @@ export async function POST(request: Request) {
 
   if (!session) {
     return fail({ code: "UNAUTHORIZED", message: "인증이 필요합니다." }, 401);
+  }
+
+  if (!session.isActive) {
+    return fail({ code: "CANDIDATE_INACTIVE", message: "활성화된 후보자만 작성할 수 있습니다." }, 403);
+  }
+
+  const botRejection = await getBotRejectionResponse("candidate.first_message");
+
+  if (botRejection) {
+    return botRejection;
+  }
+
+  const rateLimitResponse = await getAccountRateLimitResponse({
+    accountId: session.authUserId,
+    action: "candidate.first_message",
+    budgets: ABUSE_POLICY.candidateWrite.accountBudgets,
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   if (session.hasFirstMessage) {
@@ -74,6 +124,12 @@ export async function POST(request: Request) {
       { code: "VALIDATION_ERROR", message: "내용은 1~100자여야 합니다." },
       400,
     );
+  }
+
+  const safety = evaluateContentSafety(trimmedContent);
+
+  if (!safety.allowed) {
+    return fail({ code: "UNSAFE_CONTENT", message: safety.message }, 422);
   }
 
   const result = await createCandidateFirstMessage({

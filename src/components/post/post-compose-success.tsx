@@ -62,12 +62,14 @@ function CheckmarkIcon({ sizePx }: { sizePx: number }) {
 type PostComposeSuccessProps = {
   publicUuid: string;
   dongName: string;
+  notificationVerificationRequired: boolean;
   onDismiss: () => void;
 };
 
 export function PostComposeSuccess({
   publicUuid,
   dongName,
+  notificationVerificationRequired,
   onDismiss,
 }: PostComposeSuccessProps) {
   const [copied, setCopied] = useState(false);
@@ -158,6 +160,12 @@ export function PostComposeSuccess({
           {`${displayDongName}에 남긴 목소리를 포토카드로 저장해보세요.`}
           <br />
           링크를 통해서 후보자의 답글을 확인할 수도 있어요.
+          {notificationVerificationRequired ? (
+            <>
+              <br />
+              답변 알림을 받으려면 받은 이메일에서 주소를 확인해 주세요.
+            </>
+          ) : null}
         </p>
       </div>
 

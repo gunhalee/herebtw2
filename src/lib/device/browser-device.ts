@@ -6,8 +6,8 @@ const DEVICE_REGISTER_TTL_MS = 1000 * 60 * 60 * 24;
 
 type RegisterDeviceResponse = {
   device: {
-    id: string | null;
     anonymousDeviceId: string;
+    identityMode: string;
   };
 };
 

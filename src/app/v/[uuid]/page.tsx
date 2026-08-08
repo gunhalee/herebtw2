@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ uuid: string }>;
+  searchParams: Promise<{ emailVerified?: string }>;
 };
 
 export function generateMetadata(): Metadata {
@@ -53,8 +54,9 @@ export function generateMetadata(): Metadata {
   };
 }
 
-export default async function VoiceDetailPage({ params }: PageProps) {
+export default async function VoiceDetailPage({ params, searchParams }: PageProps) {
   const { uuid } = await params;
+  const { emailVerified } = await searchParams;
   const post = await findPostByUuidRepository(uuid);
 
   if (!post) {
@@ -74,6 +76,13 @@ export default async function VoiceDetailPage({ params }: PageProps) {
 
   return (
     <VoiceDetailScreen
+      emailVerificationStatus={
+        emailVerified === "1"
+          ? "success"
+          : emailVerified === "0"
+            ? "failed"
+            : undefined
+      }
       post={{
         id: post.id,
         publicUuid: post.public_uuid,

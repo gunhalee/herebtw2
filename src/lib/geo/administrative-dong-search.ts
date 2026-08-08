@@ -90,6 +90,7 @@ function createKakaoResponseError(status: number) {
 
 function toSelection(
   document: KakaoAddressDocument,
+  actorBindingHash?: string,
 ): ManualAdministrativeLocationSelection | null {
   const address = document.address;
   const administrativeAreaCode = address?.h_code?.trim() ?? "";
@@ -138,6 +139,7 @@ function toSelection(
     location,
     locationSource: "manual",
     locationScope,
+    actorBindingHash,
   });
 
   return {
@@ -167,6 +169,7 @@ export function normalizeAdministrativeDongSearchQuery(query: unknown) {
 
 export async function searchAdministrativeDongs(
   query: string,
+  actorBindingHash?: string,
 ): Promise<ManualAdministrativeLocationSelection[]> {
   const apiKey = requireKakaoRestApiKey();
   const controller = new AbortController();
@@ -192,7 +195,7 @@ export async function searchAdministrativeDongs(
     const seenAreaCodes = new Set<string>();
 
     return (Array.isArray(json.documents) ? json.documents : [])
-      .map(toSelection)
+      .map((document) => toSelection(document, actorBindingHash))
       .filter((selection): selection is ManualAdministrativeLocationSelection => {
         if (
           !selection ||

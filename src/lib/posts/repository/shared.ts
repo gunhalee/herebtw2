@@ -1,4 +1,4 @@
-import { supabaseUpsert } from "../../supabase/rest";
+import { supabaseSelect, supabaseUpsert } from "../../supabase/rest";
 import type { DeviceIdentityRow } from "./types";
 
 const FEED_RPC_DISTANCE_FALLBACK_METERS = 2147483647;
@@ -11,10 +11,18 @@ function isUuid(value: string) {
 
 async function ensureDeviceIdentity(anonymousDeviceId: string) {
   const rows = await supabaseUpsert<DeviceIdentityRow[]>(
-    "device_identities?on_conflict=anonymous_device_id&select=id,anonymous_device_id",
+    "device_identities?on_conflict=anonymous_device_id&select=id,anonymous_device_id,token_version,revoked_at,risk_level",
     {
       anonymous_device_id: anonymousDeviceId,
     },
+  );
+
+  return rows?.[0] ?? null;
+}
+
+async function findDeviceIdentityById(deviceId: string) {
+  const rows = await supabaseSelect<DeviceIdentityRow[]>(
+    `device_identities?id=eq.${encodeURIComponent(deviceId)}&select=id,anonymous_device_id,token_version,revoked_at,risk_level&limit=1`,
   );
 
   return rows?.[0] ?? null;
@@ -40,6 +48,7 @@ export {
   FEED_RPC_DISTANCE_FALLBACK_METERS,
   buildInFilter,
   ensureDeviceIdentity,
+  findDeviceIdentityById,
   getElapsedTimeMs,
   getMonotonicTimeMs,
   isUuid,

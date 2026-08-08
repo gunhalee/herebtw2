@@ -164,7 +164,16 @@ async function startServer() {
     [NEXT_BIN_PATH, "start", "-p", String(port), "-H", "127.0.0.1"],
     {
       cwd: process.cwd(),
-      env: process.env,
+      env: {
+        ...process.env,
+        ABUSE_DEVICE_TOKEN_SECRET:
+          process.env.ABUSE_DEVICE_TOKEN_SECRET ??
+          "smoke-test-device-token-secret-at-least-32-characters",
+        ABUSE_SUBJECT_HASH_SECRET:
+          process.env.ABUSE_SUBJECT_HASH_SECRET ??
+          "smoke-test-subject-hash-secret-at-least-32-characters",
+        BOTID_ENFORCEMENT_MODE: "off",
+      },
       stdio: ["ignore", "pipe", "pipe"],
     },
   );

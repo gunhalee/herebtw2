@@ -21,6 +21,25 @@ type ClientRequestAbortState = {
 
 type JsonRequestMethod = "DELETE" | "PATCH" | "POST" | "PUT";
 
+export class ClientApiError extends Error {
+  code: string;
+  retryAfterSeconds: number | null;
+  status: number;
+
+  constructor(input: {
+    code: string;
+    message: string;
+    retryAfterSeconds?: number | null;
+    status: number;
+  }) {
+    super(input.message);
+    this.name = "ClientApiError";
+    this.code = input.code;
+    this.retryAfterSeconds = input.retryAfterSeconds ?? null;
+    this.status = input.status;
+  }
+}
+
 export function createJsonRequestInit(
   method: JsonRequestMethod,
   body?: unknown,
@@ -37,6 +56,19 @@ export function createJsonRequestInit(
 
 export function createJsonPostRequestInit(body: unknown): RequestInit {
   return createJsonRequestInit("POST", body);
+}
+
+export function createIdempotentJsonPostRequestInit(
+  body: unknown,
+  idempotencyKey: string,
+): RequestInit {
+  return {
+    ...createJsonPostRequestInit(body),
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+    },
+  };
 }
 
 export function createJsonPatchRequestInit(body: unknown): RequestInit {
@@ -126,7 +158,13 @@ export async function fetchClientApiData<T>({
     const json = parseApiResponse<T>(responseText);
 
     if (!response.ok || !json?.success || json.data === null) {
-      throw new Error(json?.error?.message ?? errorMessage);
+      const retryAfter = Number(response.headers.get("retry-after"));
+      throw new ClientApiError({
+        code: json?.error?.code ?? "API_REQUEST_FAILED",
+        message: json?.error?.message ?? errorMessage,
+        retryAfterSeconds: Number.isFinite(retryAfter) ? retryAfter : null,
+        status: response.status,
+      });
     }
 
     return json.data;

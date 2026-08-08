@@ -123,6 +123,9 @@ type SettingRow = {
 type DeviceIdentityRow = {
   id: string;
   anonymous_device_id: string;
+  token_version?: number;
+  revoked_at?: string | null;
+  risk_level?: "normal" | "watch" | "restricted";
 };
 
 type PostListCursor = {

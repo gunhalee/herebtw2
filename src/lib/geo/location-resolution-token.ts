@@ -8,13 +8,13 @@ import { LOCATION_POLICY } from "./location-policy";
 
 export const LOCATION_RESOLUTION_TOKEN_TTL_MS =
   LOCATION_POLICY.resolutionTokenTtlMs;
-const LOCATION_RESOLUTION_TOKEN_VERSION = 3;
+const LOCATION_RESOLUTION_TOKEN_VERSION = 4;
 
 export type LocationSource = "browser" | "manual";
 export type LocationScope = "dong" | "district" | "province";
 
 type LocationResolutionTokenPayload = {
-  version: typeof LOCATION_RESOLUTION_TOKEN_VERSION;
+  version: 3 | typeof LOCATION_RESOLUTION_TOKEN_VERSION;
   administrativeDongCode: string;
   formattedAdministrativeAreaName: string;
   locationSource: LocationSource;
@@ -24,6 +24,8 @@ type LocationResolutionTokenPayload = {
   longitudeBucket20m: number;
   latitudeBucket100m: number;
   longitudeBucket100m: number;
+  actorBindingHash?: string;
+  purpose?: "post.create";
 };
 
 type VerifiedLocationResolution = {
@@ -75,7 +77,8 @@ function isValidTokenPayload(
 ): payload is LocationResolutionTokenPayload {
   return Boolean(
     payload &&
-      payload.version === LOCATION_RESOLUTION_TOKEN_VERSION &&
+      (payload.version === 3 ||
+        payload.version === LOCATION_RESOLUTION_TOKEN_VERSION) &&
       typeof payload.administrativeDongCode === "string" &&
       /^\d{10}$/.test(payload.administrativeDongCode) &&
       typeof payload.formattedAdministrativeAreaName === "string" &&
@@ -94,7 +97,10 @@ function isValidTokenPayload(
       typeof payload.latitudeBucket100m === "number" &&
       Number.isFinite(payload.latitudeBucket100m) &&
       typeof payload.longitudeBucket100m === "number" &&
-      Number.isFinite(payload.longitudeBucket100m),
+      Number.isFinite(payload.longitudeBucket100m) &&
+      (payload.actorBindingHash === undefined ||
+        /^[0-9a-f]{64}$/u.test(payload.actorBindingHash)) &&
+      (payload.version === 3 || payload.purpose === "post.create"),
   );
 }
 
@@ -104,6 +110,7 @@ export function createLocationResolutionTokenWithExpiry(input: {
   location: PostLocation;
   locationSource?: LocationSource;
   locationScope?: LocationScope;
+  actorBindingHash?: string;
 }): CreatedLocationResolutionToken {
   const secret = getLocationResolutionTokenSecret();
 
@@ -129,6 +136,8 @@ export function createLocationResolutionTokenWithExpiry(input: {
     longitudeBucket20m: lookupCell.longitudeBucket20m,
     latitudeBucket100m: storageCell.latitudeBucket100m,
     longitudeBucket100m: storageCell.longitudeBucket100m,
+    actorBindingHash: input.actorBindingHash,
+    purpose: "post.create",
   });
 
   return {
@@ -140,6 +149,8 @@ export function createLocationResolutionTokenWithExpiry(input: {
 export function verifyLocationResolutionToken(
   token: string | null | undefined,
   location: PostLocation,
+  actorBindingHash?: string,
+  options?: { allowBoundTokenWithoutActor?: boolean },
 ): VerifiedLocationResolution | null {
   const secret = getLocationResolutionTokenSecret();
 
@@ -167,6 +178,14 @@ export function verifyLocationResolutionToken(
   const payload = decodeTokenPayload(tokenPayload);
 
   if (!isValidTokenPayload(payload) || payload.expiresAt < Date.now()) {
+    return null;
+  }
+
+  if (
+    payload.actorBindingHash &&
+    payload.actorBindingHash !== actorBindingHash &&
+    !options?.allowBoundTokenWithoutActor
+  ) {
     return null;
   }
 

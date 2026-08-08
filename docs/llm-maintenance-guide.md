@@ -13,6 +13,15 @@
 
 변경 전에 아래 파일을 먼저 읽으면 전체 구조를 빠르게 잡을 수 있다.
 
+### 횡단 설계 문서
+
+- 위치 획득·권한·정확도·직접 지역 선택을 변경할 때는
+  `docs/location-system-hardening-plan.md`와
+  `docs/mobile-geolocation-compatibility-audit.md`를 먼저 읽는다.
+- 익명 기기 식별, 작성·공감·신고 제한, 중복 탐지, moderation, Supabase
+  권한을 변경할 때는
+  `docs/abuse-prevention-design-and-implementation-plan.md`를 먼저 읽는다.
+
 ### 화면 진입
 
 - `src/app/(public)/page.tsx`

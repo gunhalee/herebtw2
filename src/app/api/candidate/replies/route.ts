@@ -1,6 +1,10 @@
 import { fail, ok } from "../../../../lib/api/response";
 import { readJsonBody } from "../../../../lib/api/request";
 import { getCandidateSession } from "../../../../lib/auth/candidate-session";
+import { getBotRejectionResponse } from "../../../../lib/abuse/bot-verification";
+import { getAccountRateLimitResponse } from "../../../../lib/abuse/account-guard";
+import { ABUSE_POLICY } from "../../../../lib/abuse/policy";
+import { evaluateContentSafety } from "../../../../lib/abuse/content-safety";
 import { createCandidateReply } from "../../../../lib/candidates/mutations";
 
 type CreateReplyRequest = {
@@ -17,6 +21,26 @@ export async function POST(request: Request) {
     return fail({ code: "UNAUTHORIZED", message: "인증이 필요합니다." }, 401);
   }
 
+  if (!session.isActive) {
+    return fail({ code: "CANDIDATE_INACTIVE", message: "활성화된 후보자만 답변할 수 있습니다." }, 403);
+  }
+
+  const botRejection = await getBotRejectionResponse("candidate.reply");
+
+  if (botRejection) {
+    return botRejection;
+  }
+
+  const rateLimitResponse = await getAccountRateLimitResponse({
+    accountId: session.authUserId,
+    action: "candidate.reply",
+    budgets: ABUSE_POLICY.candidateWrite.accountBudgets,
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const bodyResult = await readJsonBody<CreateReplyRequest>(request);
 
   if (!bodyResult.ok) {
@@ -31,6 +55,12 @@ export async function POST(request: Request) {
       { code: "VALIDATION_ERROR", message: "답변은 1~200자여야 합니다." },
       400,
     );
+  }
+
+  const safety = evaluateContentSafety(trimmedContent);
+
+  if (!safety.allowed) {
+    return fail({ code: "UNSAFE_CONTENT", message: safety.message }, 422);
   }
 
   const result = await createCandidateReply({

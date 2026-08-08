@@ -7,7 +7,11 @@ import {
   type FormEvent,
   type SetStateAction,
 } from "react";
-import { createJsonPostRequestInit, fetchClientApiData } from "../../lib/api/client";
+import {
+  ClientApiError,
+  createIdempotentJsonPostRequestInit,
+  fetchClientApiData,
+} from "../../lib/api/client";
 import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
 import type { LocationSource } from "../../lib/geo/location-resolution-token";
 import type { PostComposeState, PostLocation } from "../../types/post";
@@ -15,6 +19,7 @@ import type { PostComposeState, PostLocation } from "../../types/post";
 type ComposeSuccessResult = {
   publicUuid: string;
   dongName: string;
+  notificationVerificationRequired: boolean;
 };
 
 type UseComposeSubmitParams = {
@@ -41,6 +46,7 @@ export function useComposeSubmit({
   submitLocation,
 }: UseComposeSubmitParams) {
   const deviceRegistrationPromiseRef = useRef<Promise<string> | null>(null);
+  const clientRequestIdRef = useRef<string | null>(null);
   const submittingRef = useRef(false);
 
   function ensureDeviceRegistrationStarted() {
@@ -61,6 +67,7 @@ export function useComposeSubmit({
   }, []);
 
   function handleChangeContent(value: string) {
+    clientRequestIdRef.current = null;
     setComposeState((current) => ({
       ...current,
       content: value,
@@ -94,8 +101,18 @@ export function useComposeSubmit({
 
     try {
       const anonymousDeviceId = await ensureDeviceRegistrationStarted();
+      const clientRequestId =
+        clientRequestIdRef.current ??
+        (typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (part) => {
+              const random = Math.floor(Math.random() * 16);
+              return (part === "x" ? random : (random & 0x3) | 0x8).toString(16);
+            }));
+      clientRequestIdRef.current = clientRequestId;
       const trimmedEmail = notificationEmail.trim();
       const response = await fetchClientApiData<{
+        notificationVerificationRequired: boolean;
         post: {
           id: string;
           publicUuid: string;
@@ -103,8 +120,9 @@ export function useComposeSubmit({
         };
       }>({
         errorMessage: "죄송합니다. 저장을 실패하였습니다.",
-        init: createJsonPostRequestInit({
+        init: createIdempotentJsonPostRequestInit({
           anonymousDeviceId,
+          clientRequestId,
           content: composeState.content,
           location: {
             latitude: submitLocation.latitude,
@@ -113,16 +131,19 @@ export function useComposeSubmit({
           locationResolutionToken,
           locationSource,
           ...(trimmedEmail ? { notificationEmail: trimmedEmail } : {}),
-        }),
+        }, clientRequestId),
         path: "/api/posts",
         timeoutErrorMessage: "저장이 지연되고 있습니다. 잠시 후에 다시 시도해주세요.",
       });
 
       if (onSuccess) {
-        onSuccess({
+        await onSuccess({
           publicUuid: response.post.publicUuid,
           dongName: response.post.administrativeDongName,
+          notificationVerificationRequired:
+            response.notificationVerificationRequired,
         });
+        clientRequestIdRef.current = null;
         return;
       }
 
@@ -130,11 +151,14 @@ export function useComposeSubmit({
         ...current,
         submitting: false,
       }));
+      clientRequestIdRef.current = null;
       onDismiss?.();
     } catch (error) {
       setComposeState((current) => ({
         ...current,
         submitting: false,
+        duplicateBlocked:
+          error instanceof ClientApiError && error.code === "DUPLICATE_CONTENT",
         errorMessage:
           error instanceof Error ? error.message : "죄송합니다. 저장을 실패하였습니다.",
       }));

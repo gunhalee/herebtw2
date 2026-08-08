@@ -1,5 +1,12 @@
 import { readJsonBody } from "../../../../lib/api/request";
 import { fail, ok } from "../../../../lib/api/response";
+import { getNetworkRateLimitResponse } from "../../../../lib/abuse/network-guard";
+import { ABUSE_POLICY } from "../../../../lib/abuse/policy";
+import {
+  attachAnonymousActorToken,
+  resolveAnonymousActor,
+} from "../../../../lib/abuse/anonymous-actor";
+import { hashAbuseSubject } from "../../../../lib/abuse/rate-limit";
 import {
   normalizeAdministrativeDongSearchQuery,
   searchAdministrativeDongs,
@@ -29,10 +36,47 @@ export async function POST(request: Request) {
     );
   }
 
-  try {
-    const locations = await searchAdministrativeDongs(query);
+  let actor;
 
-    return ok({ locations });
+  try {
+    actor = await resolveAnonymousActor(request, null, {
+      allowCreateWithoutLegacy: true,
+    });
+  } catch (error) {
+    console.error("[location.search] Device binding failed:", error);
+    return fail(
+      { code: "PROTECTION_UNAVAILABLE", message: "잠시 후 다시 시도해 주세요." },
+      503,
+    );
+  }
+
+  if (!actor) {
+    return fail(
+      { code: "PROTECTION_UNAVAILABLE", message: "잠시 후 다시 시도해 주세요." },
+      503,
+    );
+  }
+
+  const withActor = (response: ReturnType<typeof ok> | ReturnType<typeof fail>) =>
+    attachAnonymousActorToken(response, actor, request);
+
+  const rateLimitResponse = await getNetworkRateLimitResponse({
+    action: "location.search",
+    budgets: ABUSE_POLICY.location.networkBudgets,
+    request,
+  });
+
+  if (rateLimitResponse) {
+    return withActor(rateLimitResponse);
+  }
+
+  try {
+    const locations = await searchAdministrativeDongs(
+      query,
+      hashAbuseSubject(actor.deviceId),
+    );
+
+    return withActor(ok({ locations }));
   } catch (error) {
     const code = isLocationResolutionError(error) ? error.code : "UNAVAILABLE";
 
@@ -42,7 +86,7 @@ export async function POST(request: Request) {
       reason: code,
     });
 
-    return fail(
+    return withActor(fail(
       {
         code: "LOCATION_SEARCH_FAILED",
         message:
@@ -51,6 +95,6 @@ export async function POST(request: Request) {
             : "동네를 검색하지 못했습니다. 잠시 후 다시 시도해 주세요.",
       },
       code === "TIMEOUT" ? 504 : 502,
-    );
+    ));
   }
 }

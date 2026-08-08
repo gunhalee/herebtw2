@@ -15,6 +15,7 @@ import { useComposeSubmit } from "./use-compose-submit";
 type ComposeSuccessData = {
   publicUuid: string;
   dongName: string;
+  notificationVerificationRequired: boolean;
 };
 
 type PostComposeExperienceProps = {
@@ -117,6 +118,9 @@ export function PostComposeExperience({
         <PostComposeSuccess
           publicUuid={successData.publicUuid}
           dongName={successData.dongName}
+          notificationVerificationRequired={
+            successData.notificationVerificationRequired
+          }
           onDismiss={() => onDismiss?.()}
         />
       ) : (
