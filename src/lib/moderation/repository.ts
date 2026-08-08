@@ -5,23 +5,10 @@ import {
   supabaseSelect,
   supabaseUpsert,
 } from "../supabase/rest";
-
-export type ModerationCaseEvidenceRow = {
-  id: string;
-  content_decision_key: string;
-  public_id: string;
-  policy_version: string;
-  provider_status: string;
-  state: "open" | "published" | "rejected";
-  moderation_evidence: Array<{
-    aad_version: 1;
-    auth_tag_base64: string;
-    ciphertext_base64: string;
-    created_at: string;
-    key_version: string;
-    nonce_base64: string;
-  }>;
-};
+import {
+  normalizeModerationEvidenceRelation,
+  type ModerationCaseEvidenceApiRow,
+} from "./evidence-relation";
 
 export type ModerationQueueJob = {
   enqueued_at: string;
@@ -47,10 +34,16 @@ export async function completeModerationJob(messageId: number) {
 }
 
 export async function loadModerationCaseEvidence(casePublicId: string) {
-  const rows = await supabaseSelect<ModerationCaseEvidenceRow[]>(
+  const rows = await supabaseSelect<ModerationCaseEvidenceApiRow[]>(
     `moderation_cases?select=id,public_id,policy_version,provider_status,state,content_decision_key,moderation_evidence(aad_version,auth_tag_base64,ciphertext_base64,created_at,key_version,nonce_base64)&public_id=eq.${encodeURIComponent(casePublicId)}&limit=1`,
   );
-  return rows?.[0] ?? null;
+  const row = rows?.[0];
+  return row
+    ? {
+        ...row,
+        moderation_evidence: normalizeModerationEvidenceRelation(row.moderation_evidence),
+      }
+    : null;
 }
 
 export async function recordModerationProviderResult(input: {

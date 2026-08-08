@@ -36,7 +36,7 @@ async function processCase(casePublicId: string) {
     });
     return;
   }
-  const evidence = moderationCase.moderation_evidence[0];
+  const evidence = moderationCase.moderation_evidence;
   if (!evidence) throw new Error("Moderation evidence is missing.");
   const content = decryptModerationEvidence({
     aadVersion: evidence.aad_version,
