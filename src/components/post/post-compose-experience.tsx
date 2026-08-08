@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createPortal, flushSync } from "react-dom";
 import type { PostComposeState } from "../../types/post";
 import type { ManualAdministrativeLocationSelection } from "../../lib/geo/administrative-dong-search";
+import { shouldShowComposeLocationChange } from "../../lib/geo/compose-location-presentation";
 import { PostComposeForm } from "./post-compose-form";
 import { PostComposeSheetShell } from "./post-compose-sheet-shell";
 import { PostComposeSuccess } from "./post-compose-success";
@@ -128,7 +129,11 @@ export function PostComposeExperience({
           submitDisabled={submitDisabled}
           onChangeContent={handleChangeContent}
           onChangeNotificationEmail={setNotificationEmail}
-          onChangeLocation={onChangeLocation}
+          onChangeLocation={
+            shouldShowComposeLocationChange(locationSource)
+              ? onChangeLocation
+              : undefined
+          }
           onDismiss={onDismiss}
           onRetryLocation={retryLocation}
           onSubmit={handleSubmit}

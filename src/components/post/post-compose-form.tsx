@@ -3,7 +3,7 @@
 import type { FormEvent } from "react";
 import { uiColors, uiSpacing, uiTypography } from "../../lib/ui/tokens";
 import type { PostComposeState } from "../../types/post";
-import { PostComposeLocationRow } from "./post-compose-location-row";
+import { PostComposeHeader } from "./post-compose-header";
 
 type PostComposeFormProps = {
   composeState: PostComposeState;
@@ -45,75 +45,12 @@ export function PostComposeForm({
         height: "100%",
       }}
     >
-      <div
-        style={{
-          alignItems: "center",
-          display: "grid",
-          gridTemplateColumns: "1fr auto 1fr",
-          width: "100%",
-        }}
-      >
-        <button
-          onClick={onDismiss}
-          style={{
-            appearance: "none",
-            background: "transparent",
-            border: "none",
-            color: uiColors.textMuted,
-            cursor: "pointer",
-            fontSize: "18px",
-            fontWeight: 700,
-            justifySelf: "start",
-            minHeight: "40px",
-            padding: `${uiSpacing.xs} ${uiSpacing.xs}`,
-          }}
-          type="button"
-        >
-          닫기
-        </button>
-
-        <div
-          style={{
-            justifySelf: "center",
-            minWidth: 0,
-          }}
-        >
-          <h2
-            style={{
-              color: uiColors.textStrong,
-              fontSize: "18px",
-              lineHeight: 1.2,
-              margin: 0,
-              textAlign: "center",
-            }}
-          >
-            여기 남기기
-          </h2>
-        </div>
-
-        <button
-          disabled={submitDisabled}
-          style={{
-            appearance: "none",
-            background: "transparent",
-            border: "none",
-            color: submitDisabled ? "#9ca3af" : uiColors.buttonPrimary,
-            cursor: submitDisabled ? "default" : "pointer",
-            fontSize: "18px",
-            fontWeight: 700,
-            justifySelf: "end",
-            minHeight: "40px",
-            padding: `${uiSpacing.xs} ${uiSpacing.xs}`,
-          }}
-          type="submit"
-        >
-          {composeState.submitting ? "등록 중..." : "등록"}
-        </button>
-      </div>
-
-      <PostComposeLocationRow
+      <PostComposeHeader
         locationDisplayName={locationDisplayName}
+        submitDisabled={submitDisabled}
+        submitting={composeState.submitting}
         onChangeLocation={onChangeLocation}
+        onDismiss={onDismiss}
       />
 
       <div

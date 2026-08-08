@@ -16,3 +16,29 @@ export function openCurrentPageInAndroidChrome() {
 
   return true;
 }
+
+export function openCurrentPageSecurely() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const secureUrl = new URL(window.location.href);
+  secureUrl.protocol = "https:";
+  window.location.assign(secureUrl.toString());
+}
+
+export function openCurrentPageInNewWindow() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.open(window.location.href, "_blank", "noopener,noreferrer");
+}
+
+export function reloadCurrentPage() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.location.reload();
+}
