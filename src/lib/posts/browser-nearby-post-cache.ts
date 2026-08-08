@@ -35,13 +35,13 @@ export function readCachedNearbyPostList(
     return null;
   }
 
-  const raw = window.localStorage.getItem(NEARBY_POST_CACHE_STORAGE_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
   try {
+    const raw = window.localStorage.getItem(NEARBY_POST_CACHE_STORAGE_KEY);
+
+    if (!raw) {
+      return null;
+    }
+
     const cached = JSON.parse(raw) as Partial<CachedNearbyPostList>;
     const currentCacheKey = getNearbyPostCacheKey(location);
 
@@ -80,10 +80,14 @@ export function writeCachedNearbyPostList(
     nextCursor: state.nextCursor,
   };
 
-  window.localStorage.setItem(
-    NEARBY_POST_CACHE_STORAGE_KEY,
-    JSON.stringify(payload),
-  );
+  try {
+    window.localStorage.setItem(
+      NEARBY_POST_CACHE_STORAGE_KEY,
+      JSON.stringify(payload),
+    );
+  } catch {
+    // Cache availability must never gate the live nearby feed.
+  }
 }
 
 function getCachedNearbyPostListState(

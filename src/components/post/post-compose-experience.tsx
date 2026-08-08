@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createPortal, flushSync } from "react-dom";
 import type { PostComposeState } from "../../types/post";
+import type { ManualAdministrativeLocationSelection } from "../../lib/geo/administrative-dong-search";
 import { PostComposeForm } from "./post-compose-form";
 import { PostComposeSheetShell } from "./post-compose-sheet-shell";
 import { PostComposeSuccess } from "./post-compose-success";
@@ -16,6 +17,9 @@ type ComposeSuccessData = {
 };
 
 type PostComposeExperienceProps = {
+  manualLocationSelection?: ManualAdministrativeLocationSelection | null;
+  maximumAccuracyMeters?: number;
+  onChangeLocation?: () => void;
   onDismiss?: () => void;
   onSuccess?: () => void | Promise<void>;
 };
@@ -31,6 +35,9 @@ function createInitialComposeState(): PostComposeState {
 }
 
 export function PostComposeExperience({
+  manualLocationSelection,
+  maximumAccuracyMeters,
+  onChangeLocation,
   onDismiss,
   onSuccess,
 }: PostComposeExperienceProps) {
@@ -39,12 +46,16 @@ export function PostComposeExperience({
   const [successData, setSuccessData] = useState<ComposeSuccessData | null>(null);
   const {
     locationAccuracyWarning,
+    locationDisplayName,
     locationRefreshing,
     locationReadyForSubmit,
     locationResolutionToken,
+    locationSource,
     retryLocation,
     submitLocation,
   } = useComposeLocation({
+    manualLocationSelection,
+    maximumAccuracyMeters,
     setComposeState,
   });
   const { sheetPortalReady, sheetViewportLayout } = useComposeSheetLayout({
@@ -69,6 +80,7 @@ export function PostComposeExperience({
       }
     },
     locationResolutionToken,
+    locationSource,
     setComposeState,
     submitLocation,
   });
@@ -110,11 +122,13 @@ export function PostComposeExperience({
         <PostComposeForm
           composeState={composeState}
           locationAccuracyWarning={locationAccuracyWarning}
+          locationDisplayName={locationDisplayName}
           locationRefreshing={locationRefreshing}
           notificationEmail={notificationEmail}
           submitDisabled={submitDisabled}
           onChangeContent={handleChangeContent}
           onChangeNotificationEmail={setNotificationEmail}
+          onChangeLocation={onChangeLocation}
           onDismiss={onDismiss}
           onRetryLocation={retryLocation}
           onSubmit={handleSubmit}

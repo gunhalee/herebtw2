@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createJsonPostRequestInit, fetchClientApiData } from "../../lib/api/client";
 import { ensureRegisteredBrowserDevice } from "../../lib/device/browser-device";
+import type { LocationSource } from "../../lib/geo/location-resolution-token";
 import type { PostComposeState, PostLocation } from "../../types/post";
 
 type ComposeSuccessResult = {
@@ -20,6 +21,7 @@ type UseComposeSubmitParams = {
   composeState: PostComposeState;
   locationReadyForSubmit: boolean;
   locationResolutionToken: string | null;
+  locationSource: LocationSource;
   notificationEmail: string;
   onDismiss?: () => void;
   onSuccess?: (result: ComposeSuccessResult) => void | Promise<void>;
@@ -31,6 +33,7 @@ export function useComposeSubmit({
   composeState,
   locationReadyForSubmit,
   locationResolutionToken,
+  locationSource,
   notificationEmail,
   onDismiss,
   onSuccess,
@@ -108,6 +111,7 @@ export function useComposeSubmit({
             longitude: submitLocation.longitude,
           },
           locationResolutionToken,
+          locationSource,
           ...(trimmedEmail ? { notificationEmail: trimmedEmail } : {}),
         }),
         path: "/api/posts",

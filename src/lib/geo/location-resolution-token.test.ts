@@ -8,7 +8,7 @@ import {
 const TOKEN_SECRET = "test-location-token-secret-at-least-32-characters";
 const LOCATION = { latitude: 37.5665, longitude: 126.978 };
 
-describe("location resolution token v2", () => {
+describe("location resolution token v3", () => {
   beforeEach(() => {
     process.env.LOCATION_RESOLUTION_TOKEN_SECRET = TOKEN_SECRET;
     vi.useFakeTimers();
@@ -30,6 +30,8 @@ describe("location resolution token v2", () => {
     expect(verifyLocationResolutionToken(created.token, LOCATION)).toEqual({
       administrativeDongCode: "1111051500",
       formattedAdministrativeAreaName: "서울특별시 종로구 청운효자동",
+      locationSource: "browser",
+      locationScope: "dong",
     });
     expect(
       verifyLocationResolutionToken(created.token, {
@@ -37,6 +39,23 @@ describe("location resolution token v2", () => {
         longitude: LOCATION.longitude,
       }),
     ).toBeNull();
+  });
+
+  it("preserves a server-issued manual selection source", () => {
+    const created = createLocationResolutionTokenWithExpiry({
+      administrativeDongCode: "1120065000",
+      formattedAdministrativeAreaName: "서울 성동구 성수1가1동",
+      location: LOCATION,
+      locationSource: "manual",
+      locationScope: "district",
+    });
+
+    expect(verifyLocationResolutionToken(created.token, LOCATION)).toEqual({
+      administrativeDongCode: "1120065000",
+      formattedAdministrativeAreaName: "서울 성동구 성수1가1동",
+      locationSource: "manual",
+      locationScope: "district",
+    });
   });
 
   it("rejects expired, tampered, and legacy tokens", () => {

@@ -12,17 +12,23 @@
 
 ### 구현 상태 (2026-08-06)
 
+> 2026-08-08 모바일 브라우저 권한·WebView·정확도 보완 이후의 위치 획득
+> 정책과 QA 기준은 `docs/mobile-geolocation-compatibility-audit.md`를
+> 우선한다. 특히 정밀 측위는 전체 8초 제한이 아니라 첫 fix 최대 30초와
+> 첫 결과 이후 8초 개선 구간으로 분리됐다.
+
 WP1~WP6의 애플리케이션 코드 구현을 완료했다. 이 문서의 "현재 구현"과
 "확인된 문제" 절은 보완 전 기준의 조사 기록이며, 현재 동작은 아래와 같다.
 
-- 위치 토큰 v2는 카카오 행정동 10자리 코드, 20m 조회 셀, 100m 저장 셀을
-  모두 서명하며 v1 토큰을 거부한다.
+- 위치 토큰 v3는 카카오 행정 지역 10자리 코드, 20m 조회 셀, 100m 저장 셀,
+  위치 출처와 선택 범위를 모두 서명하며 이전 토큰을 거부한다.
 - 행정동 표시 캐시는 `v2` 키와 20m 셀을 사용하고 provider와 schema
   version을 검증한다.
 - 홈 측위를 글쓰기 측위가 취소·대체하며 동일한 글쓰기 요청은 하나로
   병합된다. `watchPosition`은 `AbortSignal`로 정리된다.
-- 글쓰기 패널은 fresh 좌표, 500m 이하 정확도, 카카오 행정동, 유효한
-  위치 토큰이 모두 준비된 뒤 열린다.
+- 글쓰기 패널은 fresh 좌표, 카카오 행정 지역, 유효한 위치 토큰이 모두
+  준비된 뒤 열린다. 500m 초과는 한 번 재시도하고, 재시도 후 2km 이내는
+  경고 후 허용하며 2km 초과는 지역 직접 선택으로 전환한다.
 - nearby 피드 캐시는 현재 GPS의 100m 셀이 일치할 때만 읽으며 위치
   세션을 prime하지 않는다.
 - Nominatim fallback은 없고 카카오 실패 유형을 분류해 좌표와 키 없이
@@ -90,7 +96,7 @@ flowchart TD
   lookupGrid --> resolveApi["POST /api/location/resolve"]
   resolveApi --> kakao["카카오 coord2regioncode"]
   kakao --> administrative["H 행정동명 + 10자리 코드"]
-  administrative --> tokenV2["v2 토큰: 조회 20m + 저장 100m"]
+  administrative --> tokenV2["v3 토큰: 조회 20m + 저장 100m + 출처/범위"]
   administrative --> adminCacheV2["20m 키 행정동 캐시 v2"]
   session --> postApi["POST /api/posts"]
   tokenV2 --> postApi
@@ -190,7 +196,9 @@ flowchart TD
 
 - 정확도 목표: 100m
 - 제출 경고: 100m 초과
-- 제출 차단: 500m 초과
+- 500m 초과: 한 번 재시도
+- 재시도 후 제출 상한: 2km
+- 재시도 후 2km 초과: 지역 직접 선택
 - accurate watch: 최대 8초
 - 측정 결과 허용 나이: 30초
 - 일반 geolocation 캐시: 60초
@@ -246,7 +254,7 @@ flowchart TD
   lookup20 --> adminCacheV2["admin cache v2"]
   lookup20 --> resolveApi["location resolve API"]
   resolveApi --> kakaoProvider["Kakao provider"]
-  kakaoProvider --> tokenV2["token v2: lookup20 + storage100"]
+  kakaoProvider --> tokenV2["token v3: lookup20 + storage100 + source/scope"]
   measurement --> storage100["100m storage cell"]
   tokenV2 --> submitGate["compose submit gate"]
   submitGate --> postApi["posts API"]
@@ -263,7 +271,7 @@ flowchart TD
 6. 새 intent는 이전 측위를 취소하거나 명시적으로 승격한다.
 7. 작성 패널은 좌표와 행정동 확인이 모두 완료된 뒤 연다.
 8. 서버는 이전 클라이언트를 위해 토큰 없는 제출 fallback을 유지한다.
-9. 브라우저의 신규 클라이언트는 유효한 v2 토큰이 준비돼야 제출한다.
+9. 브라우저의 신규 클라이언트는 유효한 v3 토큰이 준비돼야 제출한다.
 10. 외부 provider 오류는 사용자에게 노출하지 않고 운영 로그에는 분류한다.
 
 ## 6. 좌표·캐시·토큰 설계
@@ -287,7 +295,7 @@ type StorageLocationCell = {
 UI·세션은 측정 좌표를 사용하고, provider와 캐시 경계에서만 셀 타입으로
 변환한다.
 
-## 6-2. 위치 확인 토큰 v2
+## 6-2. 위치 확인 토큰 v3
 
 관련 파일:
 
@@ -346,7 +354,7 @@ type LocationResolutionTokenPayloadV2 = {
 
 - 행정동명은 30분 동안 표시용으로 사용할 수 있음
 - 토큰이 없거나 만료되면 상태는 `cached`, 제출 준비 상태는 아님
-- `verified` 상태는 유효한 v2 토큰이 있을 때만 사용
+- `verified` 상태는 유효한 v3 토큰이 있을 때만 사용
 
 ## 6-4. nearby 피드 캐시
 
@@ -390,7 +398,9 @@ export const LOCATION_POLICY = {
 
 - 100m 이하: 경고 없이 제출
 - 100m 초과 500m 이하: 경고와 재확인 제공, 제출 허용
-- 500m 초과: 제출 차단
+- 500m 초과: 한 번 재시도
+- 재시도 후 500m 초과 2km 이하: 넓은 범위 경고 후 제출 허용
+- 재시도 후 2km 초과: 위치 제출 차단 후 지역 직접 선택
 - accuracy 없음: 제출 차단
 
 이 정책은 제품 결정이므로 UI와 세션에서 각각 숫자를 재선언하지 않는다.
@@ -506,7 +516,7 @@ abortActiveRequest(reason: "unmount" | "superseded" | "user"): void
 ```text
 정확한 좌표 수집
 → 20m 행정동 캐시 확인
-→ 유효한 v2 토큰이 없으면 /api/location/resolve
+→ 유효한 v3 토큰이 없으면 /api/location/resolve
 → verified snapshot 반환
 ```
 
@@ -541,6 +551,8 @@ type ComposeGateState =
 
 - verified 행정동명 표시
 - 100~500m이면 정확도 경고와 “위치 재확인” 제공
+- 500m 초과는 한 번 재시도하고 2km까지 경고 후 허용
+- 2km 초과 또는 위치 접근 차단은 전국 지역 직접 선택 제공
 - 재확인 중 제출 버튼 비활성화
 - 재확인은 좌표와 행정동 토큰까지 모두 갱신
 - 패널 닫기 시 active compose request 취소
@@ -550,7 +562,7 @@ type ComposeGateState =
 신규 클라이언트 조건:
 
 - 좌표 fresh
-- accuracy 500m 이하
+- 첫 측정 accuracy 500m 이하 또는 재시도 후 2km 이하
 - administrative state가 `verified`
 - 유효한 v2 token 존재
 - 제출 중이 아님
@@ -672,7 +684,7 @@ npm run verify:runtime-env
 
 - 20m·100m 양자화와 역변환
 - 한국 bbox
-- token v2 생성·검증
+- token v3 생성·검증
 - v1 토큰 거부
 - 카카오 H 선택
 - B만 있는 응답 거부
@@ -747,7 +759,7 @@ provider dependency를 주입하거나 mock transport를 사용한다.
   - 초기 계획과 실제 구현 범위 차이 표시
   - 이 문서를 후속 보완 기준으로 링크
 - `docs/llm-maintenance-guide.md`
-  - v2 토큰·20m 행정동 캐시·상태 store 설명
+  - v3 토큰·20m 행정동 캐시·상태 store 설명
 - `docs/verification-guardrails.md`
   - 위치 unit/API test와 runtime env 검사
 - 필요 시 PRD의 클라이언트 역지오코딩 설명 수정
@@ -907,7 +919,7 @@ flowchart LR
 
 권장 PR 분리:
 
-1. token v2 + admin cache v2
+1. token v3 + admin cache v2
 2. location policy + cancellable session store
 3. compose gate + submit readiness
 4. nearby cache 분리
@@ -968,7 +980,7 @@ WP1은 데이터 정확성 문제를 막으므로 가장 먼저 수행한다.
 2. Kakao API 활성화와 쿼터 확인
 3. Vercel rate limiting 정책 확인
 4. 자동 테스트와 수동 좌표 검증
-5. localStorage/token v2 migration 확인
+5. localStorage/token v3 migration 확인
 
 ### 배포 후 24시간
 
@@ -989,13 +1001,13 @@ WP1은 데이터 정확성 문제를 막으므로 가장 먼저 수행한다.
 
 - provider code rollback
 - cache namespace를 새 버전으로 변경해 혼합 결과 방지
-- token version은 v2 유지
+- token version은 v3 유지
 - localStorage v2 유지
 - 필요 시 위치 작성 기능을 일시적으로 차단
 
 ## 18. 최종 완료 기준
 
-- 20m 행정동 결과가 20m 캐시와 v2 토큰에만 재사용됨
+- 20m 행정동 결과가 20m 캐시와 v3 토큰에만 재사용됨
 - DB와 피드는 계속 100m 좌표만 사용함
 - 기존 Nominatim cache와 v1 token이 신뢰되지 않음
 - compose 측위가 중복 실행되지 않고 취소 가능함

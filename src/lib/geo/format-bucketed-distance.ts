@@ -1,6 +1,7 @@
 import { GLOBAL_FEED_DISTANCE_SENTINEL_METERS } from "./location-buckets";
 
 const MAX_PLAUSIBLE_DISTANCE_METERS = 20_100_000;
+export const DISTANCE_UNAVAILABLE_SENTINEL_METERS = -2;
 
 function roundDistanceUpToNearest100Meters(distanceMeters: number) {
   return Math.ceil(distanceMeters / 100) * 100;
@@ -28,4 +29,15 @@ export function formatBucketedDistance(distanceMeters: number) {
   }
 
   return `${(roundDistanceUpToNearest100Meters(distanceMeters) / 1000).toFixed(1)}km`;
+}
+
+export function getAdministrativeAreaDistanceForDisplay(
+  administrativeAreaName: string,
+  distanceMeters: number,
+) {
+  const areaName = administrativeAreaName.trim().split(/\s+/).at(-1) ?? "";
+
+  return /(동|읍|면)$/.test(areaName)
+    ? distanceMeters
+    : DISTANCE_UNAVAILABLE_SENTINEL_METERS;
 }

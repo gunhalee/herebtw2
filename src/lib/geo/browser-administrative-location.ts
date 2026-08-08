@@ -67,13 +67,13 @@ export function readCachedAdministrativeLocation(
     return null;
   }
 
-  const raw = window.localStorage.getItem(ADMINISTRATIVE_LOCATION_STORAGE_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
   try {
+    const raw = window.localStorage.getItem(ADMINISTRATIVE_LOCATION_STORAGE_KEY);
+
+    if (!raw) {
+      return null;
+    }
+
     const cached = JSON.parse(raw) as Partial<CachedAdministrativeLocation>;
     const currentCacheKey = getAdministrativeLocationCacheKey(location);
 
@@ -124,8 +124,12 @@ export function writeCachedAdministrativeLocation(
     ...normalizeCachedLocationResolutionToken(resolvedLocation),
   };
 
-  window.localStorage.setItem(
-    ADMINISTRATIVE_LOCATION_STORAGE_KEY,
-    JSON.stringify(payload),
-  );
+  try {
+    window.localStorage.setItem(
+      ADMINISTRATIVE_LOCATION_STORAGE_KEY,
+      JSON.stringify(payload),
+    );
+  } catch {
+    // Location resolution must still work when storage is blocked or full.
+  }
 }
