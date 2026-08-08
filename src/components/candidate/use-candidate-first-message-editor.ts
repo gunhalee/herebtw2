@@ -40,9 +40,15 @@ export function useCandidateFirstMessageEditor(initialContent: string) {
     setMessageError(null);
 
     try {
-      await updateCandidateFirstMessage({
+      const result = await updateCandidateFirstMessage({
         content: trimmed,
       });
+      if (result.publicationStatus === "under_review") {
+        setMessageError("수정 내용을 안전하게 확인하고 있어요. 확인 전까지 기존 메시지가 표시됩니다.");
+        setEditingMessage(false);
+        setMessageContent(savedContent);
+        return;
+      }
       setEditingMessage(false);
       setSavedContent(trimmed);
       setMessageContent(trimmed);

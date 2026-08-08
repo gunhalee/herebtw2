@@ -12,6 +12,8 @@ type PostRow = {
   notification_email?: string | null;
   created_at: string;
   delete_expires_at: string;
+  moderation_state?: "allowed" | "approved" | "pending_review" | "rejected";
+  status?: "active" | "deleted" | "hidden" | "quarantined";
 };
 
 type NearbyPostRow = PostRow & {
@@ -58,6 +60,7 @@ type CandidateRow = {
   email: string;
   photo_url?: string | null;
   first_message_id?: string | null;
+  pending_first_message_id?: string | null;
   metro_council_district?: string | null;
   local_council_district?: string | null;
   council_type?: string | null;

@@ -96,7 +96,7 @@ async function findPostByClientRequestIdRepository(
   clientRequestId: string,
 ) {
   const rows = await supabaseSelect<PostRow[]>(
-    `posts?author_device_id=eq.${encodeURIComponent(authorDeviceId)}&client_request_id=eq.${encodeURIComponent(clientRequestId)}&select=id,public_uuid,content,administrative_dong_name,created_at,delete_expires_at&limit=1`,
+    `posts?author_device_id=eq.${encodeURIComponent(authorDeviceId)}&client_request_id=eq.${encodeURIComponent(clientRequestId)}&select=id,public_uuid,content,administrative_dong_name,created_at,delete_expires_at,status,moderation_state&limit=1`,
   );
 
   return rows?.[0] ?? null;
@@ -110,6 +110,16 @@ async function findPostByFingerprintRepository(
     `posts?author_device_id=eq.${encodeURIComponent(authorDeviceId)}&content_fingerprint=eq.${encodeURIComponent(contentFingerprint)}&status=in.(active,quarantined)&select=id,public_uuid,content,administrative_dong_name,created_at,delete_expires_at&limit=1`,
   );
 
+  return rows?.[0] ?? null;
+}
+
+async function findPostByContentHmacRepository(
+  authorDeviceId: string,
+  contentHmac: string,
+) {
+  const rows = await supabaseSelect<PostRow[]>(
+    `posts?author_device_id=eq.${encodeURIComponent(authorDeviceId)}&moderation_content_hmac=eq.${encodeURIComponent(contentHmac)}&status=in.(active,quarantined)&select=id,public_uuid,content,administrative_dong_name,created_at,delete_expires_at,status,moderation_state&limit=1`,
+  );
   return rows?.[0] ?? null;
 }
 
@@ -169,6 +179,7 @@ async function reportPostRepository(
 export {
   createPostRepository,
   findPostByClientRequestIdRepository,
+  findPostByContentHmacRepository,
   findPostByFingerprintRepository,
   findSimilarRecentPostsRepository,
   reportPostRepository,

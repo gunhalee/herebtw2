@@ -19,6 +19,7 @@ type DashboardScreenProps = {
   posts: DashboardPost[];
   stats: DashboardStats;
   firstMessage: FirstMessage | null;
+  firstMessagePending?: boolean;
 };
 
 export function DashboardScreen({
@@ -27,6 +28,7 @@ export function DashboardScreen({
   posts,
   stats,
   firstMessage,
+  firstMessagePending = false,
 }: DashboardScreenProps) {
   const router = useRouter();
   const firstMessageEditor = useCandidateFirstMessageEditor(
@@ -66,6 +68,12 @@ export function DashboardScreen({
           onSave={firstMessageEditor.handleSaveMessage}
           onStartEditing={firstMessageEditor.startEditing}
         />
+      ) : null}
+
+      {firstMessagePending ? (
+        <div style={{ background: "#fff7ed", borderBottom: "1px solid #fed7aa", color: "#9a3412", fontSize: "13px", lineHeight: 1.5, padding: "14px 20px" }}>
+          첫 메시지 내용을 안전하게 확인하고 있어요. 확인이 끝나기 전에는 주민에게 공개되지 않습니다.
+        </div>
       ) : null}
 
       <CandidateDashboardStatsGrid stats={stats} />

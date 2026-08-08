@@ -17,9 +17,9 @@
 | --- | --- | --- | --- |
 | Google Cloud Natural Language | 활성화 | 전용 프로젝트·API·예산·service account 준비 | 즉시 |
 | Telegram bot·비공개 채널 | 결제 없음 | 지금 생성 | 운영 알림 통합 테스트 전 |
-| Supabase TOTP MFA | 별도 결제 없음 | 운영자 이메일 확정, UI 구현 후 등록 | 운영 도구 production 활성화 전 |
+| 64-hex 운영 인증 | 결제 없음 | 서로 다른 운영·evidence secret 생성 | 운영 도구 production 활성화 전 |
 | Hugging Face managed endpoint | 유예 | 계정·후보 모델만 기록, 로컬 benchmark | 확장 trigger 충족 후 |
-| Cloud KMS | 유예 가능 | interface와 test key로 개발 | production 암호화 evidence 수집 전 |
+| Evidence 암호화 | 결제 없음 | Vercel Sensitive Environment Variable과 AES-256-GCM 구현 | production evidence 수집 전 |
 | Supabase·Vercel 상위 요금제 | 유예 | 기존 quota 모니터링 | 실제 사용량·SLO가 현재 quota를 초과하기 전 |
 | 법률 자문 | 유예 가능 | 개인정보 처리방침 초안과 질문 목록 작성 | 공개 출시 전 |
 
@@ -29,9 +29,11 @@ production 주 판별기인 것처럼 간주하거나 모델 기반 auto-block�
 
 ## 2. 절대 유예하면 안 되는 경계
 
-- Telegram과 Supabase MFA는 유료 준비가 아니므로 운영 도구 production 공개 전에 완료한다.
-- critical·quarantine 원문을 production에서 보존하기 전에는 Cloud KMS 또는 동등한 production
-  key manager를 준비한다. 개발용 환경변수 key로 실제 사용자 증거를 장기 보존하지 않는다.
+- Telegram과 64-hex 운영 인증은 유료 준비가 아니므로 운영 도구 production 공개 전에 완료한다.
+- critical·quarantine 원문을 production에서 보존하기 전에 운영 인증 key와 별개의 64-hex
+  evidence key, AES-256-GCM, key version과 90일 cleanup을 구현한다.
+- 운영·evidence key는 Vercel Production의 Sensitive Environment Variable로 설정하고 Preview와
+  Production에서 서로 다른 값을 사용한다.
 - 개인정보 처리방침 법률 검토는 개발 중에는 미룰 수 있지만 공개 출시 이후로 미루지 않는다.
 - Google Cloud budget alert는 지출을 자동 차단하지 않으므로 `$100` hard stop은 애플리케이션
   내부의 검증된 과금 unit counter로 별도 강제한다.
@@ -43,9 +45,9 @@ production 주 판별기인 것처럼 간주하거나 모델 기반 auto-block�
 
 - [ ] 운영 전용 이메일 계정을 확정한다.
 - [ ] 비밀번호 관리자와 오프라인 복구 정보 보관 위치를 정한다.
-- [ ] Google, Supabase, Hugging Face, Telegram 운영 계정 자체에 MFA를 켠다.
-- [ ] token, TOTP seed, service-account credential을 Git·문서·Telegram에 남기지 않는 규칙을
-      기록한다.
+- [ ] Google, Supabase dashboard, Hugging Face, Telegram 운영 계정 자체에 가능한 MFA를 켠다.
+- [ ] token, 운영 secret, evidence key, service-account credential을 Git·문서·Telegram에 남기지
+      않는 규칙을 기록한다.
 - [ ] development, preview, production secret을 서로 분리하기로 확정한다.
 
 완료 증거:
@@ -110,48 +112,63 @@ GOOGLE_BILLING_PERIOD_TIMEZONE=UTC
 주의: Cloud Billing 데이터에는 지연이 있으므로 Cloud budget alert만으로 정확한 `$100` 차단을
 보장하지 않는다.
 
-### E. 결제 없이 먼저 진행: Supabase 운영자 인증
+### E. 결제 없이 진행: 64-hex 운영 인증
 
-- [ ] 이건하 운영자 전용 이메일을 확정한다.
-- [ ] `moderator_memberships`와 AAL2 검증 코드를 먼저 구현한다.
-- [ ] authorization은 사용자 수정이 가능한 `user_metadata`가 아니라 서버 DB membership 또는
-      안전한 `app_metadata`를 사용한다.
-- [ ] 운영자 계정 생성 후 TOTP enroll, challenge, verify를 완료한다.
-- [ ] 원문 열람과 publish/hide/delete/restore API는 `aal2`가 아니면 거절한다.
+- [ ] `randomBytes(32).toString("hex")`로 lowercase 64-hex `MODERATION_OPS_SECRET`을 생성한다.
+- [ ] secret은 Vercel Production Sensitive Environment Variable과 비밀번호 관리자에만 저장한다.
+- [ ] Preview에는 Production과 다른 secret을 사용한다.
+- [ ] `POST /api/ops/login`에서만 secret을 받고 URL query·fragment에 넣지 않는다.
+- [ ] 32-byte buffer의 constant-time 비교, body 상한과 로그인 실패 rate limit을 구현한다.
+- [ ] 성공하면 secret 대신 12시간 `__Host-moderation_ops` HttpOnly signed cookie를 발급한다.
+- [ ] cookie는 `Secure`, `SameSite=Strict`, `Path=/`이며 `Domain`을 설정하지 않는다.
+- [ ] session에는 version, `operatorId="lee-geonha"`, issued-at, expires-at만 넣는다.
+- [ ] 원문 조회와 publish/hide/delete/restore API는 session을 각각 검증한다.
+- [ ] 상태 변경 POST는 session에 더해 Origin·CSRF와 확인 화면을 요구한다.
 - [ ] 운영자 열람·결정·복구를 append-only audit에 남긴다.
-- [ ] 계정 삭제만으로 기존 access token이 즉시 무효화된다고 가정하지 않고 session revoke와
-      짧은 민감 작업 session 정책을 구현한다.
-- [ ] Supabase가 애플리케이션 recovery code를 자동 제공한다고 가정하지 않고 별도 복구 절차를
-      작성한다.
+- [ ] secret rotation 시 기존 session이 모두 무효화되는지 확인한다.
 
-Supabase TOTP MFA는 현재 모든 프로젝트에서 기본 제공되므로 이 단계만을 위한 신규 유료 플랜은
-필요하지 않다. 다만 전체 프로젝트 사용량이 현재 quota를 넘는지는 별도로 모니터링한다.
+환경변수:
 
-### F. 개발 중 준비: 암호화 interface, production 전 KMS 전환
+```text
+MODERATION_OPS_SECRET=<64-hex secret>
+MODERATION_OPS_SESSION_TTL_SECONDS=43200
+```
 
-지금 Cloud KMS 결제를 활성화하지 않아도 schema, repository와 암호화 interface는 구현할 수 있다.
+Telegram 검토 버튼은 secret이 없는 `/ops/...` URL만 열고, cookie가 없으면 로그인 화면을 거쳐
+원래 same-origin `/ops/` 경로로 돌아간다. `loudnclear-v2`의 query secret 방식은 복제하지 않는다.
 
-- [ ] `encryptEvidence`, `decryptEvidence`, `rotateEvidenceKey` interface를 먼저 정의한다.
-- [ ] local/test에서는 test 전용 256-bit key만 사용하고 fixture 외 원문을 저장하지 않는다.
-- [ ] test key와 production key를 절대 재사용하지 않는다.
-- [ ] ciphertext, nonce, algorithm, AAD version, key version, 90일 `expires_at`을 저장한다.
-- [ ] production evidence feature flag의 기본값을 `off`로 둔다.
-- [ ] 실제 사용자 critical·quarantine 원문 수집 전 Cloud KMS 또는 동등한 key manager를 선택한다.
-- [ ] runtime identity에는 지정 key의 encrypt/decrypt 최소 권한만 부여한다.
-- [ ] 복호화, rotation, key 폐기와 90일 cleanup을 통합 테스트한다.
+### F. 결제 없이 진행: 64-hex evidence 암호화
 
-KMS 준비 전 허용되는 production 상태:
+- [ ] 운영 인증과 다른 64-hex `MODERATION_EVIDENCE_KEY_CURRENT`를 생성한다.
+- [ ] key를 lowercase hex 64자로 제한하고 decode 결과가 정확히 32 bytes인지 시작 시 검증한다.
+- [ ] `encryptEvidence`, `decryptEvidence`, `rotateEvidenceKey` interface를 정의한다.
+- [ ] `AES-256-GCM`, record별 새로운 12-byte random nonce와 16-byte auth tag를 사용한다.
+- [ ] `case_public_id`, `policy_version`, `created_at`, `aad_version`을 canonical AAD로 사용한다.
+- [ ] ciphertext, nonce, auth tag, algorithm, AAD version, key version, 90일 `expires_at`을 저장한다.
+- [ ] current key로만 새 evidence를 암호화한다.
+- [ ] rotation 중에는 previous key로 읽을 수 있게 하고 모든 미만료 row를 current로 재암호화한 뒤
+      previous key를 제거한다.
+- [ ] local/test key와 production key를 절대 재사용하지 않는다.
+- [ ] decrypt는 유효한 운영 session의 Node.js server route에서만 수행한다.
+- [ ] 복호화, 변조 탐지, nonce uniqueness, rotation, key 폐기와 90일 cleanup을 통합 테스트한다.
 
-- 일반 욕설 차단 후 HMAC reason만 기록
-- critical·격리 원문 evidence 보존 기능은 `off`
-- critical·애매한 콘텐츠 기능을 켜야 한다면 원문 보존 없이 안전하게 거절하거나, KMS 준비가
-  끝날 때까지 제한된 내부 테스트 환경에만 배포
+환경변수:
 
-KMS 준비 전 금지되는 상태:
+```text
+MODERATION_EVIDENCE_KEY_CURRENT_VERSION=v1
+MODERATION_EVIDENCE_KEY_CURRENT=<64-hex secret>
+MODERATION_EVIDENCE_KEY_PREVIOUS_VERSION=
+MODERATION_EVIDENCE_KEY_PREVIOUS=
+```
 
-- 개발용 key로 production 원문 암호화
-- 암호화되지 않은 원문을 abuse log, queue, Telegram에 보존
-- decrypt 권한을 브라우저 또는 일반 사용자에게 제공
+금지되는 상태:
+
+- 운영 인증과 evidence 암호화에 같은 key 사용
+- 개발·Preview key를 Production에서 재사용
+- query, Telegram, 로그, DB에 평문 key 저장
+- 같은 GCM nonce를 재사용
+- auth tag 검증 실패 ciphertext를 표시하거나 자동 복구
+- decrypt key 또는 Supabase service-role key를 브라우저에 제공
 
 ### G. 결제 유예: Hugging Face managed endpoint
 
@@ -195,11 +212,19 @@ Hugging Face를 활성화하지 않은 기간에는 실제 처리업체 목록�
 - [ ] Telegram 정상 발송, 중복 억제, `retry_after`, 실패 상태를 시험한다.
 - [ ] 잘못된 webhook secret, chat ID, operator user ID를 모두 거절한다.
 - [ ] Telegram URL을 여는 GET만으로 콘텐츠 상태가 변경되지 않는지 확인한다.
-- [ ] Supabase AAL1 접근 실패와 AAL2 접근 성공을 API·DB 양쪽에서 확인한다.
+- [ ] 누락·오류·만료·변조된 운영 session의 원문·결정 API 접근이 모두 실패하는지 확인한다.
+- [ ] Telegram URL과 server log에 운영 secret이 포함되지 않는지 확인한다.
 - [ ] Google timeout·429·quota·`$100` stop fallback을 확인한다.
-- [ ] KMS가 준비되지 않았다면 evidence feature가 production에서 강제로 `off`인지 확인한다.
+- [ ] evidence key 누락·형식 오류 시 암호화 저장이 fail closed하고 평문 fallback이 없는지 확인한다.
 - [ ] 개인정보 처리방침 placeholder가 남아 있으면 public production 활성화를 막는다.
 - [ ] 운영자 부재와 12시간 초과에도 격리 글이 자동 공개되지 않는지 확인한다.
+
+관리형 인증·KMS 전환 trigger도 운영 runbook에 기록한다.
+
+- 운영자가 두 명 이상이 되거나 역할별 권한 분리가 필요함
+- 운영 secret 공유·유출 또는 반복 공격 징후가 발생함
+- 90일 초과 legal hold, 키 사용 감사 또는 복호화 권한 분리가 필요함
+- Vercel project의 secret 접근 인원이 확대됨
 
 ## 4. 당장 사용자가 수행할 최소 작업
 
@@ -211,9 +236,9 @@ Hugging Face를 활성화하지 않은 기간에는 실제 처리업체 목록�
 4. `$100` 월 예산과 50%·100% 알림 설정
 5. production runtime service account 생성
 
-Telegram 생성은 결제가 필요하지 않으므로 가능한 한 같이 진행한다. Supabase TOTP 실제 등록은
-운영 화면 구현 후, KMS는 production evidence 활성화 전, Hugging Face는 확장 trigger 충족 후로
-미룬다.
+전체 moderation 구현에는 추가로 서로 다른 64-hex 운영 secret과 evidence key를 생성한다.
+Telegram과 두 secret은 결제가 필요하지 않으므로 가능한 한 같이 준비한다. Hugging Face는 확장
+trigger 충족 후로 미룬다.
 
 ## 5. 외부 식별자 전달 형식
 
@@ -225,9 +250,7 @@ Google runtime service account email:
 Telegram bot username:
 Telegram monitor channel ID:
 Telegram operator user ID:
-Supabase moderator auth email:
 Hugging Face organization: deferred
-KMS key resource: deferred
 ```
 
 다음 값은 전달 문서나 issue에 적지 않고 배포 환경의 secret UI에서만 설정한다.
@@ -237,8 +260,8 @@ Telegram bot token
 Telegram webhook secret
 Google credential/private key
 Supabase service-role/secret key
-TOTP seed
-evidence encryption key
+64-hex moderation ops secret
+64-hex evidence current/previous key
 Hugging Face access token
 ```
 
@@ -249,6 +272,7 @@ Hugging Face access token
 - [Google Cloud programmatic budget notifications](https://docs.cloud.google.com/billing/docs/how-to/budgets-programmatic-notifications)
 - [Telegram bot 생성](https://core.telegram.org/bots/tutorial)
 - [Telegram Bot API](https://core.telegram.org/bots/api)
-- [Supabase TOTP MFA](https://supabase.com/docs/guides/auth/auth-mfa/totp)
+- [Node.js Crypto](https://nodejs.org/api/crypto.html)
+- [Vercel Sensitive Environment Variables](https://vercel.com/docs/environment-variables/sensitive-environment-variables)
 - [Hugging Face Inference Endpoints quick start](https://huggingface.co/docs/inference-endpoints/quick_start)
 - [Hugging Face Inference Endpoints 설정](https://huggingface.co/docs/inference-endpoints/guides/configuration)

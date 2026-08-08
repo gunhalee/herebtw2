@@ -13,6 +13,7 @@ type UpdateCandidateFirstMessageInput = {
 };
 
 type CreateCandidateFirstMessageResponse = {
+  publicationStatus: "published" | "under_review";
   post: {
     id: string;
     public_uuid: string;
@@ -21,7 +22,8 @@ type CreateCandidateFirstMessageResponse = {
 };
 
 type UpdateCandidateFirstMessageResponse = {
-  content: string;
+  content: string | null;
+  publicationStatus: "published" | "under_review";
 };
 
 export async function createCandidateFirstMessage(

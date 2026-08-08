@@ -161,6 +161,11 @@ export function CandidateFirstMessagePanel({
           </button>
         </div>
       )}
+      {!editing && errorMessage ? (
+        <p role="status" style={{ color: "#9a3412", fontSize: "12px", margin: "8px 0 0" }}>
+          {errorMessage}
+        </p>
+      ) : null}
     </div>
   );
 }

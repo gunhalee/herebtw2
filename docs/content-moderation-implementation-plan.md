@@ -28,7 +28,7 @@
 7. 트래픽이 커져도 게시 공통 경로에 외부 API, 무제한 유사도 검색, 동기 로그 적재가
    병목이 되지 않게 한다.
 8. 운영 검수는 웹 운영 도구를 source of truth로 삼고 Telegram 전용 모니터 채널은 알림과
-   MFA 검수 화면 진입을 빠르게 하는 보조 수단으로 사용한다.
+   64-hex secret으로 보호된 검수 화면 진입을 빠르게 하는 보조 수단으로 사용한다.
 
 권장 최종 흐름은 다음과 같다.
 
@@ -578,7 +578,7 @@ create table public.moderation_decisions (
   id bigint generated always as identity primary key,
   case_id bigint not null references public.moderation_cases(id),
   actor_type text not null check (actor_type in ('system', 'moderator')),
-  moderator_auth_user_id uuid,
+  operator_id text,
   decision text not null check (decision in ('publish', 'keep_hidden', 'hide', 'delete')),
   reason_code text not null,
   policy_version integer not null,
@@ -586,8 +586,8 @@ create table public.moderation_decisions (
   note text,
   created_at timestamptz not null default now(),
   constraint moderation_decisions_actor_check check (
-    (actor_type = 'system' and moderator_auth_user_id is null)
-    or (actor_type = 'moderator' and moderator_auth_user_id is not null)
+    (actor_type = 'system' and operator_id is null)
+    or (actor_type = 'moderator' and operator_id = 'lee-geonha')
   ),
   constraint moderation_decisions_note_length_check check (
     note is null or char_length(note) <= 1000
@@ -631,22 +631,35 @@ create index idx_moderation_decision_cache_expires
 
 일반 욕설 자동 차단은 원문을 저장하지 않고 secret HMAC, reason code, 정책·사전 버전만 남긴다.
 구체적 위해, 미성년 성적 위험 등 critical case와 격리 case는 운영 검수와 사고 대응에 필요한
-최소 원문을 application-level envelope encryption으로 별도 보관하고 90일 후 삭제한다.
+최소 원문을 application-level authenticated encryption으로 별도 보관하고 90일 후 삭제한다.
 
 ```text
 moderation_evidence
   case_id bigint unique
+  algorithm text            # aes-256-gcm
   ciphertext bytea
   nonce bytea
+  auth_tag bytea
+  aad_version smallint
   key_version text
   content_type text
   created_at timestamptz
   expires_at timestamptz  # created_at + 90 days
 ```
 
-- 암호화 키는 DB나 repository에 두지 않고 KMS 또는 배포 환경의 별도 secret으로 관리한다.
+- 암호화 키는 KMS 없이 Vercel의 server-only Sensitive Environment Variable로 관리한다. 정확히
+  32 random bytes를 lowercase hex로 표현한 64자 값만 허용하며 시작 시 `/^[0-9a-f]{64}$/`와
+  decode 결과 32 bytes를 검증한다.
+- `AES-256-GCM`과 record별 새로운 12-byte cryptographic random nonce, 16-byte auth tag를
+  사용한다. `case_public_id`, `policy_version`, `created_at`, `aad_version`을 canonical AAD로 묶어
+  ciphertext를 다른 case로 복사하거나 metadata를 바꾸면 복호화가 실패하게 한다.
+- 운영 인증용 `MODERATION_OPS_SECRET`과 증거 암호화 key를 반드시 별도로 생성한다. 한 key를
+  인증·암호화·HMAC에 재사용하지 않는다.
+- 새 evidence는 current key로만 암호화한다. rotation 중에는 current와 previous key를 함께 읽고
+  미만료 evidence를 current로 재암호화한 뒤 previous key를 제거한다.
 - 격리 제출은 평문을 일반 `posts`, abuse log, queue, Telegram에 복제하지 않는다. 검수 화면은
-  AAL2 운영자 확인 뒤 서버에서만 복호화한다. 공개 결정 시에만 공개용 post 본문을 materialize한다.
+  유효한 운영 session 확인 뒤 Node.js server에서만 복호화한다. 공개 결정 시에만 공개용 post
+  본문을 materialize한다.
 - 이미 공개된 글의 신고 case는 기존 공개 본문과 별도로 당시 원문 snapshot을 암호화해 보존한다.
 - 복호화 열람, 공개, 숨김, 삭제, 복구와 key version 변경을 모두 append-only 감사 기록에 남긴다.
 - 삭제는 사용자 노출 상태를 `hidden/rejected`로 바꾸는 의미이며, 보존 기간 동안 암호화 증거와
@@ -668,8 +681,8 @@ moderation_evidence
 - 새 테이블은 RLS를 즉시 활성화한다.
 - `anon`, `authenticated`, `public`에 table privilege나 공개 policy를 부여하지 않는다.
 - 현재 서버 REST 구조와 호환하기 위해 초기에는 `public`에 두되 service role 전용으로 사용한다.
-- 운영자 권한은 `user_metadata`가 아니라 서버 DB의 활성 moderator 매핑 또는 안전한
-  `app_metadata`로 검증한다.
+- 운영자 route는 Supabase Auth 사용자 권한에 의존하지 않고 유효한 server-issued 운영 session과
+  이건하 단독 `operator_id`를 검증한다. 브라우저에는 Supabase service-role key를 노출하지 않는다.
 - 검수 view가 필요하면 `security_invoker = true`를 사용하고 불필요한 execute/select 권한을
   회수한다.
 - `SECURITY DEFINER` 함수는 노출된 public schema에 만들지 않는다.
@@ -816,7 +829,7 @@ API:
 - 격리 글이 feed, detail, card, candidate 조회에서 노출되지 않음
 - provider timeout·429·잘못된 JSON·고지연 fallback
 - 일반 욕설 차단 원문이 DB·application log에 남지 않고 HMAC 근거만 저장됨
-- critical·격리 원문은 제한 테이블에 암호화되어 90일 만료되고 AAL2 열람이 감사됨
+- critical·격리 원문은 제한 테이블에 암호화되어 90일 만료되고 운영 session 열람이 감사됨
 - 후보 메시지와 시민 게시의 profile별 정책 차이
 
 DB:
@@ -927,10 +940,51 @@ burst가 있으므로 이 수치는 최대 처리량이 아니라 quota 증설·
 - bot token, Telegram API URL 전체, authorization header를 application log에 남기지 않는다.
 - 모니터 채널이 없거나 발송에 실패해도 공개 채널로 보내지 않고 DB의 `failed` 상태와 별도
   dashboard에 남긴다.
-- Telegram 링크 자체는 권한을 부여하지 않는다. 링크를 전달받아도 Supabase Auth 운영자 계정,
-  활성 `moderator_memberships`, AAL2 MFA를 모두 통과해야 원문을 열람할 수 있다.
+- Telegram 링크 자체는 권한을 부여하지 않으며 query·fragment·path에 secret을 포함하지 않는다.
+  링크를 전달받아도 유효한 `__Host-moderation_ops` session cookie가 없으면 운영 로그인 화면으로
+  이동하고 원문을 반환하지 않는다.
 - GET 링크는 절대 상태를 변경하지 않는다. 공개·숨김·삭제는 웹 확인 화면에서 CSRF·Origin
   검증을 통과한 POST로만 처리한다.
+
+#### 64-hex 운영 인증 session
+
+`loudnclear-v2`의 server-only secret과 constant-time 비교 패턴을 사용하되, URL query에
+`?key=...`를 넣는 방식은 브라우저 기록·Telegram 저장·접근 로그·referrer 노출 위험 때문에
+사용하지 않는다.
+
+1. `MODERATION_OPS_SECRET`는 `randomBytes(32).toString("hex")`로 생성한 lowercase 64-hex다.
+2. `POST /api/ops/login`만 secret을 받고 body byte 상한·content type·Origin·로그 redaction을
+   적용한다.
+3. 서버는 두 값을 32-byte buffer로 decode한 뒤 길이를 확인하고 constant-time으로 비교한다.
+4. 성공하면 secret 자체가 아닌 서명된 session token을 `__Host-moderation_ops` cookie로 발급한다.
+5. cookie는 `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`, `Max-Age=43200`이며 `Domain`을
+   설정하지 않는다.
+6. session payload는 version, `operatorId="lee-geonha"`, issued-at, expires-at만 포함하고
+   `MODERATION_OPS_SECRET`에서 HKDF-SHA-256 `info="moderation-ops-session-v1"`로 파생한 key로
+   HMAC-SHA-256 서명한다.
+7. 로그인 실패는 network·global rate limit하고 성공·실패 횟수만 남기며 입력값은 저장하지 않는다.
+8. secret rotation은 기존 session을 모두 무효화한다. 로그아웃은 cookie를 즉시 만료시킨다.
+9. 로그인 후 `next` redirect는 same-origin의 `/ops/` 하위 상대 경로만 허용한다.
+10. 모든 원문 조회와 결정 route가 cookie를 독립 검증하고, 민감 POST는 session 검증에 더해
+    Origin·CSRF와 확인 화면을 요구한다.
+
+로컬 HTTP 개발에서는 Production cookie와 이름을 분리한 개발 전용 cookie만 허용한다. Production
+코드는 `__Host-` cookie의 `Secure`를 낮추는 fallback을 갖지 않는다.
+
+이 인증은 단독 운영을 전제로 한 의도적인 single-factor 단순화다. 다음 중 하나가 발생하면
+관리형 계정 인증과 MFA로 전환한다.
+
+- 운영자가 두 명 이상이 되어 secret 공유가 필요함
+- 운영 권한을 역할별로 나누거나 사람별 책임을 증명해야 함
+- secret 유출 또는 반복적인 인증 공격 징후가 발생함
+- 외부 위탁 운영, 감사·규제 또는 별도 관리자 퇴사·회수 절차가 필요함
+
+evidence key도 다음 조건에서는 managed KMS 재검토 대상으로 올린다.
+
+- 90일보다 긴 legal hold 또는 대량 재암호화가 필요함
+- 환경변수 접근자와 복호화 권한자를 분리해야 함
+- key 사용 자체에 대한 외부 감사 기록이 필요함
+- Vercel project 접근권한 확대 또는 secret 유출 사고가 발생함
 
 #### 메시지와 버튼
 
@@ -1008,7 +1062,9 @@ unique(event_key, event_hash)
 
 ```text
 GET  /api/ops/moderation/monitor   # CRON_SECRET 전용
-POST /api/ops/moderation/monitor   # 운영자 AAL2, 기본 dryRun=true
+POST /api/ops/moderation/monitor   # 유효한 운영 session, 기본 dryRun=true
+POST /api/ops/login                # 64-hex secret 검증, session cookie 발급
+POST /api/ops/logout               # session cookie 만료
 
 TELEGRAM_BOT_TOKEN
 TELEGRAM_MONITOR_CHANNEL_ID
@@ -1016,11 +1072,18 @@ TELEGRAM_MODERATION_ALERTS_ENABLED
 TELEGRAM_WEBHOOK_SECRET
 TELEGRAM_OPERATOR_USER_IDS
 MODERATION_OPS_BASE_URL
-MODERATION_REVIEW_LINK_SECRET
+MODERATION_OPS_SECRET
+MODERATION_OPS_SESSION_TTL_SECONDS=43200
+MODERATION_EVIDENCE_KEY_CURRENT_VERSION=v1
+MODERATION_EVIDENCE_KEY_CURRENT
+MODERATION_EVIDENCE_KEY_PREVIOUS_VERSION
+MODERATION_EVIDENCE_KEY_PREVIOUS
 ```
 
-`MODERATION_REVIEW_LINK_SECRET`는 링크 만료·변조 방지용일 뿐 인증을 대체하지 않는다. route는
-Node.js runtime을 사용하고 한 run의 최대 발송 수, 메시지 간격, timeout을 제한한다.
+운영·evidence secret은 Production과 Preview에 서로 다른 값으로 설정하고 `NEXT_PUBLIC_` 접두사를
+금지한다. Production과 Preview에서는 Vercel Sensitive Environment Variable로 만들어 dashboard에서
+재열람할 수 없게 한다. route는 Node.js runtime을 사용하고 한 run의 최대 발송 수, 메시지 간격,
+timeout을 제한한다.
 
 ## 17. 단계별 구현 계획
 
@@ -1142,17 +1205,17 @@ rollout:
 - broad error 문구가 매칭 단어를 노출하지 않음
 - 후보자 답변 경로에서 시민용 `evaluateContentSafety()` 호출이 제거되고 구조적 보안 테스트가 통과
 
-### WP7. 단독 운영 검수·Telegram·지속 학습
+### WP7. 64-hex 단독 운영 검수·Telegram·지속 학습
 
 작업:
 
-1. 이건하 단독 `moderator_memberships`와 별도 Supabase Auth 운영자 계정 구성
-2. TOTP 등록·복구 코드 보관·AAL2 강제와 세션 만료 처리
+1. 서로 다른 64-hex `MODERATION_OPS_SECRET`과 evidence key 생성·검증 config
+2. constant-time secret login, 12시간 서명 cookie, logout·rotation·실패 rate limit
 3. priority queue, category·age·risk filter, case 상세, 원문 최소 노출
-4. publish/hide/delete/restore 확인 화면과 append-only 결정·열람 감사
+4. publish/hide/delete/restore 확인 화면과 `operator_id="lee-geonha"` append-only 결정·열람 감사
 5. 신고 다양성·집중도와 model/rule 근거를 범위·요약으로 표시
 6. `ops_monitor_notifications` outbox, Telegram 발송 worker, 중복 억제·재시도·90일 cleanup
-7. 텔레그램의 검토·공개 검토·숨김 검토·대기열·현황·비용 URL 버튼과 MFA deep-link 복귀
+7. 텔레그램의 검토·공개 검토·숨김 검토·대기열·현황·비용 URL 버튼과 session deep-link 복귀
 8. allowlist 기반 `/mod_status`, `/mod_queue`, `/mod_cost` 읽기 전용 명령
 9. 6·10·12시간 검수 경고, critical 사건, $50·$100 Google 비용, 장애·급증 알림
 10. 주간 drift·사전 갱신·월간 threshold 검토와 운영 복구 label의 gold 편입
@@ -1160,17 +1223,18 @@ rollout:
 완료 조건:
 
 - 비운영자는 case·원문·결정 API에 접근할 수 없음
-- 운영자는 AAL2가 아니면 원문·결정 화면에 접근할 수 없고 열람 자체가 감사됨
+- secret이 없거나 session이 만료·변조되면 원문·결정 화면에 접근할 수 없고 열람 자체가 감사됨
 - 신고 raw count가 최종 결정을 대신하지 않음
 - Telegram 메시지에 원문·연락처·좌표·hash가 없고 발송 실패 시 공개 채널 fallback이 없음
-- Telegram URL을 열기만 해서는 상태가 바뀌지 않으며 최종 POST에 재인증·CSRF 방어가 적용됨
+- Telegram URL을 열기만 해서는 상태가 바뀌지 않고 URL에 secret이 없으며 최종 POST에 session
+  재검증·CSRF 방어가 적용됨
 
 ### WP8. 증거 보존·개인정보 문서·비용 검증·출시 준비
 
 작업:
 
-1. normal profanity HMAC-only 기록과 critical/quarantine 암호화 evidence 저장소 구현
-2. key versioning, 복호화 감사, 90일 만료 job, 복구·legal-hold runbook 작성
+1. normal profanity HMAC-only 기록과 AES-256-GCM critical/quarantine evidence 저장소 구현
+2. current/previous 64-hex key versioning, 재암호화, 복호화 감사, 90일 만료 job과 복구 runbook 작성
 3. `docs/privacy-policy-draft.md` 초안 작성
 4. 운영자명 이건하를 반영하고 사업자 정보·연락처·시행일·Google 프로젝트 리전 등은
    명시적 placeholder로 표시
@@ -1183,7 +1247,7 @@ rollout:
 완료 조건:
 
 - 평문 critical evidence와 secret이 DB log·queue·Telegram·analytics에 나타나지 않음
-- 90일 만료와 암호화 키 rotation·폐기 테스트가 통과
+- 90일 만료와 current→previous 암호화 key rotation·재암호화·폐기 테스트가 통과
 - 개인정보 처리방침 초안의 placeholder가 CI에서 목록화되어 출판 전에 누락을 막음
 - 비용 비교 보고서가 실제 benchmark 수치와 공식 provider 가격 기준일을 함께 기록
 - 외부 provider 계약·retention·리전과 corpus 라이선스 검토가 체크리스트로 승인되기 전에는
@@ -1215,7 +1279,7 @@ flowchart LR
 6. Google provider + cache + quota budget
 7. quarantine queue/worker + fallback tests
 8. decision engine enforcement + compose UX
-9. moderator Auth/AAL2 + API/UI + audit
+9. 64-hex ops login/session + API/UI + audit
 10. Telegram outbox/alerts + secure review deep links
 11. encrypted evidence + retention cleanup
 12. privacy draft + provider inventory + cost benchmark
@@ -1263,10 +1327,10 @@ MODERATION_GLOBAL_KILL_SWITCH
 | 사용자 재검토 | 별도 요청 경로 없음. 운영자가 오탐을 발견하면 조용히 복구 |
 | 후보자 범위 | 첫 메시지는 시민 정책 적용. 후보자 답변은 제외하고 연락처·링크 허용 |
 | 정책 책임자·운영자 | 이건하 단독 운영 |
-| 운영 인증 | 별도 Supabase Auth 운영자 계정과 TOTP AAL2 필수 |
+| 운영 인증 | 이건하 단독 64-hex random secret, 12시간 HttpOnly signed session |
 | 운영 알림 | Telegram 전용 모니터 채널. 웹 운영 도구가 source of truth |
 | Telegram 조작 | 초기에는 URL deep link만 사용. Telegram 안에서 즉시 승인·삭제하지 않음 |
-| 증거 | 일반 욕설은 HMAC만, critical·격리는 암호화 원문과 결정 이력을 90일 보존 |
+| 증거 | 일반 욕설은 HMAC만, critical·격리는 별도 64-hex key의 AES-256-GCM 원문과 결정 이력을 90일 보존 |
 | 삭제 의미 | 공개 상태를 숨기되 보존 기간의 암호화 증거·감사 기록은 유지 |
 | Google 표본 | 1% 시작, 품질 확인 뒤 5%, 절대 비율 상한 10% |
 | Google 예산 | 월 $50에서 Telegram 경고, $100에서 호출 중단·critical 알림 |
@@ -1277,11 +1341,11 @@ MODERATION_GLOBAL_KILL_SWITCH
 ### 19-2. 구현 전에 준비하거나 구현 과정에서 생성할 것
 
 - Telegram bot과 공개 채널과 분리된 monitor channel, bot의 발송 권한, channel ID
-- 이건하 운영자 전용 Supabase Auth 계정, TOTP 기기, 오프라인 복구 코드 보관 위치
+- 서로 다른 64-hex `MODERATION_OPS_SECRET`, production evidence key와 오프라인 복구 사본
 - Google Cloud 서비스 계정·quota·billing budget alert와 월별 비용 counter 기준시각
 - Hugging Face managed endpoint 조직·결제 설정과 x2/x4 benchmark 환경
 - corpus·사전·모델별 원문 출처, license, commit/digest, 상업 이용·파생물 조건 manifest
-- evidence envelope encryption용 KMS/secret, key version·rotation·폐기 절차
+- AES-256-GCM current/previous key version·재암호화·rotation·폐기 절차
 - 개인정보 처리방침 placeholder를 채울 사업자 정보, 개인정보 문의 연락처, 시행일,
   provider 리전·retention·국외 이전 정보
 - 단독 운영자가 12시간 안에 처리하지 못할 때도 자동 공개하지 않는 격리 지속 runbook
@@ -1302,7 +1366,9 @@ MODERATION_GLOBAL_KILL_SWITCH
 - 일반 차단 원문·IP·token·좌표·이메일은 moderation 로그에 저장되지 않으며, critical·격리 원문은
   별도 암호화 evidence에만 90일 저장된다.
 - RLS·grant·moderator 권한·append-only decision이 DB 테스트로 검증된다.
-- 이건하 운영자 계정도 AAL2가 아니면 case 원문과 결정 API에 접근할 수 없다.
+- secret이 없거나 운영 session이 만료·변조되면 case 원문과 결정 API에 접근할 수 없다.
+- 운영 인증과 evidence 암호화에는 서로 다른 64-hex key를 사용하고 URL·로그·Telegram에는 어느
+  secret도 포함되지 않는다.
 - rate budget은 게시 요청당 한 번의 DB 왕복으로 소비된다.
 - 전역 trigram 검색 없이도 조직적 문구 확산을 bounded cost로 shadow 탐지한다.
 - `npm run verify`에 moderation unit, adversarial, API, architecture 검사가 포함된다.
@@ -1321,7 +1387,8 @@ MODERATION_GLOBAL_KILL_SWITCH
 - [Telegram Bot API](https://core.telegram.org/bots/api)
 - [Supabase Queues](https://supabase.com/docs/guides/queues)
 - [Supabase Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security)
-- [Supabase Auth MFA](https://supabase.com/docs/guides/auth/auth-mfa)
+- [Node.js Crypto](https://nodejs.org/api/crypto.html)
+- [Vercel Sensitive Environment Variables](https://vercel.com/docs/environment-variables/sensitive-environment-variables)
 - [Unicode UTS #39: Unicode Security Mechanisms](https://www.unicode.org/reports/tr39/)
 - [KOTOX: Obfuscation Rules for Detecting and Detoxifying Korean Toxicity](https://arxiv.org/abs/2510.10961)
 - [K-MHaS: Korean Multi-label Hate Speech Dataset](https://aclanthology.org/2022.coling-1.311/)

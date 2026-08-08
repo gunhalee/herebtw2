@@ -16,7 +16,7 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
-  if (!session.hasFirstMessage) {
+  if (!session.hasFirstMessage && !session.hasPendingFirstMessage) {
     redirect("/candidate/onboarding");
   }
 
@@ -37,6 +37,7 @@ export default async function DashboardPage() {
           ? { id: firstMessage.id, content: firstMessage.content }
           : null
       }
+      firstMessagePending={session.hasPendingFirstMessage}
     />
   );
 }

@@ -4,7 +4,6 @@ import { getCandidateSession } from "../../../../lib/auth/candidate-session";
 import { getBotRejectionResponse } from "../../../../lib/abuse/bot-verification";
 import { getAccountRateLimitResponse } from "../../../../lib/abuse/account-guard";
 import { ABUSE_POLICY } from "../../../../lib/abuse/policy";
-import { evaluateContentSafety } from "../../../../lib/abuse/content-safety";
 import {
   createCandidateFirstMessage,
   updateCandidateFirstMessage,
@@ -59,18 +58,19 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const safety = evaluateContentSafety(trimmedContent);
-
-  if (!safety.allowed) {
-    return fail({ code: "UNSAFE_CONTENT", message: safety.message }, 422);
-  }
-
-  await updateCandidateFirstMessage({
+  const updateResult = await updateCandidateFirstMessage({
     postId: session.firstMessageId,
     content: trimmedContent,
   });
 
-  return ok({ content: trimmedContent });
+  if (!updateResult.ok) {
+    return fail({ code: updateResult.code, message: updateResult.message }, 422);
+  }
+
+  return ok({
+    content: updateResult.publicationStatus === "published" ? trimmedContent : null,
+    publicationStatus: updateResult.publicationStatus,
+  });
 }
 
 type FirstMessageRequest = {
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     return rateLimitResponse;
   }
 
-  if (session.hasFirstMessage) {
+  if (session.hasFirstMessage || session.hasPendingFirstMessage) {
     return fail(
       { code: "ALREADY_EXISTS", message: "이미 첫 메시지를 작성했습니다." },
       400,
@@ -126,12 +126,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const safety = evaluateContentSafety(trimmedContent);
-
-  if (!safety.allowed) {
-    return fail({ code: "UNSAFE_CONTENT", message: safety.message }, 422);
-  }
-
   const result = await createCandidateFirstMessage({
     candidateId: session.candidateId,
     content: trimmedContent,
@@ -140,9 +134,9 @@ export async function POST(request: Request) {
   if (!result.ok) {
     return fail(
       { code: result.code, message: result.message },
-      result.code === "NOT_FOUND" ? 404 : 500,
+      result.code === "NOT_FOUND" ? 404 : result.code === "UNSAFE_CONTENT" ? 422 : 500,
     );
   }
 
-  return ok({ post: result.post });
+  return ok({ post: result.post, publicationStatus: result.publicationStatus });
 }

@@ -20,6 +20,7 @@ type ComposeSuccessResult = {
   publicUuid: string;
   dongName: string;
   notificationVerificationRequired: boolean;
+  publicationStatus: "published" | "under_review";
 };
 
 type UseComposeSubmitParams = {
@@ -113,6 +114,7 @@ export function useComposeSubmit({
       const trimmedEmail = notificationEmail.trim();
       const response = await fetchClientApiData<{
         notificationVerificationRequired: boolean;
+        publicationStatus: "published" | "under_review";
         post: {
           id: string;
           publicUuid: string;
@@ -142,6 +144,7 @@ export function useComposeSubmit({
           dongName: response.post.administrativeDongName,
           notificationVerificationRequired:
             response.notificationVerificationRequired,
+          publicationStatus: response.publicationStatus,
         });
         clientRequestIdRef.current = null;
         return;

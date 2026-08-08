@@ -16,6 +16,7 @@ type ComposeSuccessData = {
   publicUuid: string;
   dongName: string;
   notificationVerificationRequired: boolean;
+  publicationStatus: "published" | "under_review";
 };
 
 type PostComposeExperienceProps = {
@@ -121,6 +122,7 @@ export function PostComposeExperience({
           notificationVerificationRequired={
             successData.notificationVerificationRequired
           }
+          publicationStatus={successData.publicationStatus}
           onDismiss={() => onDismiss?.()}
         />
       ) : (

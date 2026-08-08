@@ -12,6 +12,8 @@ export {
 export {
   attachCandidateFirstMessageRepository,
   createCandidateFirstMessageRepository,
+  createCandidateFirstMessageUpdateCaseRepository,
+  createCandidateQuarantinedFirstMessageRepository,
   createReply,
   updateCandidateFirstMessageRepository,
 } from "./candidate-mutations";

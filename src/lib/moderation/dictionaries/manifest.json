@@ -1,0 +1,30 @@
+{
+  "dictionaryVersion": "ko-safety-2026-08-v1",
+  "reviewedAt": "2026-08-09",
+  "runtimeAutoUpdate": false,
+  "sources": [
+    {
+      "name": "internal-curated-bootstrap",
+      "license": "project-internal",
+      "revision": "v1",
+      "usage": "High-precision Korean profanity, threat, sexual-risk, self-harm, PII and spam patterns"
+    }
+  ],
+  "externalCandidates": [
+    {
+      "name": "korcen",
+      "status": "evaluation-only-not-vendored",
+      "requiredBeforeUse": [
+        "pin commit SHA",
+        "verify Apache-2.0 attribution",
+        "human review additions and exceptions",
+        "run fixed service-corpus benchmark"
+      ]
+    }
+  ],
+  "notes": [
+    "No dictionary or model artifact is downloaded at runtime.",
+    "Matched expressions are not returned to users.",
+    "Normal compound exceptions are scoped to the matched view and cannot mask a separate violation."
+  ]
+}

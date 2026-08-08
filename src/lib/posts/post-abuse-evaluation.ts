@@ -1,8 +1,9 @@
 import { fingerprintContent } from "../abuse/content-normalization";
-import { evaluateContentSafety } from "../abuse/content-safety";
 import { logAbuseEvent } from "../abuse/log-event";
+import { evaluateModerationContent } from "../moderation/decision-engine";
 import {
   findPostByFingerprintRepository,
+  findPostByContentHmacRepository,
   findSimilarRecentPostsRepository,
 } from "./repository";
 import { validatePostContent } from "./validators";
@@ -21,30 +22,33 @@ export async function evaluatePostSubmission(input: {
     };
   }
 
-  const safety = evaluateContentSafety(input.content);
+  const moderation = evaluateModerationContent({
+    content: input.content,
+    profile: "citizen_post",
+  });
 
-  if (!safety.allowed) {
+  if (moderation.action === "block") {
     await logAbuseEvent("unsafe_content_rejected", {}, {
       action: "post.create",
       decision: "block",
       deviceId: input.authorDeviceId,
-      reasonCode: safety.ruleCode,
+      reasonCode: moderation.reasonCodes[0] ?? "unsafe_content",
     });
 
     return {
       code: "UNSAFE_CONTENT" as const,
-      message: safety.message,
+      message: moderation.message ?? "게시할 수 없는 내용이 포함되어 있어요.",
       ok: false as const,
     };
   }
 
   const normalizedContent = fingerprintContent(input.content);
-  const duplicatePost = await findPostByFingerprintRepository(
-    input.authorDeviceId,
-    normalizedContent.fingerprint,
-  );
+  const [duplicatePost, duplicateModerationPost] = await Promise.all([
+    findPostByFingerprintRepository(input.authorDeviceId, normalizedContent.fingerprint),
+    findPostByContentHmacRepository(input.authorDeviceId, moderation.contentDecisionKey),
+  ]);
 
-  if (duplicatePost) {
+  if (duplicatePost || duplicateModerationPost) {
     await logAbuseEvent("duplicate_content", {
       fingerprintVersion: normalizedContent.version,
     }, {
@@ -103,5 +107,5 @@ export async function evaluatePostSubmission(input: {
     }
   }
 
-  return { normalizedContent, ok: true as const };
+  return { moderation, normalizedContent, ok: true as const };
 }

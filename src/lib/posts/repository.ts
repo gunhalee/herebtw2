@@ -1,6 +1,8 @@
 export {
   attachCandidateFirstMessageRepository,
   createCandidateFirstMessageRepository,
+  createCandidateFirstMessageUpdateCaseRepository,
+  createCandidateQuarantinedFirstMessageRepository,
   createReply,
   findCandidateByAuthUserId,
   findCandidateById,
@@ -25,9 +27,15 @@ export {
 export {
   createPostRepository,
   findPostByClientRequestIdRepository,
+  findPostByContentHmacRepository,
   findPostByFingerprintRepository,
   findSimilarRecentPostsRepository,
   reportPostRepository,
   syncDeviceRepository,
   toggleAgreeRepository,
 } from "./repository/mutations";
+export {
+  createQuarantinedPostRepository,
+  createReportModerationCaseRepository,
+  loadPostForReportModerationRepository,
+} from "./repository/moderation-mutations";

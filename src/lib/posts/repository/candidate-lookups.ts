@@ -9,7 +9,7 @@ import type {
 
 async function findCandidateByAuthUserId(authUserId: string) {
   const rows = await supabaseSelect<CandidateRow[]>(
-    `candidates?select=id,auth_user_id,name,district,email,first_message_id,is_active,created_at,activated_at&auth_user_id=eq.${authUserId}&limit=1`,
+    `candidates?select=id,auth_user_id,name,district,email,first_message_id,pending_first_message_id,is_active,created_at,activated_at&auth_user_id=eq.${authUserId}&limit=1`,
   );
 
   return rows?.[0] ?? null;

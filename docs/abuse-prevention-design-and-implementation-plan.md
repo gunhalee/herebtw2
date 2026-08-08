@@ -625,7 +625,7 @@ public.moderation_cases (
 public.moderation_decisions (
   id uuid primary key,
   case_id uuid,
-  moderator_auth_user_id uuid,
+  operator_id text,   -- single operator: lee-geonha
   decision text,    -- publish/hide/delete/no_action
   reason_code text,
   note text,
@@ -634,9 +634,9 @@ public.moderation_decisions (
 ```
 
 - 두 테이블 모두 RLS 활성화, 공개 정책 없음, anon/authenticated 권한 회수
-- 운영자는 별도의 활성 moderator 매핑으로 서버에서 검증
-- 권한은 Supabase `user_metadata`가 아니라 서버 DB 또는 안전한 app metadata를
-  사용
+- 운영자는 server-only 64-hex secret 로그인으로 발급한 12시간 signed HttpOnly session으로 검증
+- 운영 인증과 evidence AES-256-GCM에는 서로 다른 64-hex key를 사용
+- secret은 URL query·Telegram·DB·로그에 넣지 않고 Vercel Sensitive Environment Variable로 관리
 - 모든 결정과 복구를 append-only로 기록
 
 관리자 UI가 준비되기 전에는 제한된 운영 스크립트로 같은 decision row를
@@ -1000,7 +1000,8 @@ src/lib/abuse/
 src/lib/moderation/
   content-rules.ts
   report-policy.ts
-  moderator-session.ts
+  ops-secret-session.ts
+  evidence-crypto.ts
 
 src/app/api/moderation/
   cases/route.ts
@@ -1138,7 +1139,7 @@ DB·헤더·BotID 의존성은 adapter에서 주입한다.
 3. 신고 코드 allowlist와 확장
 4. 신고자 다양성·집중도 집계
 5. 격리 포스트의 피드·상세·카드 차단
-6. moderator session과 최소 검수 API
+6. 64-hex ops secret session과 최소 검수 API
 7. publish/hide/delete/no_action 감사 로그
 
 완료 조건:
@@ -1146,7 +1147,7 @@ DB·헤더·BotID 의존성은 adapter에서 주입한다.
 - 신고 수 하나만으로 자동 비노출되지 않음
 - 격리 글은 직접 UUID·카드 경로에서도 공개되지 않음
 - 운영자 결정과 복구가 모두 append-only 기록으로 남음
-- 비운영자와 비활성 운영자는 검수 API를 사용할 수 없음
+- secret 누락·불일치와 만료·변조된 session은 검수 API를 사용할 수 없음
 
 ## WP6. 공감·후보·이메일 보완
 

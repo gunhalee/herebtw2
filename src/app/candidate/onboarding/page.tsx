@@ -9,7 +9,7 @@ export default async function OnboardingPage() {
     redirect("/auth/login");
   }
 
-  if (session.hasFirstMessage) {
+  if (session.hasFirstMessage || session.hasPendingFirstMessage) {
     redirect("/candidate/dashboard");
   }
 

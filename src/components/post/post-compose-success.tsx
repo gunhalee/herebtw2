@@ -63,6 +63,7 @@ type PostComposeSuccessProps = {
   publicUuid: string;
   dongName: string;
   notificationVerificationRequired: boolean;
+  publicationStatus: "published" | "under_review";
   onDismiss: () => void;
 };
 
@@ -70,6 +71,7 @@ export function PostComposeSuccess({
   publicUuid,
   dongName,
   notificationVerificationRequired,
+  publicationStatus,
   onDismiss,
 }: PostComposeSuccessProps) {
   const [copied, setCopied] = useState(false);
@@ -147,7 +149,9 @@ export function PostComposeSuccess({
             margin: 0,
           }}
         >
-          당신의 목소리가 전달되었습니다
+          {publicationStatus === "under_review"
+            ? "내용을 안전하게 확인하고 있어요"
+            : "당신의 목소리가 전달되었습니다"}
         </h2>
         <p
           style={{
@@ -157,19 +161,26 @@ export function PostComposeSuccess({
             lineHeight: 1.5,
           }}
         >
-          {`${displayDongName}에 남긴 목소리를 포토카드로 저장해보세요.`}
-          <br />
-          링크를 통해서 후보자의 답글을 확인할 수도 있어요.
-          {notificationVerificationRequired ? (
+          {publicationStatus === "under_review" ? (
+            "확인이 끝나면 게시 여부가 반영됩니다. 확인 전에는 다른 사람에게 공개되지 않아요."
+          ) : (
             <>
+              {`${displayDongName}에 남긴 목소리를 포토카드로 저장해보세요.`}
               <br />
-              답변 알림을 받으려면 받은 이메일에서 주소를 확인해 주세요.
+              링크를 통해서 후보자의 답글을 확인할 수도 있어요.
+              {notificationVerificationRequired ? (
+                <>
+                  <br />
+                  답변 알림을 받으려면 받은 이메일에서 주소를 확인해 주세요.
+                </>
+              ) : null}
             </>
-          ) : null}
+          )}
         </p>
       </div>
 
-      <button
+      {publicationStatus === "published" ? (
+      <><button
         onClick={handleCopyLink}
         type="button"
         style={{
@@ -236,7 +247,8 @@ export function PostComposeSuccess({
       >
         <Download size={16} />
         {savingCardImage ? "이미지 준비 중..." : "포토카드 다운로드"}
-      </button>
+      </button></>
+      ) : null}
 
       <button
         onClick={onDismiss}

@@ -4,7 +4,6 @@ import { getCandidateSession } from "../../../../lib/auth/candidate-session";
 import { getBotRejectionResponse } from "../../../../lib/abuse/bot-verification";
 import { getAccountRateLimitResponse } from "../../../../lib/abuse/account-guard";
 import { ABUSE_POLICY } from "../../../../lib/abuse/policy";
-import { evaluateContentSafety } from "../../../../lib/abuse/content-safety";
 import { createCandidateReply } from "../../../../lib/candidates/mutations";
 
 type CreateReplyRequest = {
@@ -55,12 +54,6 @@ export async function POST(request: Request) {
       { code: "VALIDATION_ERROR", message: "답변은 1~200자여야 합니다." },
       400,
     );
-  }
-
-  const safety = evaluateContentSafety(trimmedContent);
-
-  if (!safety.allowed) {
-    return fail({ code: "UNSAFE_CONTENT", message: safety.message }, 422);
   }
 
   const result = await createCandidateReply({

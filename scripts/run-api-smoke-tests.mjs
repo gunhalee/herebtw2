@@ -531,6 +531,54 @@ async function runSmokeTests(baseUrl) {
   expectJsonFailure(malformedReport.body, "malformed report", "INVALID_REQUEST");
   results.push("POST /api/posts/[postId]/report (malformed JSON) -> 400");
 
+  const unauthorizedWorker = await request(
+    baseUrl,
+    "/api/internal/moderation/worker",
+    { method: "POST" },
+  );
+  assert.equal(
+    unauthorizedWorker.response.status,
+    401,
+    "moderation worker without a bearer secret should return 401.",
+  );
+  expectJsonFailure(
+    unauthorizedWorker.body,
+    "unauthorized moderation worker",
+    "UNAUTHORIZED",
+  );
+  results.push("POST /api/internal/moderation/worker (unauthorized) -> 401");
+
+  const unauthorizedTelegram = await request(
+    baseUrl,
+    "/api/telegram/moderation",
+    {
+      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+  assert.equal(
+    unauthorizedTelegram.response.status,
+    401,
+    "Telegram webhook without its secret should return 401.",
+  );
+  results.push("POST /api/telegram/moderation (unauthorized) -> 401");
+
+  const unauthorizedOpsDecision = await request(
+    baseUrl,
+    `/api/ops/moderation/${DUMMY_POST_ID}/decision`,
+    {
+      body: new URLSearchParams({ action: "reject", csrf: "invalid" }),
+      method: "POST",
+    },
+  );
+  assert.equal(
+    unauthorizedOpsDecision.response.status,
+    401,
+    "ops decision without a session should return 401.",
+  );
+  results.push("POST /api/ops/moderation/[casePublicId]/decision (unauthorized) -> 401");
+
   return results;
 }
 

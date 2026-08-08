@@ -188,9 +188,10 @@ export async function POST(request: Request) {
     if (existingPost) {
       return withActor(
         ok({
-          post: existingPost,
-          publicationStatus: "published" as const,
-          notificationVerificationRequired: Boolean(body.notificationEmail?.trim()),
+          post: existingPost.post,
+          publicationStatus: existingPost.publicationStatus,
+          notificationVerificationRequired:
+            existingPost.publicationStatus === "published" && Boolean(body.notificationEmail?.trim()),
           replayed: true,
         }),
       );
@@ -339,13 +340,15 @@ export async function POST(request: Request) {
       ok({
         post: result.post,
         publicationStatus: result.publicationStatus,
-        notificationVerificationRequired: Boolean(normalizedEmail.value),
+        notificationVerificationRequired:
+          result.publicationStatus === "published" && Boolean(normalizedEmail.value),
       }),
     );
   } catch (error) {
     if (
       error instanceof Error &&
       (error.message.includes("uq_posts_device_visible_fingerprint") ||
+        error.message.includes("uq_posts_device_moderation_content_hmac") ||
         error.message.includes("uq_posts_device_active_content"))
     ) {
       return withActor(
