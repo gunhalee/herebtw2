@@ -7,6 +7,7 @@ import {
 } from "./browser-external-navigation";
 import {
   clearBrowserLocationRecoveryAttempt,
+  getBrowserLocationRecoveryContext,
   hasBrowserLocationRecoveryAttempt,
   runBrowserLocationRetryAction,
 } from "./browser-location-recovery";
@@ -25,15 +26,6 @@ describe("browser location recovery action", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-  });
-
-  it("reloads the document for denied-permission recovery", () => {
-    const continueRetry = vi.fn();
-
-    runBrowserLocationRetryAction("reload", continueRetry);
-
-    expect(reloadCurrentPage).toHaveBeenCalledOnce();
-    expect(continueRetry).not.toHaveBeenCalled();
   });
 
   it("opens structural recovery targets directly", () => {
@@ -59,7 +51,7 @@ describe("browser location recovery action", () => {
     expect(continueRetry).toHaveBeenNthCalledWith(2, "resolve-location");
   });
 
-  it("remembers navigation recovery across a same-tab reload", () => {
+  it("reloads and remembers that compose should resume", () => {
     const values = new Map<string, string>();
     const sessionStorage = {
       getItem: vi.fn((key: string) => values.get(key) ?? null),
@@ -68,7 +60,23 @@ describe("browser location recovery action", () => {
     };
     vi.stubGlobal("window", { sessionStorage });
 
-    runBrowserLocationRetryAction("reload", vi.fn());
+    runBrowserLocationRetryAction("reload", vi.fn(), "compose");
+
+    expect(reloadCurrentPage).toHaveBeenCalledOnce();
+    expect(hasBrowserLocationRecoveryAttempt()).toBe(true);
+    expect(getBrowserLocationRecoveryContext()).toBe("compose");
+  });
+
+  it("remembers a same-tab navigation recovery", () => {
+    const values = new Map<string, string>();
+    const sessionStorage = {
+      getItem: vi.fn((key: string) => values.get(key) ?? null),
+      removeItem: vi.fn((key: string) => values.delete(key)),
+      setItem: vi.fn((key: string, value: string) => values.set(key, value)),
+    };
+    vi.stubGlobal("window", { sessionStorage });
+
+    runBrowserLocationRetryAction("secure-page", vi.fn());
 
     expect(hasBrowserLocationRecoveryAttempt()).toBe(true);
     clearBrowserLocationRecoveryAttempt();
@@ -93,7 +101,7 @@ describe("browser location recovery action", () => {
     };
     vi.stubGlobal("window", { history, sessionStorage });
 
-    runBrowserLocationRetryAction("reload", vi.fn());
+    runBrowserLocationRetryAction("secure-page", vi.fn());
 
     expect(hasBrowserLocationRecoveryAttempt()).toBe(true);
   });

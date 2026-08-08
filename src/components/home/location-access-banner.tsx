@@ -34,7 +34,7 @@ export function LocationAccessBanner({
       return;
     }
 
-    runBrowserLocationRetryAction(guidance.retryAction, onRequest);
+    runBrowserLocationRetryAction(guidance.retryAction, onRequest, "access");
   }
 
   return (
@@ -60,7 +60,7 @@ export function LocationAccessBanner({
             margin: 0,
           }}
         >
-          {guidance.title}
+          {locating ? "위치 확인 중..." : guidance.title}
         </p>
         <p
           style={{
@@ -70,7 +70,9 @@ export function LocationAccessBanner({
             margin: "2px 0 0",
           }}
         >
-          {guidance.message}
+          {locating
+            ? "브라우저의 위치 권한 요청을 확인해 주세요."
+            : guidance.message}
         </p>
       </div>
       <button

@@ -4,6 +4,7 @@ import {
   getCurrentBrowserCoordinates,
 } from "./browser-location";
 import {
+  canRetryDeniedBrowserGeolocation,
   getBrowserGeolocationPermissionState,
   getBrowserLocationFailureCode,
 } from "./browser-location-support";
@@ -162,5 +163,25 @@ describe("accurate browser location acquisition", () => {
     await expect(getBrowserGeolocationPermissionState()).resolves.toBe(
       "unsupported",
     );
+  });
+
+  it("does not start another long location request while permission remains denied", async () => {
+    vi.stubGlobal("navigator", {
+      permissions: {
+        query: vi.fn(async () => ({ state: "denied" })),
+      },
+    });
+
+    await expect(canRetryDeniedBrowserGeolocation()).resolves.toBe(false);
+  });
+
+  it("continues directly when permission was reset to prompt", async () => {
+    vi.stubGlobal("navigator", {
+      permissions: {
+        query: vi.fn(async () => ({ state: "prompt" })),
+      },
+    });
+
+    await expect(canRetryDeniedBrowserGeolocation()).resolves.toBe(true);
   });
 });

@@ -9,6 +9,7 @@ import {
   type SetStateAction,
 } from "react";
 import {
+  canRetryDeniedBrowserGeolocation,
   getBrowserGeolocationPermissionState,
   observeBrowserGeolocationPermission,
 } from "../../lib/geo/browser-location-support";
@@ -19,6 +20,7 @@ import {
 } from "../../lib/geo/browser-location-guidance";
 import {
   clearBrowserLocationRecoveryAttempt,
+  getBrowserLocationRecoveryContext,
   hasBrowserLocationRecoveryAttempt,
 } from "../../lib/geo/browser-location-recovery";
 import {
@@ -160,7 +162,13 @@ export function useHomeLocationAccess({
     let disposed = false;
     let removePermissionListener: () => void = () => undefined;
 
-    setRecoveryAttemptCompleted(hasBrowserLocationRecoveryAttempt());
+    const hasRecoveryAttempt = hasBrowserLocationRecoveryAttempt();
+    const recoveryContext = getBrowserLocationRecoveryContext();
+    setRecoveryAttemptCompleted(hasRecoveryAttempt);
+
+    if (hasRecoveryAttempt && recoveryContext !== "compose") {
+      requestLocationAccessRef.current();
+    }
 
     const refreshAfterPermissionGrant = (
       state: PermissionState | "unsupported",
@@ -229,9 +237,23 @@ export function useHomeLocationAccess({
     void requestLocationAccess();
   }
 
-  function handleRetryLocationAccess(
-    _action: BrowserLocationContinuationAction,
+  async function handleRetryLocationAccess(
+    action: BrowserLocationContinuationAction,
   ) {
+    if (
+      action === "fresh-location" &&
+      locationSession.permissionMode === "denied" &&
+      !(await canRetryDeniedBrowserGeolocation())
+    ) {
+      setLocationAccessGuidance(
+        getBrowserLocationGuidance({
+          permissionMode: "denied",
+          transientRetryCompleted: true,
+        }),
+      );
+      return;
+    }
+
     setLocationAccessGuidance(null);
     void requestLocationAccess({ transientRetryCompleted: true });
   }

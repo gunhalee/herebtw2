@@ -234,7 +234,7 @@ export function HomeScreen({
         locationAccessGuidance={
           shouldShowLocationAccessBanner ? bannerGuidance : null
         }
-        locationAccessRequesting={locationAccessRequesting}
+        locationAccessRequesting={locationAccessRequesting || composeLocating}
         obscurePosts={obscureGlobalFallbackList}
         onApplyPendingUpdates={handleApplyPendingFeedSnapshot}
         onCloseMenu={handleCloseMenu}
@@ -269,6 +269,7 @@ export function HomeScreen({
       {composePermissionDialogOpen ? (
         <DeferredComposePermissionDialog
           guidance={composePermissionDialogGuidance!}
+          recoveryContext="compose"
           onClose={handleCloseComposePermissionDialog}
           onManualSearch={handleOpenManualLocationSearch}
           onRetry={handleRetryCompose}
@@ -277,6 +278,7 @@ export function HomeScreen({
       {locationAccessDialogOpen ? (
         <DeferredComposePermissionDialog
           guidance={locationAccessDialogGuidance!}
+          recoveryContext="access"
           onClose={handleCloseLocationAccessDialog}
           onManualSearch={handleOpenManualLocationSearchFromAccessDialog}
           onRetry={handleRetryLocationAccess}

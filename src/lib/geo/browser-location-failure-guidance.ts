@@ -19,31 +19,10 @@ function isEmbeddedBrowser(userAgent: string) {
   );
 }
 
-function getPermissionSteps(userAgent: string) {
-  if (isEmbeddedBrowser(userAgent)) {
-    return [
-      "앱의 메뉴에서 ‘Safari로 열기’ 또는 ‘Chrome으로 열기’를 선택해 주세요.",
-      "외부 브라우저에서 이 사이트의 위치 권한을 허용한 뒤 다시 시도해 주세요.",
-    ];
-  }
-
-  if (/iPhone|iPad|iPod/i.test(userAgent)) {
-    return [
-      "Safari 주소창의 페이지 메뉴에서 이 웹 사이트의 위치를 ‘허용’으로 바꿔 주세요.",
-      "iPhone 설정의 위치 서비스에서 Safari의 위치 접근과 ‘정확한 위치’를 켜 주세요.",
-    ];
-  }
-
-  if (/Android/i.test(userAgent)) {
-    return [
-      "Chrome 주소창의 사이트 정보 → 권한에서 위치를 허용해 주세요.",
-      "휴대전화 설정에서 위치를 켜고 Chrome의 위치 권한을 ‘허용’ 및 ‘정확한 위치’로 바꿔 주세요.",
-    ];
-  }
-
+function getExternalBrowserSteps() {
   return [
-    "주소창의 사이트 정보에서 이 사이트의 위치 권한을 허용해 주세요.",
-    "기기의 위치 서비스를 켠 뒤 다시 시도해 주세요.",
+    "앱의 메뉴에서 ‘Safari로 열기’ 또는 ‘Chrome으로 열기’를 선택해 주세요.",
+    "외부 브라우저에서 위치 권한을 다시 요청해 주세요.",
   ];
 }
 
@@ -67,6 +46,23 @@ export function getBrowserLocationFailureGuidance({
     code === "GEOLOCATION_POLICY_BLOCKED" ||
     code === "GEOLOCATION_UNAVAILABLE" ||
     code === "GEOLOCATION_PERMISSION_DENIED";
+
+  if (
+    code === "GEOLOCATION_PERMISSION_DENIED" &&
+    transientRetryCompleted &&
+    !recoveryAttemptCompleted
+  ) {
+    return {
+      title: "위치 권한을 한 번 더 요청할게요",
+      message: "페이지를 새로고침한 뒤 위치 권한 요청을 바로 다시 시작합니다.",
+      steps: [],
+      retryLabel: "새로고침 후 다시 요청",
+      retryAction: "reload",
+      retryAvailable: true,
+      manualSearchAvailable: false,
+      primaryAction: "retry",
+    };
+  }
 
   if (
     transientRetryCompleted ||
@@ -112,7 +108,7 @@ export function getBrowserLocationFailureGuidance({
     return {
       title: "이 브라우저에서는 위치를 사용할 수 없어요",
       message: "크롬, 사파리 등 다른 브라우저에서 접속해주세요.",
-      steps: getPermissionSteps(userAgent),
+      steps: getExternalBrowserSteps(),
       retryLabel: "Chrome에서 열기",
       retryAction: "external-browser",
       retryAvailable: true,
@@ -122,14 +118,26 @@ export function getBrowserLocationFailureGuidance({
   }
 
   if (code === "GEOLOCATION_PERMISSION_DENIED") {
+    if (canOpenAndroidChrome) {
+      return {
+        title: "이 브라우저에서는 위치 권한을 받기 어려워요",
+        message: "Chrome에서 열어 위치 권한을 다시 요청해 주세요.",
+        steps: getExternalBrowserSteps(),
+        retryLabel: "Chrome에서 열기",
+        retryAction: "external-browser",
+        retryAvailable: true,
+        manualSearchAvailable: false,
+        primaryAction: "retry",
+      };
+    }
+
     return {
-      title: "위치 권한을 허용해 주세요",
-      message: "사이트를 이용하기 위해서는 위치 정보가 필요합니다.",
-      steps: getPermissionSteps(userAgent),
-      retryLabel: canOpenAndroidChrome
-        ? "Chrome에서 열기"
-        : "설정 후 새로고침",
-      retryAction: canOpenAndroidChrome ? "external-browser" : "reload",
+      title: "위치 권한이 필요해요",
+      message:
+        "주변 글을 불러오고 글을 남기려면 위치 권한이 필요합니다. 다시 요청해 볼게요.",
+      steps: [],
+      retryLabel: "위치 권한 다시 요청",
+      retryAction: "fresh-location",
       retryAvailable: true,
       manualSearchAvailable: false,
       primaryAction: "retry",

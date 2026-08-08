@@ -10,8 +10,13 @@ import type {
 } from "./browser-location-guidance";
 
 const LOCATION_RECOVERY_ATTEMPT_KEY = "herebtw:location-recovery-attempt:v1";
+const LOCATION_RECOVERY_CONTEXT_KEY = "herebtw:location-recovery-context:v1";
 const LOCATION_RECOVERY_HISTORY_KEY = "__herebtwLocationRecoveryAttemptedAt";
+const LOCATION_RECOVERY_HISTORY_CONTEXT_KEY =
+  "__herebtwLocationRecoveryContext";
 const LOCATION_RECOVERY_ATTEMPT_TTL_MS = 10 * 60 * 1000;
+
+export type BrowserLocationRecoveryContext = "access" | "compose";
 
 function getFreshRecoveryAttempt(attemptedAt: unknown) {
   const timestamp = Number(attemptedAt);
@@ -50,6 +55,12 @@ function isNavigationRecoveryAction(action: BrowserLocationRetryAction) {
   );
 }
 
+function isBrowserLocationRecoveryContext(
+  value: unknown,
+): value is BrowserLocationRecoveryContext {
+  return value === "access" || value === "compose";
+}
+
 export function hasBrowserLocationRecoveryAttempt() {
   if (typeof window === "undefined") {
     return false;
@@ -70,6 +81,38 @@ export function hasBrowserLocationRecoveryAttempt() {
   }
 }
 
+export function getBrowserLocationRecoveryContext(): BrowserLocationRecoveryContext | null {
+  if (typeof window === "undefined" || !hasBrowserLocationRecoveryAttempt()) {
+    return null;
+  }
+
+  try {
+    const storedContext = window.sessionStorage.getItem(
+      LOCATION_RECOVERY_CONTEXT_KEY,
+    );
+
+    if (isBrowserLocationRecoveryContext(storedContext)) {
+      return storedContext;
+    }
+  } catch {
+    // History state is used when session storage is unavailable.
+  }
+
+  try {
+    const historyState = window.history.state;
+    const historyContext =
+      historyState && typeof historyState === "object"
+        ? historyState[LOCATION_RECOVERY_HISTORY_CONTEXT_KEY]
+        : null;
+
+    return isBrowserLocationRecoveryContext(historyContext)
+      ? historyContext
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function clearBrowserLocationRecoveryAttempt() {
   if (typeof window === "undefined") {
     return;
@@ -77,6 +120,7 @@ export function clearBrowserLocationRecoveryAttempt() {
 
   try {
     window.sessionStorage.removeItem(LOCATION_RECOVERY_ATTEMPT_KEY);
+    window.sessionStorage.removeItem(LOCATION_RECOVERY_CONTEXT_KEY);
   } catch {
     // Storage access is best-effort in private or embedded browsers.
   }
@@ -87,6 +131,7 @@ export function clearBrowserLocationRecoveryAttempt() {
     if (historyState && typeof historyState === "object") {
       const nextHistoryState = { ...historyState };
       delete nextHistoryState[LOCATION_RECOVERY_HISTORY_KEY];
+      delete nextHistoryState[LOCATION_RECOVERY_HISTORY_CONTEXT_KEY];
       window.history.replaceState(nextHistoryState, "");
     }
   } catch {
@@ -94,7 +139,9 @@ export function clearBrowserLocationRecoveryAttempt() {
   }
 }
 
-function markBrowserLocationRecoveryAttempt() {
+function markBrowserLocationRecoveryAttempt(
+  context?: BrowserLocationRecoveryContext,
+) {
   if (typeof window === "undefined") {
     return;
   }
@@ -104,6 +151,9 @@ function markBrowserLocationRecoveryAttempt() {
       LOCATION_RECOVERY_ATTEMPT_KEY,
       String(Date.now()),
     );
+    if (context) {
+      window.sessionStorage.setItem(LOCATION_RECOVERY_CONTEXT_KEY, context);
+    }
   } catch {
     // Navigation still proceeds when storage is unavailable.
   }
@@ -119,6 +169,9 @@ function markBrowserLocationRecoveryAttempt() {
       {
         ...nextHistoryState,
         [LOCATION_RECOVERY_HISTORY_KEY]: Date.now(),
+        ...(context
+          ? { [LOCATION_RECOVERY_HISTORY_CONTEXT_KEY]: context }
+          : {}),
       },
       "",
     );
@@ -130,9 +183,10 @@ function markBrowserLocationRecoveryAttempt() {
 export function runBrowserLocationRetryAction(
   action: BrowserLocationRetryAction | undefined,
   continueRetry: (action: BrowserLocationContinuationAction) => void,
+  recoveryContext?: BrowserLocationRecoveryContext,
 ) {
   if (action && isNavigationRecoveryAction(action)) {
-    markBrowserLocationRecoveryAttempt();
+    markBrowserLocationRecoveryAttempt(recoveryContext);
   }
 
   if (action === "external-browser") {

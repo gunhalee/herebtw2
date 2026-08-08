@@ -1,12 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
-import { fetchActiveHomeFeedPage } from "./home-feed-api";
-import {
-  buildPostListErrorState,
-  buildReadyPostListState,
-  type PendingFeedSnapshot,
-} from "./home-feed-state";
+import type { PendingFeedSnapshot } from "./home-feed-state";
+import { refreshHomeFeedAfterCompose } from "./refresh-home-feed-after-compose";
 import {
   abortActiveBrowserLocationRequest,
   isBrowserLocationAccurateForPost,
@@ -14,12 +10,13 @@ import {
   refreshFreshBrowserLocationSession,
 } from "../../lib/geo/browser-location-session";
 import { getBrowserLocationGuidance, type BrowserLocationContinuationAction, type BrowserLocationGuidance } from "../../lib/geo/browser-location-guidance";
-import { clearBrowserLocationRecoveryAttempt, hasBrowserLocationRecoveryAttempt } from "../../lib/geo/browser-location-recovery";
+import { clearBrowserLocationRecoveryAttempt, getBrowserLocationRecoveryContext, hasBrowserLocationRecoveryAttempt } from "../../lib/geo/browser-location-recovery";
 import { LOCATION_POLICY } from "../../lib/geo/location-policy";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
 import type { AdministrativeLocationSnapshot } from "../../lib/geo/browser-administrative-location";
 import type { ManualAdministrativeLocationSelection } from "../../lib/geo/administrative-dong-search";
+import { canRetryDeniedBrowserGeolocation } from "../../lib/geo/browser-location-support";
 
 type UseHomeComposeFlowParams = {
   isMountedRef: MutableRefObject<boolean>;
@@ -63,6 +60,15 @@ export function useHomeComposeFlow({
     },
     [],
   );
+
+  useEffect(() => {
+    if (getBrowserLocationRecoveryContext() === "compose") {
+      void handleCompose({
+        forceDeniedRetry: true,
+        recoveryAction: "fresh-location",
+      });
+    }
+  }, []);
 
   async function handleCompose(options?: {
     accuracyRetry?: boolean;
@@ -216,7 +222,21 @@ export function useHomeComposeFlow({
     setComposeLocationGuidance(null);
   }
 
-  function handleRetryCompose(action: BrowserLocationContinuationAction) {
+  async function handleRetryCompose(action: BrowserLocationContinuationAction) {
+    if (
+      action === "fresh-location" &&
+      appShellStateRef.current.permissionMode === "denied" &&
+      !(await canRetryDeniedBrowserGeolocation())
+    ) {
+      setComposeLocationGuidance(
+        getBrowserLocationGuidance({
+          permissionMode: "denied",
+          transientRetryCompleted: true,
+        }),
+      );
+      return;
+    }
+
     setComposeLocationGuidance(null);
     const accuracyRetry = accuracyRetryPendingRef.current;
     accuracyRetryPendingRef.current = false;
@@ -248,32 +268,13 @@ export function useHomeComposeFlow({
 
   async function handleComposeSuccess() {
     setPendingFeedSnapshot(null);
-
-    try {
-      const latestLocation = feedLocationRef.current;
-      const result = await fetchActiveHomeFeedPage(latestLocation, {
-        anonymousDeviceId:
-          appShellStateRef.current.anonymousDeviceId ?? undefined,
-      });
-
-      setFeedSortMode(result.feedSortMode);
-      setPostListState((current) =>
-        buildReadyPostListState(current, {
-          items: result.data.items,
-          nextCursor: result.data.nextCursor,
-          sort: result.postSort,
-        }),
-      );
-    } catch (error) {
-      setPostListState((current) =>
-        buildPostListErrorState(
-          current,
-          error instanceof Error
-            ? error.message
-            : "등록 후 목록을 새로고침하지 못했습니다.",
-        ),
-      );
-    }
+    await refreshHomeFeedAfterCompose({
+      anonymousDeviceId:
+        appShellStateRef.current.anonymousDeviceId ?? undefined,
+      latestLocation: feedLocationRef.current,
+      setFeedSortMode,
+      setPostListState,
+    });
   }
 
   return {

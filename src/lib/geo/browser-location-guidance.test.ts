@@ -3,17 +3,16 @@ import { BrowserLocationError } from "./browser-location-support";
 import { getBrowserLocationGuidance } from "./browser-location-guidance";
 
 describe("browser location guidance", () => {
-  it("gives iOS-specific recovery steps for a denied permission", () => {
+  it("gives a simple retry before showing settings for a denied permission", () => {
     const guidance = getBrowserLocationGuidance({
       error: new BrowserLocationError("GEOLOCATION_PERMISSION_DENIED"),
       userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
     });
 
-    expect(guidance.title).toContain("권한");
-    expect(guidance.steps.join(" ")).toContain("Safari");
-    expect(guidance.steps.join(" ")).toContain("정확한 위치");
-    expect(guidance.retryLabel).toBe("설정 후 새로고침");
-    expect(guidance.retryAction).toBe("reload");
+    expect(guidance.title).toBe("위치 권한이 필요해요");
+    expect(guidance.steps).toEqual([]);
+    expect(guidance.retryLabel).toBe("위치 권한 다시 요청");
+    expect(guidance.retryAction).toBe("fresh-location");
     expect(guidance.manualSearchAvailable).toBe(false);
   });
 
@@ -66,6 +65,7 @@ describe("browser location guidance", () => {
     expect(fallbackGuidance.retryAvailable).toBe(false);
     expect(fallbackGuidance.manualSearchAvailable).toBe(true);
     expect(fallbackGuidance.primaryAction).toBe("manual");
+    expect(fallbackGuidance.steps).toEqual([]);
   });
 
   it("retries only administrative resolution when coordinates already exist", () => {
@@ -100,9 +100,13 @@ describe("browser location guidance", () => {
     expect(policyGuidance.retryAction).toBe("new-window");
   });
 
-  it("reveals manual search only after structural recovery was attempted", () => {
+  it("reloads once before revealing manual search for a denied permission", () => {
     const firstGuidance = getBrowserLocationGuidance({
       error: new BrowserLocationError("GEOLOCATION_PERMISSION_DENIED"),
+    });
+    const reloadGuidance = getBrowserLocationGuidance({
+      error: new BrowserLocationError("GEOLOCATION_PERMISSION_DENIED"),
+      transientRetryCompleted: true,
     });
     const fallbackGuidance = getBrowserLocationGuidance({
       error: new BrowserLocationError("GEOLOCATION_PERMISSION_DENIED"),
@@ -111,6 +115,9 @@ describe("browser location guidance", () => {
 
     expect(firstGuidance.retryAvailable).toBe(true);
     expect(firstGuidance.manualSearchAvailable).toBe(false);
+    expect(reloadGuidance.retryLabel).toBe("새로고침 후 다시 요청");
+    expect(reloadGuidance.retryAction).toBe("reload");
+    expect(reloadGuidance.manualSearchAvailable).toBe(false);
     expect(fallbackGuidance.retryAvailable).toBe(false);
     expect(fallbackGuidance.manualSearchAvailable).toBe(true);
     expect(fallbackGuidance.primaryAction).toBe("manual");

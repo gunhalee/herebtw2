@@ -42,8 +42,9 @@
   [WebKit bug 275950](https://bugs.webkit.org/show_bug.cgi?id=275950)
 - WebKit은 `PermissionStatus.change` 이벤트가 권한 변경을 즉시 알리지 않을
   수 있다. 따라서 이벤트 하나에 의존하지 않고 `visibilitychange`와
-  `pageshow`에서 권한을 다시 조회하며, 사용자가 설정을 바꾼 뒤에는
-  `설정 후 새로고침`으로 새 문서를 시작할 수 있게 한다.
+  `pageshow`에서도 권한을 다시 조회한다. 권한 거부 후에는 현재 문서에서
+  한 번 재요청하고, 계속 거부되면 한 번 새로고침한 직후 실제 Geolocation
+  요청을 자동 실행한다. 브라우저 설정을 직접 찾게 하지는 않는다.
   [WebKit bug 275268](https://bugs.webkit.org/show_bug.cgi?id=275268)
 - Android에서는 기기 위치, 브라우저 앱 권한, 사이트 권한이 모두 허용돼야
   한다. Android 12 이상에서는 앱에 대략적 위치만 줄 수도 있다.
@@ -64,7 +65,7 @@
 | 높음 | 홈 hydration 직후 두 경로에서 위치를 자동 요청 | 설명 없이 권한 팝업이 떠 모바일 거부율 증가, 중복 호출 가능 | 첫 방문은 권한 상태만 읽고 서비스 내 CTA 이후 실제 요청 |
 | 높음 | `navigator.geolocation` 존재 여부만 확인 | HTTP, iframe policy, WebView host 차단을 모두 일반 실패로 표시 | insecure context, policy, API 부재, native 오류를 별도 코드로 분류 |
 | 높음 | 정밀 `watchPosition` 전체 제한 8초 | 첫 권한 선택과 GPS 첫 fix가 같은 8초를 소비 | 첫 fix 최대 30초, 첫 결과 이후 개선 구간 8초로 분리 |
-| 높음 | 홈에서 거부 후 복구 상태를 감시하지 않음 | 설정에서 허용해도 탭이 이전 `denied` 상태에 머무름 | Permissions API `change`, `visibilitychange`, `pageshow`로 복귀를 감지하고 설정 후 새로고침 제공 |
+| 높음 | 홈에서 거부 후 복구 상태를 감시하지 않음 | 재요청 가능 상태가 되어도 탭이 이전 `denied` 상태에 머무름 | Permissions API `change`, `visibilitychange`, `pageshow`로 상태를 갱신하고 새로고침 직후 자동 재요청 |
 | 중간 | `Permissions API` 미지원·오동작 전략 부재 | Safari/구형 브라우저에서 잘못된 선판단 가능 | API 미지원은 `unknown`, 실제 사용자 요청 결과를 최종 판정으로 사용 |
 | 중간 | `watchPosition`이 없는 부분 구현 WebView | 객체는 있으나 정밀 측위 호출 실패 | `getCurrentPosition({enableHighAccuracy:true})`로 폴백 |
 | 중간 | 오래되거나 범위를 벗어난 좌표 검증 부족 | stale/비정상 좌표가 세션으로 들어갈 수 있음 | timestamp, 위·경도 범위, accuracy 유효성 검증 |
@@ -118,8 +119,8 @@ flowchart TD
 
 복구 버튼은 오류 원인에 따라 다음처럼 동작한다.
 
-- 권한 거부: 일반 브라우저는 `설정 후 새로고침`, Android 인앱 브라우저는
-  `Chrome에서 열기`
+- 권한 거부: 일반 브라우저는 `위치 권한 다시 요청`, 계속 거부되면
+  `새로고침 후 다시 요청`; Android 인앱 브라우저는 `Chrome에서 열기`
 - 비보안 문서: 같은 URL의 HTTPS 주소로 전환
 - iframe policy 차단: 현재 URL을 최상위 새 창으로 열기
 - 센서 unavailable/timeout/invalid: 좌표를 한 번만 새로 측정
@@ -137,9 +138,11 @@ flowchart TD
 
 지역 직접 선택은 첫 오류부터 병렬 선택지로 노출하지 않는다. 센서·네트워크·
 역지오코딩 오류는 한 번 복구를 시도한 뒤 다시 실패했을 때만 공개한다.
-권한 거부와 구조적 브라우저 오류는 새로고침·외부 브라우저·HTTPS·새 창
-열기를 먼저 제공하고, 해당 복구 시도를 한 뒤 돌아온 경우에만 직접 선택을
-공개한다. 같은 탭 새로고침에서도 단계를 유지하도록 복구 시도 시각을
+권한 거부는 먼저 현재 문서에서 실제 위치 요청을 한 번 더 실행한다. 계속
+거부되면 `새로고침 후 다시 요청`을 제공하고, 새 문서가 열리자마자 위치
+요청을 자동 실행한다. 글쓰기에서 시작한 경우 성공 후 글쓰기까지 복귀한다.
+두 경로가 모두 실패한 경우에만 지역 직접 선택을 공개하며 브라우저 설정을
+직접 찾게 하지 않는다. 문서 이동 복구의 시도 시각과 시작 맥락은
 `sessionStorage`와 history state에 최대 10분간 보존한다.
 
 ## 5. 오류별 사용자 복구 경로
@@ -149,7 +152,7 @@ flowchart TD
 | insecure context | `window.isSecureContext === false` | `HTTPS로 다시 열기` 또는 지역 직접 선택 |
 | policy blocked | `document.permissionsPolicy/featurePolicy` | `새 창에서 열기` 또는 지역 직접 선택 |
 | API unavailable | 메서드 없음 | Android 인앱은 Chrome에서 열기, 그 외는 지역 직접 선택 |
-| permission denied | native `PERMISSION_DENIED`, `SecurityError` | 먼저 `설정 후 새로고침`; Android 인앱은 Chrome에서 열기, 복구 후에도 실패하면 직접 선택 |
+| permission denied | native `PERMISSION_DENIED`, `SecurityError` | 현재 문서에서 재요청 → 새로고침 직후 자동 재요청 → 다시 실패하면 직접 선택 |
 | position unavailable | native `POSITION_UNAVAILABLE` | 위치 서비스·Wi-Fi 확인 후 한 번 재시도, 다시 실패하면 직접 선택 |
 | timeout | native/자체 deadline | 화면을 켠 채 한 번 재시도, 다시 실패하면 직접 선택 |
 | invalid position | 좌표 범위·accuracy·timestamp 검증 실패 | 한 번 새 위치 재확인, 다시 실패하면 직접 선택 |

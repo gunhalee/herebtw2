@@ -8,10 +8,14 @@ import type {
   BrowserLocationContinuationAction,
   BrowserLocationGuidance,
 } from "../../lib/geo/browser-location-guidance";
-import { runBrowserLocationRetryAction } from "../../lib/geo/browser-location-recovery";
+import {
+  runBrowserLocationRetryAction,
+  type BrowserLocationRecoveryContext,
+} from "../../lib/geo/browser-location-recovery";
 
 type ComposePermissionDialogProps = {
   guidance: BrowserLocationGuidance;
+  recoveryContext: BrowserLocationRecoveryContext;
   onClose: () => void;
   onManualSearch?: () => void;
   onRetry: (action: BrowserLocationContinuationAction) => void;
@@ -19,6 +23,7 @@ type ComposePermissionDialogProps = {
 
 export function ComposePermissionDialog({
   guidance,
+  recoveryContext,
   onClose,
   onManualSearch,
   onRetry,
@@ -54,7 +59,11 @@ export function ComposePermissionDialog({
   const retryButton = guidance.retryAvailable ? (
     <button
       onClick={() => {
-        runBrowserLocationRetryAction(guidance.retryAction, onRetry);
+        runBrowserLocationRetryAction(
+          guidance.retryAction,
+          onRetry,
+          recoveryContext,
+        );
       }}
       style={{
         background: retryIsPrimary

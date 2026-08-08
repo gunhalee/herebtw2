@@ -161,6 +161,10 @@ export async function getBrowserGeolocationPermissionState(): Promise<BrowserGeo
   }
 }
 
+export async function canRetryDeniedBrowserGeolocation() {
+  return (await getBrowserGeolocationPermissionState()) !== "denied";
+}
+
 export async function observeBrowserGeolocationPermission(
   onChange: (state: PermissionState) => void,
 ): Promise<() => void> {
