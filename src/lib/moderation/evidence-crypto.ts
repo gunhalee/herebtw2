@@ -20,12 +20,20 @@ function readHexKey(name: string) {
   return Buffer.from(value, "hex");
 }
 
+function normalizeAadTimestamp(value: string) {
+  const timestamp = new Date(value);
+  if (Number.isNaN(timestamp.getTime())) {
+    throw new Error("Invalid moderation evidence createdAt timestamp.");
+  }
+  return timestamp.toISOString();
+}
+
 function buildAad(input: { casePublicId: string; createdAt: string; policyVersion: string }) {
   return Buffer.from(
     JSON.stringify({
       aadVersion: 1,
       casePublicId: input.casePublicId,
-      createdAt: input.createdAt,
+      createdAt: normalizeAadTimestamp(input.createdAt),
       policyVersion: input.policyVersion,
     }),
     "utf8",
