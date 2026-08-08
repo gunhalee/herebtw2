@@ -1,4 +1,8 @@
 import type { PostLocation } from "../../types/post";
+import type {
+  LocationScope,
+  LocationSource,
+} from "../geo/location-resolution-token";
 import { logAbuseEvent } from "../abuse/log-event";
 import { checkDuplicateContent } from "../abuse/duplicate-check";
 import {
@@ -15,6 +19,8 @@ type CreatePostInput = {
   anonymousDeviceId?: string;
   content: string;
   location: PostLocation;
+  locationScope: LocationScope;
+  locationSource: LocationSource;
   resolvedDongCode: string | null;
   resolvedDongName: string;
   notificationEmail?: string;

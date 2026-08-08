@@ -3,12 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getAccurate: vi.fn(),
   getCurrent: vi.fn(),
+  getPermission: vi.fn(),
   resolve: vi.fn(),
 }));
 
 vi.mock("./browser-location", () => ({
   getAccurateBrowserCoordinates: mocks.getAccurate,
   getCurrentBrowserCoordinates: mocks.getCurrent,
+}));
+
+vi.mock("./browser-location-support", () => ({
+  getBrowserGeolocationPermissionState: mocks.getPermission,
 }));
 
 vi.mock("./browser-administrative-location", () => ({
@@ -27,6 +32,8 @@ describe("browser location session concurrency", () => {
     vi.stubGlobal("window", {});
     mocks.getAccurate.mockReset();
     mocks.getCurrent.mockReset();
+    mocks.getPermission.mockReset();
+    mocks.getPermission.mockResolvedValue("prompt");
     mocks.resolve.mockReset();
     mocks.resolve.mockResolvedValue({
       administrativeDongCode: "1111051500",
@@ -106,5 +113,16 @@ describe("browser location session concurrency", () => {
     releaseMeasurement();
     await Promise.all([first, second]);
     expect(mocks.resolve).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not trigger the browser prompt while preparing a first visit", async () => {
+    const session = await import("./browser-location-session");
+
+    await expect(session.prepareBrowserLocationSession()).resolves.toMatchObject({
+      permissionMode: "prompt",
+      phase: "idle",
+    });
+    expect(mocks.getCurrent).not.toHaveBeenCalled();
+    expect(mocks.getAccurate).not.toHaveBeenCalled();
   });
 });

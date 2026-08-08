@@ -1,5 +1,6 @@
 import type { PostListState } from "../../../types/post";
 import { formatRelativeTime } from "../../utils/datetime";
+import { getAdministrativeAreaDistanceForDisplay } from "../../geo/format-bucketed-distance";
 import type { NearbyPostRow } from "./types";
 
 function buildRpcPostListItems(
@@ -15,7 +16,12 @@ function buildRpcPostListItems(
     id: post.id,
     content: post.content,
     administrativeDongName: post.administrative_dong_name,
-    distanceMeters: options?.distanceMetersOverride ?? post.distance_meters,
+    distanceMeters:
+      options?.distanceMetersOverride ??
+      getAdministrativeAreaDistanceForDisplay(
+        post.administrative_dong_name,
+        post.distance_meters,
+      ),
     relativeTime: formatRelativeTime(post.created_at),
     agreeCount: post.agree_count ?? 0,
     myAgree: options?.myAgree ?? post.my_agree ?? false,

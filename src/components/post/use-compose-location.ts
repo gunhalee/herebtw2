@@ -16,17 +16,22 @@ import {
   useBrowserLocationSession,
 } from "../../lib/geo/browser-location-session";
 import type { PostComposeState, PostLocation } from "../../types/post";
+import type { ManualAdministrativeLocationSelection } from "../../lib/geo/administrative-dong-search";
+import { LOCATION_POLICY } from "../../lib/geo/location-policy";
 
 type UseComposeLocationParams = {
+  manualLocationSelection?: ManualAdministrativeLocationSelection | null;
+  maximumAccuracyMeters?: number;
   setComposeState: Dispatch<SetStateAction<PostComposeState>>;
 };
 
 function toSubmitLocation(
   locationSession: ReturnType<typeof useBrowserLocationSession>,
+  maximumAccuracyMeters: number,
 ): PostLocation | null {
   if (
     locationSession.coordinates &&
-    isBrowserLocationAccurateForPost(locationSession)
+    isBrowserLocationAccurateForPost(locationSession, maximumAccuracyMeters)
   ) {
     return locationSession.coordinates;
   }
@@ -35,32 +40,47 @@ function toSubmitLocation(
 }
 
 export function useComposeLocation({
+  manualLocationSelection = null,
+  maximumAccuracyMeters = LOCATION_POLICY.submitBlockAboveMeters,
   setComposeState,
 }: UseComposeLocationParams) {
   const [locationRefreshing, setLocationRefreshing] = useState(false);
   const locationSession = useBrowserLocationSession();
-  const submitLocation = toSubmitLocation(locationSession);
-  const locationResolutionToken = getBrowserLocationResolutionToken(locationSession);
+  const submitLocation =
+    manualLocationSelection?.location ??
+    toSubmitLocation(locationSession, maximumAccuracyMeters);
+  const locationResolutionToken =
+    manualLocationSelection?.locationResolutionToken ??
+    getBrowserLocationResolutionToken(locationSession);
   const locationResolutionTokenPending = Boolean(
-    submitLocation &&
+    !manualLocationSelection &&
+      submitLocation &&
       !locationResolutionToken &&
       locationSession.permissionMode !== "denied",
   );
   const locationReadyForSubmit =
-    !locationRefreshing &&
-    locationSession.permissionMode !== "denied" &&
-    submitLocation !== null &&
-    locationResolutionToken !== null;
+    Boolean(
+      manualLocationSelection && submitLocation && locationResolutionToken,
+    ) ||
+    (!locationRefreshing &&
+      locationSession.permissionMode !== "denied" &&
+      submitLocation !== null &&
+      locationResolutionToken !== null);
   const locationAccuracyWarning =
-    locationSession.accuracyMeters !== null &&
-    locationSession.accuracyMeters > 500
-      ? "정확한 위치를 확인할 수 없습니다. 브라우저의 정확한 위치 권한을 켠 뒤 다시 시도해 주세요."
-      : locationSession.accuracyMeters !== null &&
-          locationSession.accuracyMeters > 100
-        ? `현재 위치 정확도가 약 ${Math.round(locationSession.accuracyMeters)}m입니다. 위치가 다르면 다시 확인해 주세요.`
-        : null;
+    manualLocationSelection || locationSession.accuracyMeters === null
+      ? null
+      : locationSession.accuracyMeters > LOCATION_POLICY.submitBlockAboveMeters
+        ? "현재 위치 범위가 넓습니다. 정확한 동네 이름이 표시되지 않을 수 있어요."
+        : locationSession.accuracyMeters >
+            LOCATION_POLICY.submitWarningAboveMeters
+          ? `현재 위치 정확도가 약 ${Math.round(locationSession.accuracyMeters)}m입니다. 위치가 다르면 다시 확인해 주세요.`
+          : null;
 
   async function retryLocation() {
+    if (manualLocationSelection) {
+      return;
+    }
+
     setLocationRefreshing(true);
 
     try {
@@ -78,12 +98,12 @@ export function useComposeLocation({
   );
 
   useEffect(() => {
-    if (submitLocation) {
+    if (manualLocationSelection || submitLocation) {
       return;
     }
 
     void ensureBrowserLocationCoordinates().catch(() => undefined);
-  }, [submitLocation]);
+  }, [manualLocationSelection, submitLocation]);
 
   useEffect(() => {
     if (!locationResolutionTokenPending) {
@@ -108,10 +128,17 @@ export function useComposeLocation({
 
   return {
     locationAccuracyWarning,
+    locationDisplayName:
+      manualLocationSelection?.formattedAdministrativeAreaName ??
+      locationSession.resolvedLocation?.formattedAdministrativeAreaName ??
+      null,
     locationRefreshing,
     locationReadyForSubmit,
     locationResolutionTokenPending,
     locationResolutionToken,
+    locationSource: manualLocationSelection
+      ? ("manual" as const)
+      : ("browser" as const),
     retryLocation,
     submitLocation,
   };

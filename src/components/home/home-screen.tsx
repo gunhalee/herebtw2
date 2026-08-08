@@ -10,6 +10,7 @@ import { useHomeComposeFlow } from "./use-home-compose-flow";
 import { useHomeFeedListActions } from "./use-home-feed-list-actions";
 import { useHomeFeedLifecycle } from "./use-home-feed-lifecycle";
 import { useHomePostActions } from "./use-home-post-actions";
+import { useHomeLocationAccess } from "./use-home-location-access";
 import { useHomeShellState } from "./use-home-shell-state";
 import { useLatestRef } from "../../lib/hooks/use-latest-ref";
 import type { AppShellState } from "../../types/device";
@@ -30,6 +31,17 @@ const DeferredComposePermissionDialog = dynamic(
   () =>
     import("./compose-permission-dialog").then(
       (module) => module.ComposePermissionDialog,
+    ),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
+
+const DeferredAdministrativeAreaSearchDialog = dynamic(
+  () =>
+    import("./administrative-area-search-dialog").then(
+      (module) => module.AdministrativeAreaSearchDialog,
     ),
   {
     loading: () => null,
@@ -120,22 +132,47 @@ export function HomeScreen({
 
   const {
     composeLocating,
+    composeMaximumAccuracyMeters,
     composePanelOpen,
     composePermissionDialogOpen,
-    composePermissionDialogMessage,
+    composePermissionDialogGuidance,
     handleCloseComposePanel,
     handleCloseComposePermissionDialog,
+    handleCloseManualLocationSearch,
     handleCompose,
     handleComposeSuccess,
+    handleOpenManualLocationSearch,
     handleRetryCompose,
+    handleSelectManualLocation,
+    manualLocationSearchOpen,
+    manualLocationSelection,
   } = useHomeComposeFlow({
     isMountedRef,
     appShellStateRef,
     feedLocationRef,
+    applyResolvedLocationSelection,
     setFeedSortMode,
     setPostListState,
     setPendingFeedSnapshot,
     closeMenu: handleCloseMenu,
+  });
+
+  const {
+    bannerGuidance,
+    handleCloseLocationAccessDialog,
+    handleRequestLocationAccess,
+    handleRetryLocationAccess,
+    locationAccessDialogGuidance,
+    locationAccessDialogOpen,
+    locationAccessRequesting,
+    shouldShowLocationAccessBanner,
+  } = useHomeLocationAccess({
+    appShellStateRef,
+    applyDeniedLocationMode,
+    applyResolvedLocationSelection,
+    setFeedSortMode,
+    setPendingFeedSnapshot,
+    setPostListState,
   });
 
   useHomeFeedLifecycle({
@@ -161,6 +198,11 @@ export function HomeScreen({
     router.push(`/voices/candidate/${encodeURIComponent(candidateId)}`);
   }
 
+  function handleOpenManualLocationSearchFromAccessDialog() {
+    handleCloseLocationAccessDialog();
+    handleOpenManualLocationSearch();
+  }
+
   return (
     <div
       style={{
@@ -184,14 +226,22 @@ export function HomeScreen({
         interactionLocked={
           composeLocating ||
           composePanelOpen ||
-          composePermissionDialogOpen
+          composePermissionDialogOpen ||
+          manualLocationSearchOpen ||
+          locationAccessRequesting ||
+          locationAccessDialogOpen
         }
+        locationAccessGuidance={
+          shouldShowLocationAccessBanner ? bannerGuidance : null
+        }
+        locationAccessRequesting={locationAccessRequesting}
         obscurePosts={obscureGlobalFallbackList}
         onApplyPendingUpdates={handleApplyPendingFeedSnapshot}
         onCloseMenu={handleCloseMenu}
         onCloseReportDialog={handleCloseReportDialog}
         onCloseReportSuccessDialog={handleCloseReportSuccessDialog}
         onCompose={handleCompose}
+        onRequestLocationAccess={handleRequestLocationAccess}
         onConfirmReport={handleReport}
         onLoadMore={handleLoadMore}
         onOpenMenu={handleOpenMenu}
@@ -208,15 +258,33 @@ export function HomeScreen({
       />
       {composePanelOpen ? (
         <DeferredPostComposeExperience
+          manualLocationSelection={manualLocationSelection}
+          maximumAccuracyMeters={composeMaximumAccuracyMeters}
+          onChangeLocation={handleOpenManualLocationSearch}
           onDismiss={handleCloseComposePanel}
           onSuccess={handleComposeSuccess}
         />
       ) : null}
       {composePermissionDialogOpen ? (
         <DeferredComposePermissionDialog
-          message={composePermissionDialogMessage ?? ""}
+          guidance={composePermissionDialogGuidance!}
           onClose={handleCloseComposePermissionDialog}
+          onManualSearch={handleOpenManualLocationSearch}
           onRetry={handleRetryCompose}
+        />
+      ) : null}
+      {locationAccessDialogOpen ? (
+        <DeferredComposePermissionDialog
+          guidance={locationAccessDialogGuidance!}
+          onClose={handleCloseLocationAccessDialog}
+          onManualSearch={handleOpenManualLocationSearchFromAccessDialog}
+          onRetry={handleRetryLocationAccess}
+        />
+      ) : null}
+      {manualLocationSearchOpen ? (
+        <DeferredAdministrativeAreaSearchDialog
+          onClose={handleCloseManualLocationSearch}
+          onSelect={handleSelectManualLocation}
         />
       ) : null}
     </div>

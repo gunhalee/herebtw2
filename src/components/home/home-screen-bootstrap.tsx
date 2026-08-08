@@ -2,7 +2,6 @@
 
 import { startTransition, useEffect, useRef, useState, type ReactNode } from "react";
 import { fetchClientApiData } from "../../lib/api/client";
-import { ensureBrowserLocationSession } from "../../lib/geo/browser-location-session";
 import type { CandidateMessagesPayload } from "../candidate/candidate-messages-view";
 import type { AppShellState } from "../../types/device";
 import type { PostListState } from "../../types/post";
@@ -33,10 +32,6 @@ export function HomeScreenBootstrap({
   );
   const bootPromiseRef = useRef<Promise<void> | null>(null);
   const mountedRef = useRef(true);
-
-  useEffect(() => {
-    void ensureBrowserLocationSession().catch(() => undefined);
-  }, []);
 
   useEffect(() => {
     return () => {

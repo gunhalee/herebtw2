@@ -4,7 +4,7 @@ import {
   getOrCreateBrowserAnonymousDeviceId,
 } from "../../lib/device/browser-device";
 import type { AdministrativeLocationSnapshot } from "../../lib/geo/browser-administrative-location";
-import { ensureBrowserLocationSession } from "../../lib/geo/browser-location-session";
+import { prepareBrowserLocationSession } from "../../lib/geo/browser-location-session";
 import { readCachedNearbyPostList } from "../../lib/posts/browser-nearby-post-cache";
 import type { AppShellState } from "../../types/device";
 import type { PostListState, PostLocation } from "../../types/post";
@@ -82,7 +82,7 @@ export async function bootstrapHomeFeed({
   markDeviceReady(setAppShellState, anonymousDeviceId);
   void ensureRegisteredBrowserDevice().catch(() => undefined);
 
-  const locationSession = await ensureBrowserLocationSession();
+  const locationSession = await prepareBrowserLocationSession();
 
   if (isCancelled()) {
     return;
@@ -130,7 +130,13 @@ export async function bootstrapHomeFeed({
     } else if (resolvedCoordinates && resolvedLocation) {
       applyResolvedLocationSelection(resolvedLocation, resolvedCoordinates);
     } else {
-      releaseReadOnlyMode(setAppShellState);
+      setAppShellState((current) => ({
+        ...current,
+        permissionMode: locationSession.permissionMode,
+        readOnlyMode: false,
+        selectedDongCode: null,
+        selectedDongName: null,
+      }));
     }
 
     setFeedSortMode(resolvedCoordinates ? "nearby" : "global");

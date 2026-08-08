@@ -123,9 +123,9 @@ async function main() {
   if (
     !locationTokenContents.includes("quantizeLocationTo20MeterGrid") ||
     !locationTokenContents.includes("quantizeLocationTo100MeterGrid") ||
-    !locationTokenContents.includes("LOCATION_RESOLUTION_TOKEN_VERSION = 2")
+    !locationTokenContents.includes("LOCATION_RESOLUTION_TOKEN_VERSION = 3")
   ) {
-    violations.push("Location token v2 must bind both 20m and 100m cells");
+    violations.push("Location token v3 must bind both 20m and 100m cells");
   }
 
   if (

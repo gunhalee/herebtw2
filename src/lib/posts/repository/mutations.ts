@@ -1,4 +1,8 @@
 import type { PostLocation } from "../../../types/post";
+import type {
+  LocationScope,
+  LocationSource,
+} from "../../geo/location-resolution-token";
 import { quantizeLocationTo100MeterGrid } from "../../geo/location-buckets";
 import {
   supabaseInsert,
@@ -12,6 +16,8 @@ type CreatePostRepositoryInput = {
   anonymousDeviceId?: string;
   content: string;
   location: PostLocation;
+  locationScope: LocationScope;
+  locationSource: LocationSource;
   resolvedDongCode: string | null;
   resolvedDongName: string;
   notificationEmail?: string;
@@ -46,6 +52,8 @@ async function createPostRepository(input: CreatePostRepositoryInput) {
       longitude: quantizedLocation.longitude,
       latitude_bucket_100m: quantizedLocation.latitudeBucket100m,
       longitude_bucket_100m: quantizedLocation.longitudeBucket100m,
+      location_scope: input.locationScope,
+      location_source: input.locationSource,
       ...(input.notificationEmail ? { notification_email: input.notificationEmail } : {}),
     },
   );

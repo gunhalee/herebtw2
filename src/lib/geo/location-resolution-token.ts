@@ -8,12 +8,17 @@ import { LOCATION_POLICY } from "./location-policy";
 
 export const LOCATION_RESOLUTION_TOKEN_TTL_MS =
   LOCATION_POLICY.resolutionTokenTtlMs;
-const LOCATION_RESOLUTION_TOKEN_VERSION = 2;
+const LOCATION_RESOLUTION_TOKEN_VERSION = 3;
+
+export type LocationSource = "browser" | "manual";
+export type LocationScope = "dong" | "district" | "province";
 
 type LocationResolutionTokenPayload = {
   version: typeof LOCATION_RESOLUTION_TOKEN_VERSION;
   administrativeDongCode: string;
   formattedAdministrativeAreaName: string;
+  locationSource: LocationSource;
+  locationScope: LocationScope;
   expiresAt: number;
   latitudeBucket20m: number;
   longitudeBucket20m: number;
@@ -24,6 +29,8 @@ type LocationResolutionTokenPayload = {
 type VerifiedLocationResolution = {
   administrativeDongCode: string;
   formattedAdministrativeAreaName: string;
+  locationSource: LocationSource;
+  locationScope: LocationScope;
 };
 
 type CreatedLocationResolutionToken = {
@@ -73,6 +80,11 @@ function isValidTokenPayload(
       /^\d{10}$/.test(payload.administrativeDongCode) &&
       typeof payload.formattedAdministrativeAreaName === "string" &&
       payload.formattedAdministrativeAreaName.trim() &&
+      (payload.locationSource === "browser" ||
+        payload.locationSource === "manual") &&
+      (payload.locationScope === "dong" ||
+        payload.locationScope === "district" ||
+        payload.locationScope === "province") &&
       typeof payload.expiresAt === "number" &&
       Number.isFinite(payload.expiresAt) &&
       typeof payload.latitudeBucket20m === "number" &&
@@ -90,6 +102,8 @@ export function createLocationResolutionTokenWithExpiry(input: {
   administrativeDongCode: string;
   formattedAdministrativeAreaName: string;
   location: PostLocation;
+  locationSource?: LocationSource;
+  locationScope?: LocationScope;
 }): CreatedLocationResolutionToken {
   const secret = getLocationResolutionTokenSecret();
 
@@ -108,6 +122,8 @@ export function createLocationResolutionTokenWithExpiry(input: {
     administrativeDongCode: input.administrativeDongCode,
     formattedAdministrativeAreaName:
       input.formattedAdministrativeAreaName.trim(),
+    locationSource: input.locationSource ?? "browser",
+    locationScope: input.locationScope ?? "dong",
     expiresAt,
     latitudeBucket20m: lookupCell.latitudeBucket20m,
     longitudeBucket20m: lookupCell.longitudeBucket20m,
@@ -170,5 +186,7 @@ export function verifyLocationResolutionToken(
     administrativeDongCode: payload.administrativeDongCode,
     formattedAdministrativeAreaName:
       payload.formattedAdministrativeAreaName.trim(),
+    locationSource: payload.locationSource,
+    locationScope: payload.locationScope,
   };
 }

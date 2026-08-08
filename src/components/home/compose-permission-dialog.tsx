@@ -4,20 +4,74 @@ import {
   uiSpacing,
   uiTypography,
 } from "../../lib/ui/tokens";
+import type { BrowserLocationGuidance } from "../../lib/geo/browser-location-guidance";
+import { openCurrentPageInAndroidChrome } from "../../lib/geo/browser-external-navigation";
 
 type ComposePermissionDialogProps = {
-  message: string;
+  guidance: BrowserLocationGuidance;
   onClose: () => void;
+  onManualSearch?: () => void;
   onRetry: () => void;
 };
 
 export function ComposePermissionDialog({
-  message,
+  guidance,
   onClose,
+  onManualSearch,
   onRetry,
 }: ComposePermissionDialogProps) {
+  const manualSearchButton =
+    guidance.manualSearchAvailable && onManualSearch ? (
+      <button
+        onClick={onManualSearch}
+        style={{
+          background: "linear-gradient(180deg, #fff89a 0%, #ffed00 100%)",
+          border: "1px solid #e7dccd",
+          borderRadius: uiRadius.pill,
+          color: uiColors.textStrong,
+          cursor: "pointer",
+          fontSize: uiTypography.body.fontSize,
+          fontWeight: 700,
+          minHeight: "46px",
+          padding: `${uiSpacing.sm} ${uiSpacing.lg}`,
+          width: "100%",
+        }}
+        type="button"
+      >
+        지역 직접 선택
+      </button>
+    ) : null;
+
+  const retryButton = guidance.retryAvailable ? (
+    <button
+      onClick={() => {
+        if (guidance.retryAction === "external-browser") {
+          openCurrentPageInAndroidChrome();
+          return;
+        }
+
+        onRetry();
+      }}
+      style={{
+        background: "#ffffff",
+        border: `1px solid ${uiColors.border}`,
+        borderRadius: uiRadius.pill,
+        color: uiColors.textStrong,
+        cursor: "pointer",
+        fontSize: uiTypography.body.fontSize,
+        fontWeight: 600,
+        minHeight: "44px",
+        padding: `${uiSpacing.sm} ${uiSpacing.lg}`,
+      }}
+      type="button"
+    >
+      {guidance.retryLabel}
+    </button>
+  ) : null;
+
   return (
     <div
+      aria-label={guidance.title}
       aria-modal="true"
       role="dialog"
       style={{
@@ -44,57 +98,97 @@ export function ComposePermissionDialog({
           width: "100%",
         }}
       >
-        <p
-          style={{
-            color: uiColors.textStrong,
-            fontSize: "14px",
-            fontWeight: 600,
-            lineHeight: 1.6,
-            margin: 0,
-            textAlign: "center",
-          }}
-        >
-          {message}
-        </p>
         <div
           style={{
-            display: "grid",
+            display: "flex",
+            flexDirection: "column",
             gap: uiSpacing.sm,
-            gridTemplateColumns: "1fr 1fr",
           }}
         >
-          <button
-            onClick={onClose}
+          <h2
             style={{
-              background: "#ffffff",
-              border: `1px solid ${uiColors.border}`,
-              borderRadius: uiRadius.pill,
               color: uiColors.textStrong,
-              cursor: "pointer",
-              fontSize: uiTypography.body.fontSize,
-              fontWeight: 600,
-              padding: `${uiSpacing.sm} ${uiSpacing.lg}`,
+              fontSize: "17px",
+              lineHeight: 1.4,
+              margin: 0,
+              textAlign: "center",
             }}
-            type="button"
           >
-            닫기
-          </button>
-          <button
-            onClick={onRetry}
+            {guidance.title}
+          </h2>
+          <p
             style={{
-              background: "#ffffff",
-              border: `1px solid ${uiColors.border}`,
-              borderRadius: uiRadius.pill,
-              color: uiColors.textStrong,
-              cursor: "pointer",
-              fontSize: uiTypography.body.fontSize,
-              fontWeight: 600,
-              padding: `${uiSpacing.sm} ${uiSpacing.lg}`,
+              color: uiColors.textMuted,
+              fontSize: "13px",
+              lineHeight: 1.55,
+              margin: 0,
+              textAlign: "center",
             }}
-            type="button"
           >
-            다시 시도
-          </button>
+            {guidance.message}
+          </p>
+          {guidance.steps.length > 0 ? (
+            <ol
+              style={{
+                color: uiColors.textStrong,
+                display: "flex",
+                flexDirection: "column",
+                fontSize: "12px",
+                gap: uiSpacing.xs,
+                lineHeight: 1.5,
+                margin: `${uiSpacing.sm} 0 0`,
+                paddingLeft: "20px",
+              }}
+            >
+              {guidance.steps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          ) : null}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: uiSpacing.sm,
+          }}
+        >
+          {guidance.primaryAction === "manual"
+            ? manualSearchButton
+            : retryButton}
+          <div
+            style={{
+              display: "grid",
+              gap: uiSpacing.sm,
+              gridTemplateColumns:
+                guidance.primaryAction === "manual" && guidance.retryAvailable
+                  ? "1fr 1fr"
+                  : guidance.primaryAction === "retry" && manualSearchButton
+                    ? "1fr 1fr"
+                    : "1fr",
+            }}
+          >
+            <button
+              onClick={onClose}
+              style={{
+                background: "#ffffff",
+                border: `1px solid ${uiColors.border}`,
+                borderRadius: uiRadius.pill,
+                color: uiColors.textStrong,
+                cursor: "pointer",
+                fontSize: uiTypography.body.fontSize,
+                fontWeight: 600,
+                minHeight: "44px",
+                padding: `${uiSpacing.sm} ${uiSpacing.lg}`,
+              }}
+              type="button"
+            >
+              나중에
+            </button>
+            {guidance.primaryAction === "manual"
+              ? retryButton
+              : manualSearchButton}
+          </div>
         </div>
       </section>
     </div>

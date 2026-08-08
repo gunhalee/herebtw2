@@ -3,14 +3,17 @@
 import type { FormEvent } from "react";
 import { uiColors, uiSpacing, uiTypography } from "../../lib/ui/tokens";
 import type { PostComposeState } from "../../types/post";
+import { PostComposeLocationRow } from "./post-compose-location-row";
 
 type PostComposeFormProps = {
   composeState: PostComposeState;
   locationAccuracyWarning: string | null;
+  locationDisplayName: string | null;
   locationRefreshing: boolean;
   notificationEmail: string;
   submitDisabled: boolean;
   onChangeContent: (value: string) => void;
+  onChangeLocation?: () => void;
   onChangeNotificationEmail: (value: string) => void;
   onDismiss?: () => void;
   onRetryLocation: () => void | Promise<void>;
@@ -20,10 +23,12 @@ type PostComposeFormProps = {
 export function PostComposeForm({
   composeState,
   locationAccuracyWarning,
+  locationDisplayName,
   locationRefreshing,
   notificationEmail,
   submitDisabled,
   onChangeContent,
+  onChangeLocation,
   onChangeNotificationEmail,
   onDismiss,
   onRetryLocation,
@@ -105,6 +110,11 @@ export function PostComposeForm({
           {composeState.submitting ? "등록 중..." : "등록"}
         </button>
       </div>
+
+      <PostComposeLocationRow
+        locationDisplayName={locationDisplayName}
+        onChangeLocation={onChangeLocation}
+      />
 
       <div
         style={{
@@ -238,7 +248,7 @@ export function PostComposeForm({
             }}
             type="button"
           >
-            {locationRefreshing ? "확인 중..." : "위치 재확인"}
+            {locationRefreshing ? "위치 확인 중..." : "위치 재확인"}
           </button>
         </div>
       ) : null}

@@ -17,6 +17,7 @@ import {
   getCurrentBrowserCoordinates,
   type BrowserLocationMeasurement,
 } from "./browser-location";
+import { getBrowserGeolocationPermissionState } from "./browser-location-support";
 import { LOCATION_POLICY } from "./location-policy";
 
 export type BrowserLocationSessionPhase =
@@ -51,8 +52,6 @@ type BrowserLocationRefreshOptions = {
 
 const BROWSER_LOCATION_SESSION_FRESHNESS_TTL_MS =
   LOCATION_POLICY.sessionFreshnessMs;
-const MAX_POST_LOCATION_ACCURACY_METERS =
-  LOCATION_POLICY.submitBlockAboveMeters;
 const LOCATION_RESOLUTION_TOKEN_MIN_REMAINING_MS = 1000 * 20;
 
 const INITIAL_BROWSER_LOCATION_SESSION_STATE: BrowserLocationSessionState = {
@@ -269,11 +268,12 @@ export function hasFreshBrowserLocationCoordinates(
 
 export function isBrowserLocationAccurateForPost(
   locationSession: BrowserLocationSessionState,
+  maximumAccuracyMeters: number = LOCATION_POLICY.submitBlockAboveMeters,
 ) {
   return Boolean(
     hasFreshBrowserLocationCoordinates(locationSession) &&
       locationSession.accuracyMeters !== null &&
-      locationSession.accuracyMeters <= MAX_POST_LOCATION_ACCURACY_METERS,
+      locationSession.accuracyMeters <= maximumAccuracyMeters,
   );
 }
 
@@ -496,6 +496,32 @@ export async function refreshBrowserLocationSession() {
   }
 
   return beginBrowserLocationSessionRefresh().refreshPromise;
+}
+
+export async function prepareBrowserLocationSession() {
+  if (typeof window === "undefined") {
+    return getBrowserLocationSessionSnapshot();
+  }
+
+  const permissionState = await getBrowserGeolocationPermissionState();
+
+  if (permissionState === "granted") {
+    return ensureBrowserLocationSession();
+  }
+
+  if (permissionState === "prompt" || permissionState === "denied") {
+    setBrowserLocationSessionState({
+      accuracyMeters: null,
+      coordinates: null,
+      resolvedLocation: null,
+      lastCoordinatesAt: null,
+      permissionMode: permissionState,
+      phase: permissionState === "denied" ? "error" : "idle",
+      error: null,
+    });
+  }
+
+  return getBrowserLocationSessionSnapshot();
 }
 
 export function abortActiveBrowserLocationRequest() {

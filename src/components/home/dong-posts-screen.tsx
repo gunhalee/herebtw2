@@ -8,6 +8,8 @@ import { DongPostsFeed } from "./dong-posts-feed";
 import { FloatingComposeButton } from "./floating-compose-button";
 import { DongPostsHeader } from "./dong-posts-header";
 import { PendingFeedUpdatesButton } from "./pending-feed-updates-button";
+import { LocationAccessBanner } from "./location-access-banner";
+import type { BrowserLocationGuidance } from "../../lib/geo/browser-location-guidance";
 
 const DeferredHomeReportDialogs = dynamic(
   () => import("./home-report-dialogs").then((module) => module.HomeReportDialogs),
@@ -34,7 +36,10 @@ type DongPostsScreenProps = {
   activeReportPostId?: string | null;
   reportSubmitting?: boolean;
   obscurePosts?: boolean;
+  locationAccessGuidance?: BrowserLocationGuidance | null;
+  locationAccessRequesting?: boolean;
   onCompose?: () => void;
+  onRequestLocationAccess?: () => void;
   onApplyPendingUpdates?: () => void;
   onLoadMore?: () => void;
   onScrollTargetApplied?: () => void;
@@ -65,7 +70,10 @@ export function DongPostsScreen({
   activeReportPostId,
   reportSubmitting = false,
   obscurePosts = false,
+  locationAccessGuidance = null,
+  locationAccessRequesting = false,
   onCompose,
+  onRequestLocationAccess,
   onApplyPendingUpdates,
   onLoadMore,
   onScrollTargetApplied,
@@ -168,6 +176,14 @@ export function DongPostsScreen({
         animateComposeDongPlaceholder={animateComposeDongPlaceholder}
         currentDongName={currentDongName}
       />
+
+      {locationAccessGuidance && onRequestLocationAccess ? (
+        <LocationAccessBanner
+          guidance={locationAccessGuidance}
+          locating={locationAccessRequesting}
+          onRequest={onRequestLocationAccess}
+        />
+      ) : null}
 
       <DongPostsFeed
         activeMenuPostId={activeMenuPostId}

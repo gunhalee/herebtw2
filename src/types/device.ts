@@ -1,4 +1,4 @@
-type PermissionMode = "unknown" | "granted" | "denied";
+type PermissionMode = "unknown" | "prompt" | "granted" | "denied";
 
 type DeviceState = {
   anonymousDeviceId: string | null;

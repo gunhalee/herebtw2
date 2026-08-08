@@ -15,6 +15,8 @@ async function createCandidateFirstMessageRepository(input: {
     is_pinned: true,
     author_type: "candidate",
     candidate_id: input.candidateId,
+    location_scope: "district",
+    location_source: "system",
   });
 
   return rows?.[0] ?? null;

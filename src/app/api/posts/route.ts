@@ -7,6 +7,7 @@ import {
   resolveLocationFromCoordinates,
 } from "../../../lib/geo/resolve-location";
 import { createPost } from "../../../lib/posts/mutations";
+import type { LocationSource } from "../../../lib/geo/location-resolution-token";
 
 type CreatePostRequest = {
   anonymousDeviceId?: string;
@@ -16,6 +17,7 @@ type CreatePostRequest = {
     longitude: number;
   };
   locationResolutionToken?: string | null;
+  locationSource?: LocationSource;
   notificationEmail?: string;
 };
 
@@ -25,6 +27,7 @@ async function resolveAdministrativeLocationForPost(input: {
     longitude: number;
   };
   locationResolutionToken?: string | null;
+  locationSource?: LocationSource;
 }) {
   const verifiedLocation = verifyLocationResolutionToken(
     input.locationResolutionToken,
@@ -32,7 +35,18 @@ async function resolveAdministrativeLocationForPost(input: {
   );
 
   if (verifiedLocation) {
+    if (
+      input.locationSource === "manual" &&
+      verifiedLocation.locationSource !== "manual"
+    ) {
+      throw new Error("INVALID_MANUAL_LOCATION_SELECTION");
+    }
+
     return verifiedLocation;
+  }
+
+  if (input.locationSource === "manual") {
+    throw new Error("INVALID_MANUAL_LOCATION_SELECTION");
   }
 
   const resolvedLocation = await resolveLocationFromCoordinates(input.location);
@@ -44,6 +58,8 @@ async function resolveAdministrativeLocationForPost(input: {
       sigunguName: resolvedLocation.sigunguName,
       administrativeDongName: resolvedLocation.administrativeDongName,
     }),
+    locationScope: "dong" as const,
+    locationSource: "browser" as const,
   };
 }
 
@@ -79,11 +95,27 @@ export async function POST(request: Request) {
   let resolvedAdministrativeLocation;
 
   try {
-    resolvedAdministrativeLocation = await resolveAdministrativeLocationForPost({
-      location: body.location,
-      locationResolutionToken: body.locationResolutionToken,
-    });
-  } catch {
+    resolvedAdministrativeLocation = await resolveAdministrativeLocationForPost(
+      {
+        location: body.location,
+        locationResolutionToken: body.locationResolutionToken,
+        locationSource: body.locationSource,
+      },
+    );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "INVALID_MANUAL_LOCATION_SELECTION"
+    ) {
+      return fail(
+        {
+          code: "INVALID_LOCATION_SELECTION",
+          message: "선택한 지역이 만료되었습니다. 지역을 다시 선택해 주세요.",
+        },
+        400,
+      );
+    }
+
     return fail(
       {
         code: "LOCATION_RESOLUTION_FAILED",
@@ -100,6 +132,8 @@ export async function POST(request: Request) {
     resolvedDongCode: resolvedAdministrativeLocation.administrativeDongCode,
     resolvedDongName:
       resolvedAdministrativeLocation.formattedAdministrativeAreaName,
+    locationScope: resolvedAdministrativeLocation.locationScope,
+    locationSource: resolvedAdministrativeLocation.locationSource,
     notificationEmail: body.notificationEmail?.trim() || undefined,
   });
 

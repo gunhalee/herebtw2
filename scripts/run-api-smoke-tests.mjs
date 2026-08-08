@@ -320,9 +320,59 @@ async function runSmokeTests(baseUrl) {
   assert.equal(
     typeof validLocationResolve.body.data.location.locationResolutionToken,
     "string",
-    "location resolve should return a v2 token.",
+    "location resolve should return a v3 token.",
   );
   results.push("POST /api/location/resolve (Kakao) -> 200");
+
+  const invalidLocationSearch = await request(baseUrl, "/api/location/search", {
+    body: JSON.stringify({ query: "동" }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+  assert.equal(
+    invalidLocationSearch.response.status,
+    400,
+    "short location search should return 400.",
+  );
+  expectJsonFailure(
+    invalidLocationSearch.body,
+    "short location search",
+    "INVALID_LOCATION_QUERY",
+  );
+  results.push("POST /api/location/search (short query) -> 400");
+
+  const districtLocationSearch = await request(
+    baseUrl,
+    "/api/location/search",
+    {
+      body: JSON.stringify({ query: "서울 강남구" }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+  assert.equal(
+    districtLocationSearch.response.status,
+    200,
+    "district location search should return 200.",
+  );
+  const districtLocationSearchData = expectJsonSuccess(
+    districtLocationSearch.body,
+    "district location search",
+  );
+  assert.ok(
+    districtLocationSearchData.locations.some(
+      (location) =>
+        location.administrativeAreaCode === "1168000000" &&
+        location.locationScope === "district" &&
+        typeof location.locationResolutionToken === "string",
+    ),
+    "district location search should return a signed Gangnam-gu result.",
+  );
+  results.push("POST /api/location/search (Kakao district) -> 200");
 
   const outsideLocationResolve = await request(
     baseUrl,
@@ -359,6 +409,31 @@ async function runSmokeTests(baseUrl) {
   assert.equal(malformedPostCreate.response.status, 400, "malformed post create should return 400.");
   expectJsonFailure(malformedPostCreate.body, "malformed post create", "INVALID_REQUEST");
   results.push("POST /api/posts (malformed JSON) -> 400");
+
+  const invalidManualPostCreate = await request(baseUrl, "/api/posts", {
+    body: JSON.stringify({
+      anonymousDeviceId: "manual-token-smoke-test",
+      content: "This request must not be saved.",
+      location: SEOUL_CITY_HALL,
+      locationResolutionToken: "invalid",
+      locationSource: "manual",
+    }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+  assert.equal(
+    invalidManualPostCreate.response.status,
+    400,
+    "invalid manual token should return 400 before persistence.",
+  );
+  expectJsonFailure(
+    invalidManualPostCreate.body,
+    "invalid manual post create",
+    "INVALID_LOCATION_SELECTION",
+  );
+  results.push("POST /api/posts (invalid manual token) -> 400");
 
   const engagementSnapshot = await request(baseUrl, "/api/posts/engagement", {
     body: JSON.stringify({

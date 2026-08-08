@@ -65,4 +65,28 @@ describe("browser administrative location cache v2", () => {
       locationResolutionTokenExpiresAt: null,
     });
   });
+
+  it("keeps location resolution usable when browser storage is blocked", () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem() {
+          throw new DOMException("Blocked", "SecurityError");
+        },
+        setItem() {
+          throw new DOMException("Blocked", "SecurityError");
+        },
+      },
+    });
+
+    expect(readCachedAdministrativeLocation(LOCATION)).toBeNull();
+    expect(() =>
+      writeCachedAdministrativeLocation(LOCATION, {
+        administrativeDongCode: "1111051500",
+        administrativeDongName: "청운효자동",
+        formattedAdministrativeAreaName: "서울특별시 종로구 청운효자동",
+        locationResolutionToken: null,
+        locationResolutionTokenExpiresAt: null,
+      }),
+    ).not.toThrow();
+  });
 });
