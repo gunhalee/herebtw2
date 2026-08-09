@@ -22,6 +22,7 @@ type CreateCandidateFirstMessageResponse = {
 };
 
 type UpdateCandidateFirstMessageResponse = {
+  changed: boolean;
   content: string | null;
   publicationStatus: "published" | "under_review";
 };

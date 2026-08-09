@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { BarChart3, MessageCircle } from "lucide-react";
 import { uiColors, uiRadius, uiSpacing, uiTypography } from "../../lib/ui/tokens";
@@ -10,10 +8,12 @@ const HIGHLIGHT_THRESHOLD = 3;
 
 type CandidateDashboardPostListProps = {
   posts: DashboardPost[];
+  showHeading?: boolean;
 };
 
 export function CandidateDashboardPostList({
   posts,
+  showHeading = true,
 }: CandidateDashboardPostListProps) {
   return (
     <div
@@ -24,7 +24,7 @@ export function CandidateDashboardPostList({
         padding: `0 ${uiSpacing.pageX} ${uiSpacing.xxl}`,
       }}
     >
-      <div
+      {showHeading ? <div
         style={{
           alignItems: "center",
           display: "flex",
@@ -43,7 +43,7 @@ export function CandidateDashboardPostList({
           주민 목소리
         </h2>
         <BarChart3 size={16} color={uiColors.textMuted} />
-      </div>
+      </div> : null}
 
       {posts.length === 0 ? (
         <p
@@ -70,6 +70,7 @@ export function CandidateDashboardPostList({
           <Link
             key={post.id}
             href={href}
+            prefetch={false}
             style={{
               background: isHighlighted ? "#fffbeb" : "#ffffff",
               border: isHighlighted

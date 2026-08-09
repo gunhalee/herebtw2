@@ -12,10 +12,8 @@ export function useCandidateFirstMessageEditor(initialContent: string) {
 
   useEffect(() => {
     setSavedContent(initialContent);
-    if (!editingMessage) {
-      setMessageContent(initialContent);
-    }
-  }, [editingMessage, initialContent]);
+    setMessageContent(initialContent);
+  }, [initialContent]);
 
   function startEditing() {
     setEditingMessage(true);
@@ -33,6 +31,13 @@ export function useCandidateFirstMessageEditor(initialContent: string) {
 
     if (trimmed.length < 1 || trimmed.length > 100) {
       setMessageError("100자 이내로 입력해주세요.");
+      return;
+    }
+
+    if (trimmed === savedContent.trim()) {
+      setEditingMessage(false);
+      setMessageContent(savedContent);
+      setMessageError(null);
       return;
     }
 
@@ -74,6 +79,7 @@ export function useCandidateFirstMessageEditor(initialContent: string) {
     messageContent,
     messageError,
     savingMessage,
+    hasMessageChanges: messageContent.trim() !== savedContent.trim(),
     startEditing,
     handleChangeMessageContent,
     handleSaveMessage,

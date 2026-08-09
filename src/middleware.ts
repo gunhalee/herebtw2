@@ -31,13 +31,21 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getClaims();
 
-  if (!user) {
+  if (error || !data?.claims?.sub) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
+    return NextResponse.redirect(url);
+  }
+
+  if (
+    process.env.CANDIDATE_MFA_REQUIRED?.trim().toLowerCase() === "true" &&
+    data.claims.aal !== "aal2"
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/mfa";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 

@@ -1,9 +1,10 @@
 import { readJsonBody } from "../../../../lib/api/request";
 import { fail, ok } from "../../../../lib/api/response";
 import { getCandidateSession } from "../../../../lib/auth/candidate-session";
-import { getBotRejectionResponse } from "../../../../lib/abuse/bot-verification";
 import { getAccountRateLimitResponse } from "../../../../lib/abuse/account-guard";
 import { ABUSE_POLICY } from "../../../../lib/abuse/policy";
+import { isCandidateMfaRequired } from "../../../../lib/candidate-dashboard/feature-flags";
+import { loadFirstMessage } from "../../../../lib/posts/repository";
 import {
   createCandidateFirstMessage,
   updateCandidateFirstMessage,
@@ -24,10 +25,8 @@ export async function PATCH(request: Request) {
     return fail({ code: "CANDIDATE_INACTIVE", message: "활성화된 후보자만 작성할 수 있습니다." }, 403);
   }
 
-  const botRejection = await getBotRejectionResponse("candidate.first_message");
-
-  if (botRejection) {
-    return botRejection;
+  if (isCandidateMfaRequired() && session.assuranceLevel !== "aal2") {
+    return fail({ code: "MFA_REQUIRED", message: "수정하려면 추가 인증이 필요합니다." }, 403);
   }
 
   const rateLimitResponse = await getAccountRateLimitResponse({
@@ -58,6 +57,18 @@ export async function PATCH(request: Request) {
     );
   }
 
+  const currentFirstMessage = await loadFirstMessage(session.firstMessageId);
+  if (currentFirstMessage?.content.trim() === trimmedContent) {
+    return ok(
+      {
+        changed: false,
+        content: currentFirstMessage.content,
+        publicationStatus: "published" as const,
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
+
   const updateResult = await updateCandidateFirstMessage({
     postId: session.firstMessageId,
     content: trimmedContent,
@@ -67,10 +78,14 @@ export async function PATCH(request: Request) {
     return fail({ code: updateResult.code, message: updateResult.message }, 422);
   }
 
-  return ok({
-    content: updateResult.publicationStatus === "published" ? trimmedContent : null,
-    publicationStatus: updateResult.publicationStatus,
-  });
+  return ok(
+    {
+      changed: true,
+      content: updateResult.publicationStatus === "published" ? trimmedContent : null,
+      publicationStatus: updateResult.publicationStatus,
+    },
+    { headers: { "Cache-Control": "private, no-store" } },
+  );
 }
 
 type FirstMessageRequest = {
@@ -88,10 +103,8 @@ export async function POST(request: Request) {
     return fail({ code: "CANDIDATE_INACTIVE", message: "활성화된 후보자만 작성할 수 있습니다." }, 403);
   }
 
-  const botRejection = await getBotRejectionResponse("candidate.first_message");
-
-  if (botRejection) {
-    return botRejection;
+  if (isCandidateMfaRequired() && session.assuranceLevel !== "aal2") {
+    return fail({ code: "MFA_REQUIRED", message: "등록하려면 추가 인증이 필요합니다." }, 403);
   }
 
   const rateLimitResponse = await getAccountRateLimitResponse({
@@ -138,5 +151,8 @@ export async function POST(request: Request) {
     );
   }
 
-  return ok({ post: result.post, publicationStatus: result.publicationStatus });
+  return ok(
+    { post: result.post, publicationStatus: result.publicationStatus },
+    { headers: { "Cache-Control": "private, no-store" } },
+  );
 }

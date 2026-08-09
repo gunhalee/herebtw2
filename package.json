@@ -16,7 +16,12 @@
     "verify": "npm run typecheck && npm run test:location && npm run test:abuse && npm run test:moderation && npm run build && npm run smoke:api && npm run guard:architecture",
     "generate:administrative-dong-map": "node scripts/generate-administrative-dong-map.js",
     "generate:local-election-9-dong-mapping": "node scripts/generate-local-election-9-dong-mapping.js",
-    "generate:copy-review": "node scripts/generate-copy-review.js"
+    "generate:copy-review": "node scripts/generate-copy-review.js",
+    "candidate:coverage:dry-run": "node scripts/sync-candidate-coverage.mjs",
+    "candidate:coverage:apply": "node scripts/sync-candidate-coverage.mjs --apply",
+    "candidate:benchmark": "node scripts/benchmark-candidate-dashboard.mjs",
+    "candidate:verify": "node scripts/verify-candidate-dashboard-database.mjs",
+    "candidate:verify:strict": "node scripts/verify-candidate-dashboard-database.mjs --strict"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

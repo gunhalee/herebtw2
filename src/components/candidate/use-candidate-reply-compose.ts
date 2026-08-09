@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createCandidateReply } from "./candidate-reply-api";
 import {
   getPromiseDeadlineValue,
@@ -24,6 +24,7 @@ export function useCandidateReplyCompose({
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const clientRequestIdRef = useRef<string | null>(null);
 
   const charCount = content.trim().length;
   const submitDisabled = charCount < 1 || charCount > 200;
@@ -43,7 +44,9 @@ export function useCandidateReplyCompose({
     setError(null);
 
     try {
+      clientRequestIdRef.current ??= crypto.randomUUID();
       await createCandidateReply({
+        clientRequestId: clientRequestIdRef.current,
         postId,
         content: content.trim(),
         isPromise,

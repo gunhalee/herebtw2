@@ -152,10 +152,57 @@ async function createReply(input: {
   return rows?.[0] ?? null;
 }
 
+type AtomicReplyResult =
+  | {
+      status: "ok";
+      notification: "queued";
+      reply: {
+        id: string;
+        postId: string;
+        candidateId: string;
+        content: string;
+        isPromise: boolean;
+        promiseDeadline: string | null;
+        publicUuid: string;
+        createdAt: string;
+      };
+    }
+  | {
+      status:
+        | "already_replied"
+        | "candidate_inactive"
+        | "candidate_not_found"
+        | "idempotency_conflict"
+        | "post_not_eligible"
+        | "validation_error";
+      publicUuid?: string;
+    };
+
+async function createCandidateReplyAtomicRepository(input: {
+  authUserId: string;
+  clientRequestId: string;
+  requestHash: string;
+  postId: string;
+  content: string;
+  isPromise: boolean;
+  promiseDeadline: string | null;
+}) {
+  return supabaseRpc<AtomicReplyResult>("create_candidate_reply_atomic", {
+    p_auth_user_id: input.authUserId,
+    p_client_request_id: input.clientRequestId,
+    p_request_hash: input.requestHash,
+    p_post_id: input.postId,
+    p_content: input.content,
+    p_is_promise: input.isPromise,
+    p_promise_deadline: input.promiseDeadline,
+  });
+}
+
 export {
   attachCandidateFirstMessageRepository,
   createCandidateFirstMessageRepository,
   createCandidateFirstMessageUpdateCaseRepository,
+  createCandidateReplyAtomicRepository,
   createCandidateQuarantinedFirstMessageRepository,
   createReply,
   updateCandidateFirstMessageRepository,

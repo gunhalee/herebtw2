@@ -1,7 +1,3 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-import { createClient } from "../../lib/client";
 import type {
   DashboardPost,
   DashboardStats,
@@ -10,8 +6,10 @@ import type {
 import { CandidateDashboardHeader } from "./candidate-dashboard-header";
 import { CandidateDashboardPostList } from "./candidate-dashboard-post-list";
 import { CandidateDashboardStatsGrid } from "./candidate-dashboard-stats-grid";
-import { CandidateFirstMessagePanel } from "./candidate-first-message-panel";
-import { useCandidateFirstMessageEditor } from "./use-candidate-first-message-editor";
+import { CandidateFirstMessageSection } from "./candidate-first-message-section";
+import { CandidateDashboardFilters } from "./candidate-dashboard-filters";
+import { CandidateDashboardLoadMore } from "./candidate-dashboard-load-more";
+import type { CandidateDashboardFilter } from "../../lib/candidate-dashboard/types";
 
 type DashboardScreenProps = {
   candidateName: string;
@@ -20,6 +18,8 @@ type DashboardScreenProps = {
   stats: DashboardStats;
   firstMessage: FirstMessage | null;
   firstMessagePending?: boolean;
+  filter?: CandidateDashboardFilter;
+  nextCursor?: string | null;
 };
 
 export function DashboardScreen({
@@ -29,18 +29,9 @@ export function DashboardScreen({
   stats,
   firstMessage,
   firstMessagePending = false,
+  filter,
+  nextCursor = null,
 }: DashboardScreenProps) {
-  const router = useRouter();
-  const firstMessageEditor = useCandidateFirstMessageEditor(
-    firstMessage?.content ?? "",
-  );
-
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.replace("/");
-  }
-
   return (
     <div
       style={{
@@ -54,20 +45,10 @@ export function DashboardScreen({
       <CandidateDashboardHeader
         candidateName={candidateName}
         district={district}
-        onLogout={handleLogout}
       />
 
       {firstMessage ? (
-        <CandidateFirstMessagePanel
-          content={firstMessageEditor.messageContent}
-          editing={firstMessageEditor.editingMessage}
-          errorMessage={firstMessageEditor.messageError}
-          saving={firstMessageEditor.savingMessage}
-          onCancel={firstMessageEditor.handleCancelEdit}
-          onChangeContent={firstMessageEditor.handleChangeMessageContent}
-          onSave={firstMessageEditor.handleSaveMessage}
-          onStartEditing={firstMessageEditor.startEditing}
-        />
+        <CandidateFirstMessageSection initialContent={firstMessage.content} />
       ) : null}
 
       {firstMessagePending ? (
@@ -76,8 +57,16 @@ export function DashboardScreen({
         </div>
       ) : null}
 
+      {filter ? <CandidateDashboardFilters filter={filter} /> : null}
       <CandidateDashboardStatsGrid stats={stats} />
       <CandidateDashboardPostList posts={posts} />
+      {filter ? (
+        <CandidateDashboardLoadMore
+          key={filter}
+          filter={filter}
+          initialCursor={nextCursor}
+        />
+      ) : null}
     </div>
   );
 }

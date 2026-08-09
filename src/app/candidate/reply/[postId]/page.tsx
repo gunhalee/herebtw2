@@ -2,6 +2,11 @@ import { redirect, notFound } from "next/navigation";
 import { getCandidateSession } from "../../../../lib/auth/candidate-session";
 import { ReplyComposeScreen } from "../../../../components/candidate/reply-compose-screen";
 import { supabaseSelect } from "../../../../lib/supabase/rest";
+import {
+  isCandidateInboxReadEnabled,
+  isCandidateMfaRequired,
+} from "../../../../lib/candidate-dashboard/feature-flags";
+import { loadCandidateReplyTargetV2 } from "../../../../lib/candidate-dashboard/repository";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +21,33 @@ export default async function ReplyPage({ params }: PageProps) {
     redirect("/auth/login");
   }
 
+  if (isCandidateMfaRequired() && session.assuranceLevel !== "aal2") {
+    redirect("/auth/mfa");
+  }
+
   if (!session.hasFirstMessage) {
     redirect("/candidate/onboarding");
   }
 
   const { postId } = await params;
+
+  if (isCandidateInboxReadEnabled()) {
+    const target = await loadCandidateReplyTargetV2({
+      authUserId: session.authUserId,
+      postId,
+    });
+    if (!target || target.status === "not_found") notFound();
+    if (target.status === "already_replied") redirect(`/v/${target.publicUuid}`);
+    return (
+      <ReplyComposeScreen
+        postId={target.post.id}
+        postContent={target.post.content}
+        postDongName={target.post.administrative_dong_name}
+        postCreatedAt={target.post.created_at}
+        candidateName={session.name}
+      />
+    );
+  }
 
   // Load post by ID
   const posts = await supabaseSelect<Array<{

@@ -1,18 +1,14 @@
-"use client";
-
-import { LogOut } from "lucide-react";
 import { uiColors, uiSpacing } from "../../lib/ui/tokens";
+import { CandidateLogoutButton } from "./candidate-logout-button";
 
 type CandidateDashboardHeaderProps = {
   candidateName: string;
   district: string;
-  onLogout: () => void | Promise<void>;
 };
 
 export function CandidateDashboardHeader({
   candidateName,
   district,
-  onLogout,
 }: CandidateDashboardHeaderProps) {
   return (
     <header
@@ -47,25 +43,7 @@ export function CandidateDashboardHeader({
           {district}
         </p>
       </div>
-      <button
-        onClick={() => void onLogout()}
-        type="button"
-        style={{
-          alignItems: "center",
-          appearance: "none",
-          background: "transparent",
-          border: "none",
-          color: uiColors.textMuted,
-          cursor: "pointer",
-          display: "flex",
-          gap: "4px",
-          fontSize: "12px",
-          padding: uiSpacing.xs,
-        }}
-      >
-        <LogOut size={14} />
-        로그아웃
-      </button>
+      <CandidateLogoutButton />
     </header>
   );
 }

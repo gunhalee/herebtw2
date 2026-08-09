@@ -2,6 +2,7 @@ export {
   attachCandidateFirstMessageRepository,
   createCandidateFirstMessageRepository,
   createCandidateFirstMessageUpdateCaseRepository,
+  createCandidateReplyAtomicRepository,
   createCandidateQuarantinedFirstMessageRepository,
   createReply,
   findCandidateByAuthUserId,

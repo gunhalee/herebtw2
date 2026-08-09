@@ -548,6 +548,23 @@ async function runSmokeTests(baseUrl) {
   );
   results.push("POST /api/internal/moderation/worker (unauthorized) -> 401");
 
+  const unauthorizedReplyWorker = await request(
+    baseUrl,
+    "/api/internal/reply-notifications/worker",
+    { method: "POST" },
+  );
+  assert.equal(
+    unauthorizedReplyWorker.response.status,
+    401,
+    "reply notification worker without its bearer secret should return 401.",
+  );
+  expectJsonFailure(
+    unauthorizedReplyWorker.body,
+    "unauthorized reply notification worker",
+    "UNAUTHORIZED",
+  );
+  results.push("POST /api/internal/reply-notifications/worker (unauthorized) -> 401");
+
   const unauthorizedTelegram = await request(
     baseUrl,
     "/api/telegram/moderation",

@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { sendReplyNotification } from "../email/send-reply-notification";
 import { evaluateModerationContent } from "../moderation/decision-engine";
 import { encryptModerationEvidence } from "../moderation/evidence-crypto";
 import {
@@ -7,9 +6,7 @@ import {
   createCandidateFirstMessageRepository,
   createCandidateFirstMessageUpdateCaseRepository,
   createCandidateQuarantinedFirstMessageRepository,
-  createReply,
   loadCandidateDistrictRepository,
-  loadReplyNotificationPostRepository,
   updateCandidateFirstMessageRepository,
 } from "../posts/repository";
 
@@ -38,34 +35,6 @@ type UpdateCandidateFirstMessageInput = {
   content: string;
   postId: string;
 };
-
-type CreateCandidateReplyInput = {
-  postId: string;
-  candidateId: string;
-  candidateName: string;
-  content: string;
-  isPromise: boolean;
-  promiseDeadline: string | null;
-};
-
-type CreateCandidateReplyResult =
-  | {
-      ok: true;
-      reply: {
-        id: string;
-        post_id: string;
-        candidate_id: string;
-        content: string;
-        is_promise: boolean;
-        promise_deadline?: string | null;
-        created_at: string;
-      };
-    }
-  | {
-      ok: false;
-      code: "CREATE_FAILED";
-      message: string;
-    };
 
 export async function updateCandidateFirstMessage(
   input: UpdateCandidateFirstMessageInput,
@@ -180,45 +149,5 @@ export async function createCandidateFirstMessage(
     ok: true,
     post,
     publicationStatus: "published",
-  };
-}
-
-export async function createCandidateReply(
-  input: CreateCandidateReplyInput,
-): Promise<CreateCandidateReplyResult> {
-  const reply = await createReply({
-    postId: input.postId,
-    candidateId: input.candidateId,
-    content: input.content,
-    isPromise: input.isPromise,
-    promiseDeadline: input.promiseDeadline,
-  });
-
-  if (!reply) {
-    return {
-      ok: false,
-      code: "CREATE_FAILED",
-      message: "답변 등록에 실패했습니다.",
-    };
-  }
-
-  try {
-    const post = await loadReplyNotificationPostRepository(input.postId);
-
-    if (post?.notification_email && post.notification_email_verified_at) {
-      await sendReplyNotification({
-        toEmail: post.notification_email,
-        postContent: post.content,
-        publicUuid: post.public_uuid,
-        candidateName: input.candidateName,
-      });
-    }
-  } catch (emailError) {
-    console.error("[reply] Email notification failed:", emailError);
-  }
-
-  return {
-    ok: true,
-    reply,
   };
 }

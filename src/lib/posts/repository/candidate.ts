@@ -13,6 +13,7 @@ export {
   attachCandidateFirstMessageRepository,
   createCandidateFirstMessageRepository,
   createCandidateFirstMessageUpdateCaseRepository,
+  createCandidateReplyAtomicRepository,
   createCandidateQuarantinedFirstMessageRepository,
   createReply,
   updateCandidateFirstMessageRepository,

@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { getNetworkRateLimitResponse } from "../../../../lib/abuse/network-guard";
 import { ABUSE_POLICY } from "../../../../lib/abuse/policy";
 import { generateCardPng } from "../../../../lib/card/generate";
+import { buildReplyCandidateTagline } from "../../../../lib/card/reply-card";
 import { DeliveredVoterCard } from "../../../../lib/card/templates/delivered-voter";
 import { RepliedCandidateCard } from "../../../../lib/card/templates/replied-candidate";
 import { RepliedVoterCard } from "../../../../lib/card/templates/replied-voter";
@@ -13,38 +14,6 @@ import { findPostByUuidRepository } from "../../../../lib/posts/repository";
 type RouteContext = {
   params: Promise<{ uuid: string }>;
 };
-
-function buildReplyCandidateTagline(input: {
-  name: string;
-  district?: string | null;
-  localCouncilDistrict?: string | null;
-  metroCouncilDistrict?: string | null;
-  councilType?: string | null;
-}) {
-  const name = input.name.trim();
-  const districtLabel =
-    input.localCouncilDistrict?.trim() ||
-    input.metroCouncilDistrict?.trim() ||
-    input.district?.trim() ||
-    "";
-  const councilLabel = input.councilType?.trim()
-    ? `${input.councilType.trim()} 후보`
-    : "후보";
-  const taglineParts: string[] = [];
-
-  if (name) {
-    taglineParts.push(name);
-  }
-
-  if (districtLabel) {
-    taglineParts.push(
-      taglineParts.length > 0 ? `· ${districtLabel}` : districtLabel,
-    );
-  }
-
-  taglineParts.push(councilLabel);
-  return taglineParts.join(" ");
-}
 
 export async function GET(request: Request, context: RouteContext) {
   const { uuid } = await context.params;

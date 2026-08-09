@@ -7,6 +7,7 @@ type CandidateFirstMessagePanelProps = {
   content: string;
   editing: boolean;
   errorMessage: string | null;
+  hasChanges: boolean;
   saving: boolean;
   onCancel: () => void;
   onChangeContent: (value: string) => void;
@@ -18,6 +19,7 @@ export function CandidateFirstMessagePanel({
   content,
   editing,
   errorMessage,
+  hasChanges,
   saving,
   onCancel,
   onChangeContent,
@@ -103,7 +105,7 @@ export function CandidateFirstMessagePanel({
             <button
               type="button"
               onClick={() => void onSave()}
-              disabled={saving}
+              disabled={saving || !hasChanges}
               style={{
                 alignItems: "center",
                 appearance: "none",
@@ -111,12 +113,12 @@ export function CandidateFirstMessagePanel({
                 border: "none",
                 borderRadius: uiRadius.md,
                 color: "#ffffff",
-                cursor: saving ? "not-allowed" : "pointer",
+                cursor: saving || !hasChanges ? "not-allowed" : "pointer",
                 display: "flex",
                 fontSize: "12px",
                 fontWeight: 600,
                 gap: "3px",
-                opacity: saving ? 0.6 : 1,
+                opacity: saving || !hasChanges ? 0.6 : 1,
                 padding: "4px 10px",
               }}
             >

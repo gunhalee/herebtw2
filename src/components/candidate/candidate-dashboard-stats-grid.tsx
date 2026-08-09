@@ -1,5 +1,3 @@
-"use client";
-
 import { uiColors, uiRadius, uiSpacing } from "../../lib/ui/tokens";
 import type { DashboardStats } from "./candidate-dashboard-types";
 
