@@ -41,13 +41,19 @@ export function isGoogleModerationEnabled() {
   return process.env.VERCEL_ENV !== "preview";
 }
 
+/* 기본값과 상한이 모두 1이다. 예전에는 상한이 0.1 이라 MODERATION_GOOGLE_SAMPLE_RATE
+   에 1을 넣어도 10%만 나갔고, 운영 기본값은 0.01(1%)이었다. 그래서 검토 건이 생겨도
+   provider_status 가 대부분 skipped_sampling 으로 끝나 실제 사용량이 잡히지 않았다.
+   비용은 여기서 막지 않는다 — reserve_moderation_provider_units 가 월 단위로 막는다
+   (무료 5만 유닛, $50 경고, $100 하드스톱). 줄이려면 MODERATION_GOOGLE_SAMPLE_RATE 에
+   0~1 사이 값을 주거나 MODERATION_GOOGLE_MODE=off 로 끈다. */
 export function shouldUseGoogleModeration(casePublicId: string) {
   const mode = process.env.MODERATION_GOOGLE_MODE?.trim()
     || (process.env.VERCEL_ENV === "preview" ? "off" : "shadow");
   if (mode === "off") return false;
-  const defaultRate = mode === "uncertain" ? 0.1 : process.env.VERCEL_ENV === "production" ? 0.01 : 0.1;
-  const configuredRate = Number(process.env.MODERATION_GOOGLE_SAMPLE_RATE ?? defaultRate);
-  const sampleRate = Math.max(0, Math.min(0.1, Number.isFinite(configuredRate) ? configuredRate : defaultRate));
+  const configuredRate = Number(process.env.MODERATION_GOOGLE_SAMPLE_RATE ?? 1);
+  const sampleRate = Math.max(0, Math.min(1, Number.isFinite(configuredRate) ? configuredRate : 1));
+  if (sampleRate >= 1) return true;
   const bucket = createHash("sha256").update(casePublicId).digest().readUInt32BE(0) / 0x1_0000_0000;
   return bucket < sampleRate;
 }
