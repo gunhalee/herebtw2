@@ -1,6 +1,6 @@
 # Copy Review
 
-Generated: 2026-04-12T12:15:02.965Z
+Generated: 2026-08-24T09:10:55.841Z
 
 이 문서는 `npm run generate:copy-review`로 생성됩니다.
 화면 문구, 시스템 메시지, 샘플/참조 라벨을 파일별로 모아 검토할 수 있게 정리했습니다.
@@ -8,6 +8,10 @@ Generated: 2026-04-12T12:15:02.965Z
 ## UI & Screen Copy
 
 사용자가 화면에서 직접 보게 되는 문구입니다.
+
+### src/app/(public)/voices/candidate/[id]/loading.tsx
+
+- L27: 후보 답변 모아보기를 불러오는 중입니다.
 
 ### src/app/auth/login/page.tsx
 
@@ -21,45 +25,118 @@ Generated: 2026-04-12T12:15:02.965Z
 - L180: 로그인
 - L194: 유권자 메인으로 돌아가기
 
+### src/app/candidate/dashboard/error.tsx
+
+- L15: 대시보드를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+- L21: 다시 시도
+
+### src/app/candidate/dashboard/loading.tsx
+
+- L15: 후보자 대시보드
+- L17: 지역의 답변 대기 글을 불러오고 있습니다.
+
+### src/app/candidate/reply/[postId]/error.tsx
+
+- L15: 답변할 글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+- L21: 다시 시도
+
+### src/app/candidate/reply/[postId]/loading.tsx
+
+- L8: 답변할 글을 확인하고 있습니다.
+
 ### src/app/not-found.tsx
 
 - L22: 여기 근데
 - L31: 요청하신 화면을 찾지 못했어요.
 
+### src/app/ops/login/page.tsx
+
+- L17: 콘텐츠 검수 로그인
+- L18: 운영자 전용 64자리 보안 키를 입력하세요. 키는 서버에서만 확인되며 저장되지 않습니다.
+- L20: 운영 보안 키
+- L22: 보안 키를 확인해 주세요.
+- L23: 검수 화면 열기
+
+### src/app/ops/moderation/[casePublicId]/page.tsx
+
+- L33: 증거를 복호화하거나 무결성을 확인할 수 없습니다. 키 버전과 데이터 상태를 확인하세요.
+- L39: ← 검수 목록
+- L40: 검수 건 {casePublicId.slice(0, 8)}
+- L43: 격리된 원문
+- L44: 보존 기간이 지나 원문이 삭제되었습니다.
+- L44: {plaintext ?? "보존 기간이 지나 원문이 삭제되었습니다."}
+- L46: 없음
+- L46: 판정 근거
+- L46: {item.reason_codes.join(", ") || "없음"}
+- L50: 결정 사유 코드
+- L52: 내부 메모
+- L55: 복구·공개
+- L55: 공개 승인
+- L55: {item.state === "rejected" ? "복구·공개" : "공개 승인"}
+- L56: 게시 거절
+- L60: 결정 이력
+
+### src/app/ops/moderation/page.tsx
+
+- L15: 콘텐츠 검수
+- L16: 웹 화면이 최종 기록입니다. Telegram은 알림과 진입 링크만 제공합니다.
+- L21: 해당 상태의 검수 건이 없습니다.
+- L24: 규칙 근거 없음
+- L24: {item.reason_codes.join(", ") || "규칙 근거 없음"}
+
+### src/components/candidate/candidate-dashboard-api.ts
+
+- L11: 글을 더 불러오지 못했습니다.
+- L13: 목록 요청이 지연되고 있어요. 다시 시도해 주세요.
+
+### src/components/candidate/candidate-dashboard-filters.tsx
+
+- L13: 답변 대기
+- L14: 내가 답변한 글
+
 ### src/components/candidate/candidate-dashboard-header.tsx
 
-- L38: candidateName} 후보
-- L67: 로그아웃
+- L34: candidateName} 후보
+
+### src/components/candidate/candidate-dashboard-load-more.tsx
+
+- L33: 글을 더 불러오지 못했습니다.
+- L46: 불러오는 중...
+- L46: 더 보기
 
 ### src/components/candidate/candidate-dashboard-post-list.tsx
 
 - L43: 주민 목소리
 - L57: 아직 글이 없습니다.
-- L98: 주민 {post.agree_count}명이 관심을 보인 목소리입니다
-- L126: 공감 {post.agree_count}
-- L150: 내 답변:
-- L164: 약속
+- L99: 주민 {post.agree_count}명이 관심을 보인 목소리입니다
+- L127: 공감 {post.agree_count}
+- L151: 내 답변:
+- L165: 약속
 
 ### src/components/candidate/candidate-dashboard-stats-grid.tsx
 
-- L23: 전체 글
-- L24: 답변 완료
-- L25: 미답변
-- L26: 답변률
+- L21: 전체 글
+- L22: 답변 완료
+- L23: 미답변
+- L24: 답변률
 
 ### src/components/candidate/candidate-first-message-api.ts
 
-- L31: 첫 마디를 등록하지 못했습니다.
-- L35: 첫 마디 등록이 지연되고 있어요. 다시 시도해 주세요.
-- L43: 저장에 실패했습니다. 다시 시도해 주세요.
-- L47: 저장 요청이 지연되고 있어요. 다시 시도해 주세요.
+- L34: 첫 마디를 등록하지 못했습니다.
+- L38: 첫 마디 등록이 지연되고 있어요. 다시 시도해 주세요.
+- L46: 저장에 실패했습니다. 다시 시도해 주세요.
+- L50: 저장 요청이 지연되고 있어요. 다시 시도해 주세요.
 
 ### src/components/candidate/candidate-first-message-panel.tsx
 
-- L52: 후보자 한마디
-- L101: 취소
-- L124: 저장
-- L160: 수정
+- L54: 후보자 한마디
+- L103: 취소
+- L126: 저장
+- L162: 수정
+
+### src/components/candidate/candidate-logout-button.tsx
+
+- L35: 로그아웃
 
 ### src/components/candidate/candidate-messages-api.ts
 
@@ -68,17 +145,37 @@ Generated: 2026-04-12T12:15:02.965Z
 
 ### src/components/candidate/candidate-messages-section.tsx
 
-- L73: 우리 동네 후보
-- L118: 다른 후보들도 살펴보기
+- L119: 우리 동네 후보
+- L164: 다른 후보 더보기
 
 ### src/components/candidate/candidate-messages-view.tsx
 
-- L32: 기초의회
-- L32: 광역의회
-- L54: 기초의회
-- L56: 광역의회
-- L155: 후보
-- L155: ${councilBadge} 후보
+- L57: 기초의회
+- L57: 광역의회
+- L85: 기초의회
+- L87: 광역의회
+- L188: 후보
+- L188: ${councilBadge} 후보
+
+### src/components/candidate/candidate-mfa-panel.tsx
+
+- L44: 추가 인증 정보를 확인하지 못했습니다. 다시 로그인해 주세요.
+- L65: 여기 근데 후보자 대시보드
+- L68: 인증 앱 등록을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.
+- L88: 인증 앱에 표시된 6자리 코드를 입력해 주세요.
+- L98: 인증 코드가 올바르지 않거나 만료되었습니다. 새 코드를 입력해 주세요.
+- L115: 후보자 추가 인증
+- L117: 후보자 계정과 답변을 보호하기 위해 인증 앱의 일회용 코드를 확인합니다.
+- L121: 인증 정보를 확인하고 있습니다...
+- L125: 처음 한 번만 등록해 주세요
+- L127: Google Authenticator 등 인증 앱을 여세요.
+- L128: 아래 QR 코드를 스캔하세요.
+- L129: 앱에 표시된 6자리 코드를 입력하세요.
+- L133: QR 코드를 스캔할 수 없나요?
+- L141: 6자리 인증 코드
+- L155: 확인 중...
+- L155: 인증하고 계속
+- L161: 다른 계정으로 로그인
 
 ### src/components/candidate/candidate-onboarding-form.tsx
 
@@ -89,8 +186,8 @@ Generated: 2026-04-12T12:15:02.965Z
 
 ### src/components/candidate/candidate-reply-api.ts
 
-- L27: 답변 등록에 실패했습니다.
-- L31: 답변 등록이 지연되고 있어요. 다시 시도해 주세요.
+- L28: 답변 등록에 실패했습니다.
+- L32: 답변 등록이 지연되고 있어요. 다시 시도해 주세요.
 
 ### src/components/candidate/candidate-reply-confirm-dialog.tsx
 
@@ -104,13 +201,17 @@ Generated: 2026-04-12T12:15:02.965Z
 
 ### src/components/candidate/candidate-reply-form.tsx
 
-- L89: ${candidateName} 후보로서 주민분께 짧게 답변을 남겨 주세요.
-- L150: 이 답변은 공약입니다.
-- L178: 당선 후 3개월
-- L179: 당선 후 6개월
-- L180: 당선 후 1년
-- L181: 직접 입력
-- L228: 답변 등록
+- L90: ${candidateName} 후보로서 주민분께 짧게 답변을 남겨 주세요.
+- L155: 이 답변은 공약입니다.
+- L183: 당선 후 3개월
+- L184: 당선 후 6개월
+- L185: 당선 후 1년
+- L186: 직접 입력
+- L233: 답변 등록
+
+### src/components/candidate/dashboard-screen.tsx
+
+- L56: 첫 메시지 내용을 안전하게 확인하고 있어요. 확인이 끝나기 전에는 주민에게 공개되지 않습니다.
 
 ### src/components/candidate/onboarding-screen.tsx
 
@@ -144,8 +245,9 @@ Generated: 2026-04-12T12:15:02.965Z
 
 ### src/components/candidate/use-candidate-first-message-editor.ts
 
-- L35: 100자 이내로 입력해주세요.
-- L53: 수정에 실패했습니다. 다시 시도해 주세요.
+- L33: 100자 이내로 입력해주세요.
+- L52: 수정 내용을 안전하게 확인하고 있어요. 확인 전까지 기존 메시지가 표시됩니다.
+- L64: 수정에 실패했습니다. 다시 시도해 주세요.
 
 ### src/components/candidate/use-candidate-onboarding.ts
 
@@ -153,7 +255,7 @@ Generated: 2026-04-12T12:15:02.965Z
 
 ### src/components/candidate/use-candidate-reply-compose.ts
 
-- L62: 답변 등록에 실패했습니다.
+- L66: 답변 등록에 실패했습니다.
 
 ### src/components/common/empty-state.tsx
 
@@ -168,20 +270,43 @@ Generated: 2026-04-12T12:15:02.965Z
 
 - L13: 불러오는 중입니다
 
+### src/components/common/veil-overlay.tsx
+
+- L6: 우리 동네 글을 불러오는 중입니다.
+
+### src/components/home/administrative-area-search-dialog.tsx
+
+- L55: 동네를 검색하지 못했습니다.
+- L62: 동네 검색이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.
+- L82: 동네를 검색하지 못했습니다.
+- L151: 작성할 지역 찾기
+- L161: 동·읍·면부터 시·도까지 선택할 수 있어요.
+- L204: 예: 성수1가1동, 서울 강남구
+
+### src/components/home/administrative-area-search-results.tsx
+
+- L22: 시·도
+- L26: 시·군·구
+- L29: 동·읍·면
+- L68: 동네 이름을 두 글자 이상 입력해 주세요.
+- L70: 같은 이름이 많다면 시·군·구를 함께 입력해 주세요.
+- L84: 지역을 찾고 있어요...
+- L114: 검색 결과가 없어요. 더 큰 지역 단위를 입력해주세요.
+- L116: 예: 성수1가1동 → 서울 성동구
+
 ### src/components/home/compose-permission-dialog.tsx
 
-- L55: 글을 작성하려면 위치 권한 허용이 필요해요.
-- L78: 닫기
-- L94: 다시 시도
+- L55: 지역 직접 선택
+- L203: 나중에
 
 ### src/components/home/dong-posts-feed-content.tsx
 
 - L42: 더 보기
 - L100: 불러오는 중
 
-### src/components/home/dong-posts-feed-veil.tsx
+### src/components/home/floating-compose-button.tsx
 
-- L6: 주민들의 한마디를 보기 위해 위치 권한을 허용해주세요.
+- L19: 위치 확인 중...
 
 ### src/components/home/home-report-dialogs.tsx
 
@@ -192,56 +317,96 @@ Generated: 2026-04-12T12:15:02.965Z
 - L185: 신고 처리 중
 - L185: 예
 
+### src/components/home/home-static-screen.tsx
+
+- L20: 우리 동네
+- L21: 기초의회
+- L22: 광역의회
+- L194: ${candidate.councilType} 후보
+- L195: 후보
+- L371: 우리 동네 후보
+- L412: 더 보기
+- L680: 의원
+- L680: ${replyCouncilBadgeLabel.replace(/의회$/, "의원")} 후보
+- L681: 후보
+- L694: 약속
+
+### src/components/home/location-access-banner.tsx
+
+- L29: 지역 직접 선택
+- L63: 위치 확인 중...
+- L74: 브라우저의 위치 권한 요청을 확인해 주세요.
+- L97: 위치 확인 중...
+
 ### src/components/home/pending-feed-updates-button.tsx
 
 - L46: 새 글 {count}개 이어보기
 
+### src/components/home/refresh-home-feed-after-compose.ts
+
+- L41: 등록 후 목록을 새로고침하지 못했습니다.
+
+### src/components/home/use-home-location-access.ts
+
+- L148: 주변 글을 불러오지 못했어요.
+
 ### src/components/home/use-home-shell-state.ts
 
-- L29: 우리 동네
+- L15: 우리 동네
 
 ### src/components/post/post-compose-form.tsx
 
-- L61: 닫기
-- L79: 여기 남기기
-- L99: 등록 중...
-- L99: 등록
-- L115: 지금 여기에서 글을 남겨보세요.
-- L167: 후보자가 답변하면 알려드릴까요?
-- L172: 이메일 주소 (선택)
-- L195: 이메일은 답변 알림 용도로만 사용되며, 다른 목적으로 쓰지 않습니다.
-- L219: 같은 내용의 글이 이미 있어요. 내용을 조금 수정한 뒤 다시 시도해 주세요.
+- L68: 지금 여기에 한마디 해주세요.
+- L120: 후보자가 답변하면 알려드릴까요?
+- L125: 이메일 주소 (선택)
+- L148: 입력한 주소로 확인 메일을 보내며, 확인한 경우에만 답변 알림을 보내드립니다.
+- L188: 위치 확인 중...
+- L188: 위치 재확인
+- L213: 같은 내용의 글이 이미 있어요. 내용을 조금 수정한 뒤 다시 시도해 주세요.
+
+### src/components/post/post-compose-header.tsx
+
+- L77: ${locationDisplayName}에 남기기
+- L78: 위치 확인 중...
+- L98: 지역 변경
+- L119: 등록 중...
+- L119: 등록
 
 ### src/components/post/post-compose-success.tsx
 
 - L30: /** viewBox 1:1 SVG — width·height 동일로만 그려 비율이 깨지지 않게 함 */
-- L148: 당신의 목소리가 전달되었습니다
-- L158: ${displayDongName}에 남긴 목소리를 포토카드로 저장해보세요.
-- L160: 링크를 통해서 후보자의 답글을 확인할 수도 있어요.
-- L195: 복사됨
-- L200: 링크 복사하기
-- L230: 이미지 준비 중...
-- L230: 포토카드 다운로드
-- L250: 닫기
+- L153: 내용을 안전하게 확인하고 있어요
+- L154: 당신의 목소리가 전달되었습니다
+- L165: 확인이 끝나면 게시 여부가 반영됩니다. 확인 전에는 다른 사람에게 공개되지 않아요.
+- L168: ${displayDongName}에 남긴 목소리를 포토카드로 저장해보세요.
+- L170: 링크를 통해서 후보자의 답글을 확인할 수도 있어요.
+- L174: 답변 알림을 받으려면 받은 이메일에서 주소를 확인해 주세요.
+- L214: 복사됨
+- L219: 링크 복사하기
+- L249: 이미지 준비 중...
+- L249: 포토카드 다운로드
+- L270: 닫기
 
 ### src/components/post/use-compose-location.ts
 
-- L72: 현재 위치 확인이 끝난 뒤에 글을 등록할 수 있어요.
+- L74: 현재 위치 범위가 넓습니다. 정확한 동네 이름이 표시되지 않을 수 있어요.
+- L77: 현재 위치 정확도가 약 ${Math.round(locationSession.accuracyMeters)}m입니다. 위치가 다르면 다시 확인해 주세요.
+- L125: 위치 정보를 로드하고 있어요. 잠시만 기다려주세요.
 
 ### src/components/sheet/post-list-item-card.tsx
 
-- L62: 구·시·군의회
-- L117: /* 답변 있는 카드: 왼쪽 노란 띠 */
-- L130: /* 원글 영역 */
-- L206: /* 답변 영역 — CandidateMessageCard 스타일 그대로 */
-- L216: /* 프로필 사진 */
-- L251: /* 태그·이름·본문 */
-- L259: /* 메타 행: 이름 · 선거구 + 의회 태그 */
-- L291: 의원
-- L291: ${replyCouncilBadge.replace(/의회$/, "의원")} 후보
-- L292: 후보
-- L305: 약속
-- L309: /* 답변 본문 */
+- L74: 구·시·군의회
+- L129: /* 답변 있는 카드: 왼쪽 노란 띠 */
+- L142: /* 원글 영역 */
+- L218: /* 답변 영역 — CandidateMessageCard 스타일 그대로 */
+- L228: /* 프로필 사진 */
+- L267: /* 태그·이름·본문 */
+- L275: /* 메타 행: 이름 · 선거구 + 의회 태그 */
+- L307: 의원
+- L307: ${replyCouncilBadge.replace(/의회$/, "의원")} 후보
+- L308: 후보
+- L321: 약속
+- L325: /* 답변 본문 */
 
 ### src/components/sheet/post-list-item-menu.tsx
 
@@ -249,14 +414,16 @@ Generated: 2026-04-12T12:15:02.965Z
 
 ### src/components/voice/voice-detail-screen.tsx
 
-- L148: 이미지 준비 중...
-- L148: 포토카드 다운로드
+- L103: 이메일 확인이 완료됐어요. 후보자가 답변하면 알려드릴게요.
+- L104: 확인 링크가 만료됐거나 올바르지 않아요.
+- L171: 이미지 준비 중...
+- L171: 포토카드 다운로드
 
 ### src/lib/content/home-copy.ts
 
-- L15: 여기 근데
+- L15: 김윤기 화이팅!
 - L16: 한마디 할게요
-- L18: 아직 이 근처엔 올라온 이야기가 없어요
+- L18: 이 곳에 첫 한마디를 남겨주세요.
 - L22: 여기
 - L24: 인데요
 
@@ -274,44 +441,91 @@ Generated: 2026-04-12T12:15:02.965Z
 
 에러, 검증, 등록/요청 실패 등 시스템 응답 문구입니다.
 
+### src/app/api/candidate/dashboard/posts/route.ts
+
+- L25: 새 목록 경로가 아직 활성화되지 않았습니다.
+- L33: 인증이 필요합니다.
+- L39: 추가 인증이 필요합니다.
+- L50: 목록 위치가 올바르지 않습니다.
+- L64: 목록을 불러오지 못했습니다.
+
 ### src/app/api/candidate/first-message/route.ts
 
-- L17: 인증이 필요합니다.
-- L21: 첫 메시지가 없습니다.
-- L33: 내용은 1~100자여야 합니다.
-- L54: 인증이 필요합니다.
-- L59: 이미 첫 메시지를 작성했습니다.
-- L74: 내용은 1~100자여야 합니다.
+- L21: 인증이 필요합니다.
+- L25: 활성화된 후보자만 작성할 수 있습니다.
+- L29: 수정하려면 추가 인증이 필요합니다.
+- L43: 첫 메시지가 없습니다.
+- L55: 내용은 1~100자여야 합니다.
+- L99: 인증이 필요합니다.
+- L103: 활성화된 후보자만 작성할 수 있습니다.
+- L107: 등록하려면 추가 인증이 필요합니다.
+- L122: 이미 첫 메시지를 작성했습니다.
+- L137: 내용은 1~100자여야 합니다.
 
 ### src/app/api/candidate/replies/route.ts
 
-- L17: 인증이 필요합니다.
-- L31: 답변은 1~200자여야 합니다.
-
-### src/app/api/card/[uuid]/route.ts
-
-- L29: ${input.councilType.trim()} 후보
-- L30: 후보
+- L38: 인증이 필요합니다.
+- L45: 활성화된 후보자만 답변할 수 있습니다.
+- L53: 답변하려면 추가 인증이 필요합니다.
+- L83: 요청 식별자가 올바르지 않습니다.
+- L96: 답변은 1~2,000자여야 합니다.
 
 ### src/app/api/device/register/route.ts
 
-- L22: anonymousDeviceId가 필요합니다.
+- L38: 기기를 등록하지 못했습니다.
+- L68: 짧은 시간에 여러 번 요청했어요. ${budget.retryAfterSeconds}초 후 다시 시도해 주세요.
+- L92: 기기 보호 기능을 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.
 
 ### src/app/api/location/resolve/route.ts
 
-- L30: 유효한 위치 좌표가 필요해요.
-- L60: 유효한 위치 좌표가 필요해요.
-- L61: 현재 위치를 확인하지 못했어요.
+- L39: 유효한 위치 좌표가 필요해요.
+- L54: 잠시 후 다시 시도해 주세요.
+- L61: 잠시 후 다시 시도해 주세요.
+- L115: 유효한 위치 좌표가 필요해요.
+- L121: 현재 위치에서는 동네를 확인할 수 없어요.
+- L127: 위치 확인이 지연되고 있어요. 다시 시도해 주세요.
+- L133: 위치 확인 요청이 많아요. 잠시 후 다시 시도해 주세요.
+- L138: 현재 위치를 확인하지 못했어요.
+
+### src/app/api/location/search/route.ts
+
+- L33: 동네 이름을 두 글자 이상 입력해 주세요.
+- L48: 잠시 후 다시 시도해 주세요.
+- L55: 잠시 후 다시 시도해 주세요.
+- L94: 동네 검색이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.
+- L95: 동네를 검색하지 못했습니다. 잠시 후 다시 시도해 주세요.
 
 ### src/app/api/posts/[postId]/agree/toggle/route.ts
 
-- L29: anonymousDeviceId가 필요합니다.
+- L44: 기기 정보를 확인할 수 없습니다.
+- L72: 짧은 시간에 여러 번 요청했어요. ${budget.retryAfterSeconds}초 후 다시 시도해 주세요.
+- L101: 잠시 후 다시 시도해 주세요.
+
+### src/app/api/posts/[postId]/report/route.ts
+
+- L48: 기기 정보를 확인할 수 없습니다.
+- L76: 짧은 시간에 여러 번 요청했어요. ${budget.retryAfterSeconds}초 후 다시 시도해 주세요.
+- L113: 잠시 후 다시 시도해 주세요.
 
 ### src/app/api/posts/route.ts
 
-- L63: anonymousDeviceId가 필요합니다.
-- L73: 유효한 위치 좌표가 필요해요.
-- L90: 현재 위치를 확인하지 못했어요.
+- L105: 유효한 위치 좌표가 필요해요.
+- L122: 선택한 지역이 만료되었습니다. 지역을 다시 선택해 주세요.
+- L147: 요청 식별자가 올바르지 않습니다. 다시 시도해 주세요.
+- L162: 보호 기능을 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.
+- L172: 기기 정보를 확인할 수 없습니다. 새로고침 후 다시 시도해 주세요.
+- L223: 짧은 시간에 여러 번 요청했어요. ${deviceBudget.retryAfterSeconds}초 후 다시 시도해 주세요.
+- L261: 보호 기능을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.
+- L294: 선택한 지역이 만료되었습니다. 지역을 다시 선택해 주세요.
+- L305: 현재 위치를 확인하지 못했어요.
+- L356: 같은 내용의 글을 이미 남겼어요.
+- L365: 글을 저장하지 못했습니다.
+
+### src/app/api/telegram/moderation/route.ts
+
+- L34: 읽기 전용 명령\n/status 전체 상태\n/queue 검수 대기 상태\n결정과 원문 열람은 웹 운영 도구에서만 가능합니다.
+- L40: 검수 대기: ${status.openCases}건\n가장 오래된 건: ${status.oldestAgeMinutes}분\n${baseUrl}/ops/moderation
+- L41: moderation 상태\n대기: ${status.openCases}건\n가장 오래된 건: ${status.oldestAgeMinutes}분\nGoogle 호출: ${status.googleRequests}건\n예상 비용: $${status.estimatedGoogleCostUsd.toFixed(2)}
 
 ### src/components/home/home-feed-api.ts
 
@@ -319,11 +533,6 @@ Generated: 2026-04-12T12:15:02.965Z
 - L128: 피드 갱신에 실패했습니다.
 - L146: 공감 상태를 갱신하지 못했습니다.
 - L162: 전역 피드를 불러오지 못했습니다.
-
-### src/components/home/home-feed-bootstrap.ts
-
-- L46: 브라우저에서 디바이스를 준비하지 못했습니다.
-- L137: 피드를 불러오지 못했습니다.
 
 ### src/components/home/home-post-api.ts
 
@@ -337,10 +546,6 @@ Generated: 2026-04-12T12:15:02.965Z
 
 - L88: 맞아요 상태를 반영하지 못했습니다.
 
-### src/components/home/use-home-compose-flow.ts
-
-- L103: 등록 후 목록을 새로고침하지 못했습니다.
-
 ### src/components/home/use-home-feed-list-actions.ts
 
 - L108: 목록을 더 불러오지 못했습니다.
@@ -352,34 +557,25 @@ Generated: 2026-04-12T12:15:02.965Z
 
 ### src/components/post/use-compose-submit.ts
 
-- L75: 위치 정보를 로드하고 있어요. 잠시만 기다려주세요.
-- L96: 글을 등록하지 못했어요.
-- L108: 저장이 늦어졌어요. 잠시 후에 다시 시도해 주세요.
-- L129: 글을 등록하지 못했어요.
+- L91: 위치 정보를 로드하고 있어요. 잠시만 기다려주세요.
+- L124: 죄송합니다. 저장을 실패하였습니다.
+- L138: 저장이 지연되고 있습니다. 잠시 후에 다시 시도해주세요.
+- L166: 죄송합니다. 저장을 실패하였습니다.
 
 ### src/lib/device/browser-device.ts
 
-- L92: 디바이스 등록에 실패했습니다.
-- L97: 기기 등록이 지연되고 있어요. 다시 시도해주세요.
-- L111: 브라우저에서 디바이스를 준비하지 못했습니다.
+- L87: 디바이스 등록에 실패했습니다.
+- L92: 기기 등록이 지연되고 있어요. 다시 시도해주세요.
+- L106: 브라우저에서 디바이스를 준비하지 못했습니다.
 
 ### src/lib/geo/browser-administrative-location-resolver.ts
 
 - L21: 현재 위치를 행정동으로 확인하지 못했습니다.
-- L27: 현재 위치 확인이 지연되고 있어요. 다시 시도해 주세요.
-- L44: 현재 위치를 확인하지 못했어요. 다시 시도해 주세요.
-- L48: 위치 권한을 허용하면 우리 동네에 글을 남길 수 있어요.
-- L52: 위치 확인 시간이 초과됐어요. 다시 시도해 주세요.
-- L56: 이 브라우저에서는 위치 정보를 사용할 수 없어요.
-- L60: 현재 위치를 아직 찾지 못했어요. 다시 시도해 주세요.
-- L63: 현재 위치를 확인하지 못했어요. 다시 시도해 주세요.
+- L26: 현재 위치 확인이 지연되고 있어요. 다시 시도해 주세요.
 
 ### src/lib/posts/mutations.ts
 
-- L80: 내용을 다시 확인해 주세요.
-- L98: 같은 내용의 글이 이미 있어요. 내용을 조금 수정해 다시 시도해 주세요.
-- L147: anonymousDeviceId가 필요합니다.
-- L157: 신고 사유 코드가 필요합니다.
+- L151: 안전 확인 중인 글입니다.
 
 ### src/lib/posts/validators.ts
 
@@ -391,9 +587,9 @@ Generated: 2026-04-12T12:15:02.965Z
 
 ### src/lib/geo/format-bucketed-distance.ts
 
-- L11: 전체 피드
-- L19: 거리 미확인
-- L23: 100m 이내
+- L12: 전체 피드
+- L20: 거리 미확인
+- L24: 100m 이내
 
 ### src/lib/utils/datetime.ts
 
@@ -401,25 +597,6 @@ Generated: 2026-04-12T12:15:02.965Z
 - L13: ${Math.floor(diffSeconds / 60)}분 전
 - L17: ${Math.floor(diffSeconds / 3600)}시간 전
 - L20: ${Math.floor(diffSeconds / 86400)}일 전
-
-## Sample & Placeholder Text
-
-샘플 데이터, placeholder, 데모용 텍스트입니다.
-
-### src/components/home/use-compose-dong-flashcard.ts
-
-- L13: 우리 동네
-- L16: 역삼1동
-- L17: 연남동
-- L18: 망원1동
-- L19: 서교동
-- L20: 삼청동
-- L21: 정자동
-- L22: 광안2동
-- L23: 봉천동
-- L24: 평창동
-- L25: 효자동
-- L26: 송도2동
 
 ## Reference Geographic Labels
 

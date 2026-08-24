@@ -1,6 +1,7 @@
 "use client";
 
 import { uiColors, uiRadius, uiSpacing, uiTypography } from "../../lib/ui/tokens";
+import { CANDIDATE_REPLY_MAX_LENGTH } from "../../lib/candidate-replies/policy";
 import { formatRelativeTime } from "../../lib/utils/datetime";
 import type { PromiseDeadlineOption } from "./candidate-reply-deadline";
 
@@ -85,7 +86,7 @@ export function CandidateReplyForm({
         <textarea
           value={content}
           onChange={(event) => onChangeContent(event.target.value)}
-          maxLength={200}
+          maxLength={CANDIDATE_REPLY_MAX_LENGTH}
           placeholder={`${candidateName} 후보로서 주민분께 짧게 답변을 남겨 주세요.`}
           style={{
             appearance: "none",
@@ -105,13 +106,17 @@ export function CandidateReplyForm({
         <span
           style={{
             bottom: uiSpacing.sm,
-            color: charCount > 180 ? uiColors.danger : uiColors.textMuted,
+            color:
+              charCount > CANDIDATE_REPLY_MAX_LENGTH * 0.9
+                ? uiColors.danger
+                : uiColors.textMuted,
             fontSize: uiTypography.meta.fontSize,
             position: "absolute",
             right: uiSpacing.md,
           }}
         >
-          {charCount}/200
+          {charCount.toLocaleString("ko-KR")}/
+          {CANDIDATE_REPLY_MAX_LENGTH.toLocaleString("ko-KR")}
         </span>
       </div>
 

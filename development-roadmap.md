@@ -273,7 +273,7 @@ Phase 1이 완료되어야 Phase 2의 답변 알림이 의미를 가지며, Phas
 | id | PK | |
 | post_id | FK | 원본 글 |
 | candidate_id | FK | 답변 후보 |
-| content | varchar(200) | 답변 본문 (200자 제한) |
+| content | varchar(2000) | 답변 본문 (2,000자 제한) |
 | is_promise | boolean | 약속 여부 |
 | promise_deadline | date (nullable) | 약속 기한 |
 | created_at | timestamp | |
