@@ -2,7 +2,7 @@ import { unstable_cache } from "next/cache";
 import { resolveLocalElection9DistrictsByAdministrativeCode } from "../geo/local-election-9-districts";
 import { supabaseSelect } from "../supabase/rest";
 
-export type CandidateMatchType = "local" | "metro" | "other";
+export type CandidateMatchType = "local" | "metro" | "national" | "other";
 
 export type CandidateMessage = {
   id: string;
@@ -45,12 +45,14 @@ type PostRow = {
 };
 
 const ALL_DISTRICTS_CACHE_KEY = "__all__";
+const NATIONAL_PARTY_LEADER_COUNCIL_TYPE = "당대표";
 const BASE_SELECT =
   "id,name,district,photo_url,first_message_id,metro_council_district,local_council_district,council_type";
 const ORDER: Record<CandidateMatchType, number> = {
   local: 0,
   metro: 1,
-  other: 2,
+  national: 2,
+  other: 3,
 };
 
 async function loadCandidateMessagesUncached(
@@ -65,7 +67,9 @@ async function loadCandidateMessagesUncached(
   let candidateRows: CandidateRow[] | null = null;
 
   if (localDistrict || metroDistrict) {
-    const orParts: string[] = [];
+    const orParts: string[] = [
+      `council_type.eq.${encodeURIComponent(NATIONAL_PARTY_LEADER_COUNCIL_TYPE)}`,
+    ];
 
     if (localDistrict) {
       orParts.push(
@@ -80,18 +84,18 @@ async function loadCandidateMessagesUncached(
     }
 
     const matchedRows = await supabaseSelect<CandidateRow[]>(
-      `candidates?select=${BASE_SELECT}&first_message_id=not.is.null&or=(${orParts.join(",")})`,
+      `candidates?select=${BASE_SELECT}&is_active=eq.true&first_message_id=not.is.null&or=(${orParts.join(",")})`,
     );
 
     candidateRows =
       matchedRows && matchedRows.length > 0
         ? matchedRows
         : await supabaseSelect<CandidateRow[]>(
-            `candidates?select=${BASE_SELECT}&first_message_id=not.is.null`,
+            `candidates?select=${BASE_SELECT}&is_active=eq.true&first_message_id=not.is.null`,
           );
   } else {
     candidateRows = await supabaseSelect<CandidateRow[]>(
-      `candidates?select=${BASE_SELECT}&first_message_id=not.is.null`,
+      `candidates?select=${BASE_SELECT}&is_active=eq.true&first_message_id=not.is.null`,
     );
   }
 
@@ -128,6 +132,10 @@ async function loadCandidateMessagesUncached(
         candidate.metro_council_district === metroDistrict
       ) {
         matchType = "metro";
+      } else if (
+        candidate.council_type === NATIONAL_PARTY_LEADER_COUNCIL_TYPE
+      ) {
+        matchType = "national";
       }
 
       return {
@@ -145,7 +153,11 @@ async function loadCandidateMessagesUncached(
     })
     .filter((candidate): candidate is CandidateMessage => candidate !== null);
 
-  candidates.sort((left, right) => ORDER[left.matchType] - ORDER[right.matchType]);
+  candidates.sort(
+    (left, right) =>
+      ORDER[left.matchType] - ORDER[right.matchType] ||
+      left.name.localeCompare(right.name, "ko"),
+  );
 
   return {
     candidates,
