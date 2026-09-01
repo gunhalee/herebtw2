@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { voicePageCandidateHeaderLine } from "../content/voice-page";
 import { formatAdministrativeAreaNameForHomeDisplay } from "../geo/format-administrative-area";
 import { findPostByUuidRepository } from "../posts/repository";
+import { formatReplyContentForCard } from "./card-text";
 import { generateCardPng } from "./generate";
 import { RepliedVoterCard } from "./templates/replied-voter";
 
@@ -59,7 +60,7 @@ export async function generateReplyNotificationCard(publicUuid: string) {
       createdAt: post.created_at,
       agreeCount: post.agree_count,
       replyTagline,
-      replyContent: post.reply_content,
+      replyContent: formatReplyContentForCard(post.reply_content),
       replyIsPromise: post.reply_is_promise ?? false,
       replyCreatedAt: post.reply_created_at ?? post.created_at,
     }),

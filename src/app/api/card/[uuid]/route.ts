@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createElement } from "react";
 import { getNetworkRateLimitResponse } from "../../../../lib/abuse/network-guard";
 import { ABUSE_POLICY } from "../../../../lib/abuse/policy";
+import { formatReplyContentForCard } from "../../../../lib/card/card-text";
 import { generateCardPng } from "../../../../lib/card/generate";
 import { buildReplyCandidateTagline } from "../../../../lib/card/reply-card";
 import { DeliveredVoterCard } from "../../../../lib/card/templates/delivered-voter";
@@ -56,6 +57,7 @@ export async function GET(request: Request, context: RouteContext) {
       metroCouncilDistrict: post.reply_candidate_metro_council_district ?? null,
       councilType: post.reply_candidate_council_type ?? null,
     });
+    const cardReplyContent = formatReplyContentForCard(post.reply_content);
 
     if (cardType === "candidate") {
       element = createElement(RepliedCandidateCard, {
@@ -63,7 +65,7 @@ export async function GET(request: Request, context: RouteContext) {
         content: post.content,
         dongName: dongDisplay,
         replyTagline,
-        replyContent: post.reply_content,
+        replyContent: cardReplyContent,
         replyIsPromise: post.reply_is_promise ?? false,
         agreeCount: post.agree_count,
       });
@@ -75,7 +77,7 @@ export async function GET(request: Request, context: RouteContext) {
         createdAt: post.created_at,
         agreeCount: post.agree_count,
         replyTagline,
-        replyContent: post.reply_content,
+        replyContent: cardReplyContent,
         replyIsPromise: post.reply_is_promise ?? false,
         replyCreatedAt: post.reply_created_at ?? post.created_at,
       });

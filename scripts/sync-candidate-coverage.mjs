@@ -4,6 +4,17 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const apply = process.argv.includes("--apply");
+const candidateIdArgument = process.argv.find((argument) =>
+  argument.startsWith("--candidate-id="),
+);
+const candidateId = candidateIdArgument?.slice("--candidate-id=".length) ?? null;
+
+if (
+  candidateId &&
+  !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(candidateId)
+) {
+  throw new Error("--candidate-id must be a valid UUID.");
+}
 
 function readEnv() {
   const result = {};
@@ -43,6 +54,37 @@ const electionMap = JSON.parse(
   fs.readFileSync(path.join(root, "src/lib/geo/data/local-election-9-dong-districts.json"), "utf8"),
 );
 
+// MOIS jscode20260701: 16 current first-level areas after Gwangju and
+// Jeollanam-do were merged on 2026-07-01. The two retired codes remain in
+// nationwide coverage so posts created before the transition stay routable.
+const NATIONAL_PROVINCE_AREAS = [
+  ["1100000000", "서울특별시", true],
+  ["1200000000", "전남광주통합특별시", true],
+  ["2600000000", "부산광역시", true],
+  ["2700000000", "대구광역시", true],
+  ["2800000000", "인천광역시", true],
+  ["3000000000", "대전광역시", true],
+  ["3100000000", "울산광역시", true],
+  ["3600000000", "세종특별자치시", true],
+  ["4100000000", "경기도", true],
+  ["4300000000", "충청북도", true],
+  ["4400000000", "충청남도", true],
+  ["4700000000", "경상북도", true],
+  ["4800000000", "경상남도", true],
+  ["5000000000", "제주특별자치도", true],
+  ["5100000000", "강원특별자치도", true],
+  ["5200000000", "전북특별자치도", true],
+  ["2900000000", "광주광역시", false],
+  ["4600000000", "전라남도", false],
+].map(([code, name, isActive]) => ({
+  code,
+  name,
+  level: "province",
+  parent_code: null,
+  source: "mois_jscode_20260701",
+  is_active: isActive,
+}));
+
 const areaByCode = new Map();
 for (const [lookupKey, value] of Object.entries(administrativeMap.administrativeByRegionAndName)) {
   const [code, name] = value;
@@ -51,6 +93,10 @@ for (const [lookupKey, value] of Object.entries(administrativeMap.administrative
   const level = code.endsWith("00000000") ? "province" : code.endsWith("00000") ? "district" : "dong";
   const parentCode = level === "province" ? null : level === "district" ? `${code.slice(0, 2)}00000000` : `${code.slice(0, 5)}00000`;
   areaByCode.set(code, { code, name, level, parent_code: parentCode, source: "data_go_kr+kakao_h_code", provinceName, districtName });
+}
+
+for (const area of NATIONAL_PROVINCE_AREAS) {
+  areaByCode.set(area.code, area);
 }
 
 const provinceAliases = new Map([
@@ -63,6 +109,19 @@ const provinceAliases = new Map([
 ]);
 
 function resolveCandidate(candidate) {
+  if (candidate.council_type === "당대표") {
+    const nationwideProvinceCodes = NATIONAL_PROVINCE_AREAS
+      .map((area) => area.code)
+      .sort();
+
+    if (nationwideProvinceCodes.length > 0) {
+      return {
+        areaCodes: nationwideProvinceCodes,
+        coverageType: "province",
+      };
+    }
+  }
+
   const electionField = candidate.local_council_district || candidate.metro_council_district;
   if (electionField) {
     const key = candidate.local_council_district ? "localCouncilDistrict" : "metroCouncilDistrict";
@@ -118,7 +177,11 @@ function closureRows(areaCodes) {
   return [...rows.values()];
 }
 
-const candidates = await request("candidates?select=id,name,district,metro_council_district,local_council_district,council_type,is_active&is_active=eq.true");
+const candidateFilter = candidateId ? `&id=eq.${candidateId}` : "";
+const candidates = await request(`candidates?select=id,name,district,metro_council_district,local_council_district,council_type,is_active&is_active=eq.true${candidateFilter}`);
+if (candidateId && candidates.length === 0) {
+  throw new Error(`Active candidate ${candidateId} was not found.`);
+}
 const resolved = candidates.map((candidate) => ({ candidate, coverage: resolveCandidate(candidate) }));
 console.log(JSON.stringify(resolved.map(({ candidate, coverage }) => ({ candidateId: candidate.id, name: candidate.name, district: candidate.district, coverage })), null, 2));
 

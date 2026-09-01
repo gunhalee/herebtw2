@@ -352,7 +352,7 @@
 | id | bigint | PK, auto increment | |
 | post_id | bigint | FK → posts.id, UNIQUE | 원본 글 (1:1) |
 | candidate_id | bigint | FK → candidates.id | 답변 후보 |
-| content | varchar(200) | NOT NULL | 답변 본문 (200자 제한) |
+| content | varchar(2000) | NOT NULL | 답변 본문 (2,000자 제한) |
 | is_promise | boolean | NOT NULL, default false | 약속 여부 |
 | promise_deadline | date | nullable | 약속 이행 기한 |
 | created_at | timestamp | NOT NULL, default now() | |

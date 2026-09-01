@@ -10,6 +10,9 @@ import {
   isCandidateMfaRequired,
 } from "../../../../lib/candidate-dashboard/feature-flags";
 import { createCandidateRequestTiming } from "../../../../lib/candidate-dashboard/timing";
+import {
+  isCandidateReplyLengthValid,
+} from "../../../../lib/candidate-replies/policy";
 
 type CreateReplyRequest = {
   clientRequestId?: string;
@@ -85,10 +88,13 @@ export async function POST(request: Request) {
   }
 
   const trimmedContent = content?.trim() ?? "";
-  if (trimmedContent.length < 1 || trimmedContent.length > 200) {
+  if (!isCandidateReplyLengthValid(trimmedContent)) {
     return finishResponse(
       fail(
-        { code: "VALIDATION_ERROR", message: "답변은 1~200자여야 합니다." },
+        {
+          code: "VALIDATION_ERROR",
+          message: "답변은 1~2,000자여야 합니다.",
+        },
         400,
       ),
       "invalid_content",

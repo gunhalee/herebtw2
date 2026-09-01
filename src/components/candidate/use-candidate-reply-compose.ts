@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { isCandidateReplyLengthValid } from "../../lib/candidate-replies/policy";
 import { createCandidateReply } from "./candidate-reply-api";
 import {
   getPromiseDeadlineValue,
@@ -27,7 +28,7 @@ export function useCandidateReplyCompose({
   const clientRequestIdRef = useRef<string | null>(null);
 
   const charCount = content.trim().length;
-  const submitDisabled = charCount < 1 || charCount > 200;
+  const submitDisabled = !isCandidateReplyLengthValid(content);
 
   function openConfirm() {
     setShowConfirm(true);
